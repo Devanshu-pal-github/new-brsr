@@ -14,12 +14,39 @@ This project is a complete rewrite of the previous system, designed to be more e
 
 ### System Flow
 
-1. **Company Onboarding**
-   - Platform admin initializes company
-   - Assigns desired report type (e.g., BRSR)
-   - Configures modules (Basic and Calc)
-   - Creates company administrator account
-   - Sets up initial financial year
+1. **Access Control Hierarchy**
+   - **Developer Admin (Super Admin)**: Full CRUD authority over all entities (Companies, Reports, Modules, Questions, Users, User Access). Responsible for initial setup, configuration, and B2B partner-level management.
+   - **Company Admin**: Manages company-specific data, plants, and user access within their company. Can select pre-assigned reports and modules. No CRUD on core entities (Reports, Modules, Questions).
+   - **Plant Admin**: Manages data for specific plants. Limited to data entry and validation within assigned modules.
+   - **User**: Basic data entry and viewing permissions.
+
+2. **Company Onboarding (Developer Admin Responsibility)**
+   - Developer Admin initializes company.
+   - Developer Admin assigns desired report types (e.g., BRSR).
+   - Developer Admin configures and assigns modules (Basic and Calc).
+   - Developer Admin creates company administrator account.
+   - Developer Admin sets up initial financial year.
+
+3. **Report, Module, Question Management (Developer Admin Responsibility)**
+   - Reports, Modules, and Questions are pre-defined and managed exclusively by Developer Admins.
+   - Company Admins will request specific reports/modules/questions, which Developer Admins will then assign to their company.
+
+4. **Plant Setup and Hierarchy**
+   - Two special plants created by default:
+     - C001 (Aggregator Plant):
+       * Stores factual aggregated cumulative data from all plants
+       * Acts as the single source of truth for company-wide data
+       * Maintains historical aggregated data
+     - P001 (Home Plant):
+       * Primary validation and data entry point
+       * Validates all subjective data
+       * Performs data auditing
+       * Sends audited cumulative responses to C001
+       * Acts as the gateway for data flow
+   - Additional plants:
+     - Submit raw data
+     - Limited to calc module access
+     - Data flows through P001 for validation
 
 2. **Plant Setup and Hierarchy**
    - Two special plants created by default:
@@ -844,4 +871,4 @@ This checklist serves as the comprehensive guide for the project implementation,
 - JWT implementation is partially done (models only)
 - Core models are cleaned and ready
 - Next focus should be on authentication implementation
-- Need to maintain backward compatibility while adding new features 
+- Need to maintain backward compatibility while adding new features

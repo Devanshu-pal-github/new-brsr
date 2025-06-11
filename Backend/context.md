@@ -13,7 +13,13 @@ This project is a robust, scalable, and maintainable B2B reporting backend built
 - **Professionalism:** Type hints, docstrings, error handling, best practices everywhere.
 
 ## 3. System Architecture & Flow
-- **Company Onboarding:** Creates company, C001 (Aggregator), P001 (Home), assigns reports.
+- **Access Control Hierarchy:**
+  - **Developer Admin (Super Admin)**: Full CRUD authority over all entities (Companies, Reports, Modules, Questions, Users, User Access). Responsible for initial setup, configuration, and B2B partner-level management.
+  - **Company Admin**: Manages company-specific data, plants, and user access within their company. Can select pre-assigned reports and modules. No CRUD on core entities (Reports, Modules, Questions).
+  - **Plant Admin**: Manages data for specific plants. Limited to data entry and validation within assigned modules.
+  - **User**: Basic data entry and viewing permissions.
+- **Company Onboarding (Developer Admin Responsibility):** Developer Admin creates company, C001 (Aggregator), P001 (Home), assigns reports.
+- **Report, Module, Question Management (Developer Admin Responsibility):** Reports, Modules, and Questions are pre-defined and managed exclusively by Developer Admins. Company Admins will request specific reports/modules/questions, which Developer Admins will then assign to their company.
 - **Plant Setup:** C001 (aggregator), P001 (home/validation), regular plants. Data flows: Plant → P001 → C001.
 - **Module Hierarchy:** Module → Submodule → Category → Question (all by UUID).
 - **Answer Flow:** Subjective/table/table-with-additional-rows, validation, authoritative source (P001/C001), audit trail.
@@ -138,4 +144,4 @@ This project is a robust, scalable, and maintainable B2B reporting backend built
 - **CI/CD:** Set up automated testing and deployment pipelines.
 
 ## 11. Final Reflection
-This backend is a gold-standard, production-ready, extensible, and secure foundation for B2B reporting and beyond. Every model, service, and flow is robust, professional, and future-proof. This documentation serves as a complete reference and onboarding guide for any future developer or stakeholder. 
+This backend is a gold-standard, production-ready, extensible, and secure foundation for B2B reporting and beyond. Every model, service, and flow is robust, professional, and future-proof. This documentation serves as a complete reference and onboarding guide for any future developer or stakeholder.

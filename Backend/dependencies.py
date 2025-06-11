@@ -67,6 +67,16 @@ def check_plant_access(user: Dict = Depends(get_current_active_user)) -> None:
             detail="User does not have plant access"
         )
 
+def check_super_admin_access(user: Dict = Depends(get_current_active_user)) -> None:
+    """
+    Check if user has super admin access
+    """
+    if user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have super admin access"
+        )
+
 def get_document_by_id(collection: str, doc_id: str, db) -> dict:
     """
     Generic function to get a document by its ID
@@ -84,4 +94,4 @@ def check_document_exists(collection: str, doc_id: str, db) -> bool:
     Check if a document exists in a collection
     """
     document = db[collection].find_one({"_id": doc_id})
-    return document is not None 
+    return document is not None

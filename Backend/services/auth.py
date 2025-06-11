@@ -22,7 +22,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+try:
+    # Try to initialize with bcrypt
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except AttributeError:
+    # Fallback to sha256_crypt if bcrypt has compatibility issues
+    pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 class SessionManager:
     def __init__(self, db):
@@ -69,7 +74,7 @@ class SessionManager:
             {"$set": {"is_active": False}}
         )
 
-    def cleanup_expired_sessions(self) -> None:
+    async def cleanup_expired_sessions(self) -> None:
         """
         Delete all expired sessions from the database.
         Why: Maintains DB hygiene and security.
@@ -159,4 +164,4 @@ def decode_token(token: str) -> TokenData:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        ) 
+        )

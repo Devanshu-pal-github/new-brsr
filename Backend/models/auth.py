@@ -9,6 +9,7 @@ ROLE_COMPANY_ADMIN = "company_admin"
 ROLE_PLANT_ADMIN = "plant_admin"
 
 class UserRole(str, Enum):
+    SUPER_ADMIN = "super_admin"
     COMPANY_ADMIN = "company_admin"
     PLANT_ADMIN = "plant_admin"
 
@@ -27,6 +28,20 @@ class UserInDB(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     hashed_password: str
     access_modules: List[str] = []
+    
+    # Add model validator to handle string role values
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        # If role is a string, convert it to UserRole enum
+        if isinstance(obj, dict) and "role" in obj and isinstance(obj["role"], str):
+            try:
+                obj["role"] = UserRole(obj["role"])
+            except ValueError:
+                # If conversion fails, use a default role or raise an error
+                valid_roles = [r.value for r in UserRole]
+                if obj["role"] not in valid_roles:
+                    raise ValueError(f"Invalid role: {obj['role']}. Must be one of: {', '.join(valid_roles)}")
+        return super().model_validate(obj, *args, **kwargs)
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
@@ -86,4 +101,4 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-# This file can be left minimal or empty if not required by the checklist. If needed, only basic user fields should be kept for authentication. 
+# This file can be left minimal or empty if not required by the checklist. If needed, only basic user fields should be kept for authentication.

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
-from dependencies import DB
-from models.report import ReportCreate, Report, ReportUpdate
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import List, Optional
+from dependencies import get_database, get_current_active_user, check_super_admin_access
+from models.report import ReportCreate, Report, ReportUpdate, ReportSummary
+from models.report import REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_STATUS_ARCHIVED
 from services.report import ReportService
 
 router = APIRouter(
@@ -10,24 +11,26 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-def get_report_service(db = Depends()) -> ReportService:
+async def get_report_service(db = Depends(get_database)):
     return ReportService(db)
 
 @router.post("/", response_model=Report, status_code=status.HTTP_201_CREATED)
-def create_report(
+async def create_report(
     report: ReportCreate,
+    current_user = Depends(check_super_admin_access),
     report_service: ReportService = Depends(get_report_service)
 ):
     """Create a new report"""
-    return report_service.create_report(report)
+    return await report_service.create_report(report)
 
 @router.get("/{report_id}", response_model=Report)
-def get_report(
+async def get_report(
     report_id: str,
+    current_user = Depends(get_current_active_user),
     report_service: ReportService = Depends(get_report_service)
 ):
     """Get a specific report by ID"""
-    report = report_service.get_report(report_id)
+    report = await report_service.get_report(report_id)
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -36,22 +39,25 @@ def get_report(
     return report
 
 @router.get("/", response_model=List[Report])
-def list_reports(
+async def list_reports(
     skip: int = 0,
     limit: int = 10,
+    status: Optional[str] = Query(None, description="Filter reports by status (active, inactive, archived)"),
+    current_user = Depends(get_current_active_user),
     report_service: ReportService = Depends(get_report_service)
 ):
-    """List all reports with pagination"""
-    return report_service.list_reports(skip=skip, limit=limit)
+    """List all reports with pagination and optional status filtering"""
+    return await report_service.list_reports(skip=skip, limit=limit, status=status)
 
 @router.patch("/{report_id}", response_model=Report)
-def update_report(
+async def update_report(
     report_id: str,
     report_update: ReportUpdate,
+    current_user = Depends(check_super_admin_access),
     report_service: ReportService = Depends(get_report_service)
 ):
     """Update a report"""
-    report = report_service.update_report(report_id, report_update)
+    report = await report_service.update_report(report_id, report_update)
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -60,15 +66,53 @@ def update_report(
     return report
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_report(
+async def delete_report(
     report_id: str,
+    current_user = Depends(check_super_admin_access),
     report_service: ReportService = Depends(get_report_service)
 ):
     """Delete a report"""
-    deleted = report_service.delete_report(report_id)
+    deleted = await report_service.delete_report(report_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Report with ID {report_id} not found"
         )
-    return None 
+    return None
+
+@router.patch("/{report_id}/status", response_model=Report)
+async def change_report_status(
+    report_id: str,
+    new_status: str = Query(..., description="New status for the report (active, inactive, archived)"),
+    current_user = Depends(check_super_admin_access),
+    report_service: ReportService = Depends(get_report_service)
+):
+    """Change the status of a report"""
+    if new_status not in [REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_STATUS_ARCHIVED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status: {new_status}. Must be one of: active, inactive, archived"
+        )
+    
+    report = await report_service.change_report_status(report_id, new_status)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report with ID {report_id} not found"
+        )
+    return report
+
+@router.get("/{report_id}/summary", response_model=ReportSummary)
+async def get_report_summary(
+    report_id: str,
+    current_user = Depends(get_current_active_user),
+    report_service: ReportService = Depends(get_report_service)
+):
+    """Get a summary of a report including usage statistics"""
+    summary = await report_service.get_report_summary(report_id)
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report with ID {report_id} not found"
+        )
+    return summary

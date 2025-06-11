@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from typing import List, Optional
-from dependencies import DB
+from typing import List, Optional, Dict
+from dependencies import DB, check_super_admin_access
 from models.question import QuestionCreate, Question, QuestionUpdate, QuestionWithCategory
 from services.question import QuestionService
 
@@ -17,7 +17,8 @@ def get_question_service(db):
 async def create_question(
     category_id: str = Query(..., description="Category ID to add the question to"),
     question: QuestionCreate = Body(...),
-    question_service = Depends(get_question_service)
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Create a new question"""
     try:
@@ -63,7 +64,8 @@ async def list_questions(
 async def update_question(
     question_id: str,
     question_update: QuestionUpdate,
-    question_service = Depends(get_question_service)
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Update a question"""
     try:
@@ -83,7 +85,8 @@ async def update_question(
 @router.delete("/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_question(
     question_id: str,
-    question_service = Depends(get_question_service)
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Delete a question and its associated answers"""
     try:
@@ -98,4 +101,4 @@ async def delete_question(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        ) 
+        )

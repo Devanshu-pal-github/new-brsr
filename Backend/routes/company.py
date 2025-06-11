@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List
-from dependencies import DB
+from typing import List, Dict
+from dependencies import DB, check_super_admin_access
 from models.company import CompanyCreate, Company, CompanyUpdate, CompanyWithPlants
 from services.company import CompanyService
 
@@ -10,13 +10,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-def get_company_service(db):
+from dependencies import get_database
+
+def get_company_service(db = Depends(get_database)):
     return CompanyService(db)
 
 @router.post("/", response_model=Company, status_code=status.HTTP_201_CREATED)
 async def create_company(
     company: CompanyCreate,
-    company_service: CompanyService = Depends(get_company_service)
+    company_service: CompanyService = Depends(get_company_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Create a new company with default plants"""
     try:
@@ -56,7 +59,8 @@ async def list_companies(
 async def update_company(
     company_id: str,
     company_update: CompanyUpdate,
-    company_service: CompanyService = Depends(get_company_service)
+    company_service: CompanyService = Depends(get_company_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Update a company"""
     try:
@@ -76,7 +80,8 @@ async def update_company(
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_company(
     company_id: str,
-    company_service: CompanyService = Depends(get_company_service)
+    company_service: CompanyService = Depends(get_company_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Delete a company and its associated plants"""
     deleted = await company_service.delete_company(company_id)
@@ -121,4 +126,4 @@ async def delete_company(
 #             status_code=status.HTTP_404_NOT_FOUND,
 #             detail=f"Company with ID {company_id} not found"
 #         )
-#     return company 
+#     return company

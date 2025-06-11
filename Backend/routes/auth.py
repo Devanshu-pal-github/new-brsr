@@ -109,7 +109,7 @@ async def refresh_token(token, db = Depends(get_database)):
     }
 
 @router.post("/register", response_model=UserInDB)
-async def register_user(user: UserCreate, db = Depends(get_database)):
+async def register_user(user_data: dict = Body(...), db = Depends(get_database)):
     """
     Register a new user (admin-only or open registration, as per business logic).
     - Checks for existing user by email.
@@ -123,7 +123,7 @@ async def register_user(user: UserCreate, db = Depends(get_database)):
         "email": "user@example.com",
         "full_name": "User Name",
         "password": "yourpassword",
-        "role": "company_admin",
+        "role": "company_admin",  # optional for first user (becomes super_admin)
         "company_id": "...",  # optional
         "plant_id": "..."     # optional
     }
@@ -142,18 +142,67 @@ async def register_user(user: UserCreate, db = Depends(get_database)):
     }
     """
     # Check if email already exists
-    if db["users"].find_one({"email": user.email}):
+    if db["users"].find_one({"email": user_data["email"]}):
         raise HTTPException(
             status_code=400,
             detail="Email already registered"
         )
-    user_dict = user.model_dump()
-    user_dict["_id"] = generate_uuid()
-    user_dict["id"] = user_dict["_id"]
-    user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
-    user_dict["access_modules"] = []
-    db["users"].insert_one(user_dict)
-    return UserInDB(**user_dict)
+    
+    # Check if this is the first user (no users in the database)
+    user_count = db["users"].count_documents({})
+    
+    # If this is the first user and no role is specified, make them a super_admin
+    if user_count == 0 and "role" not in user_data:
+        user_data["role"] = "super_admin"
+    elif "role" not in user_data:
+        # For subsequent users, role is required
+        raise HTTPException(
+            status_code=422,
+            detail=[{"loc": ["body", "role"], "msg": "Field required", "type": "missing"}]
+        )
+    
+    # Validate role value
+    from models.auth import UserRole
+    valid_roles = [r.value for r in UserRole]
+    
+    if isinstance(user_data["role"], str):
+        if user_data["role"] not in valid_roles:
+            raise HTTPException(
+                status_code=422,
+                detail=[{"loc": ["body", "role"], "msg": f"Value must be one of: {', '.join(valid_roles)}", "type": "value_error"}]
+            )
+        # Keep the role as string, don't convert to enum
+        role_str = user_data["role"]
+    else:
+        # If it's already an enum, get its string value
+        try:
+            role_str = user_data["role"].value
+        except AttributeError:
+            raise HTTPException(
+                status_code=422,
+                detail=[{"loc": ["body", "role"], "msg": f"Value must be one of: {', '.join(valid_roles)}", "type": "value_error"}]
+            )
+    
+    # Create user
+    user_data["_id"] = generate_uuid()
+    user_data["id"] = user_data["_id"]
+    user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+    user_data["access_modules"] = []
+    user_data["is_active"] = True
+    
+    # Store the string value of role in the database
+    user_data["role"] = role_str
+    
+    db["users"].insert_one(user_data)
+    
+    # For the response, we need to create a UserInDB object
+    # The UserInDB model will handle the conversion of role string to enum
+    try:
+        return UserInDB(**user_data)
+    except Exception as e:
+        # If there's an error with the response model, return a dict instead
+        # This is a fallback in case the enum conversion fails
+        return user_data
 
 @router.post("/users", response_model=UserInDB)
 async def create_user(user, db):

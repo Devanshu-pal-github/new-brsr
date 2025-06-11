@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Optional
-from dependencies import DB
+from typing import List, Optional, Dict
+from dependencies import DB, check_super_admin_access
 from models.module import ModuleCreate, Module, ModuleUpdate, ModuleWithDetails
 from services.module import ModuleService
 
@@ -16,7 +16,8 @@ def get_module_service(db):
 @router.post("/", response_model=Module, status_code=status.HTTP_201_CREATED)
 async def create_module(
     module: ModuleCreate,
-    module_service: ModuleService = Depends(get_module_service)
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Create a new module"""
     try:
@@ -56,7 +57,8 @@ async def list_modules(
 async def update_module(
     module_id: str,
     module_update: ModuleUpdate,
-    module_service: ModuleService = Depends(get_module_service)
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Update a module"""
     module = await module_service.update_module(module_id, module_update)
@@ -70,7 +72,8 @@ async def update_module(
 @router.delete("/{module_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_module(
     module_id: str,
-    module_service: ModuleService = Depends(get_module_service)
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
 ):
     """Delete a module"""
     deleted = await module_service.delete_module(module_id)
@@ -87,4 +90,4 @@ async def get_modules_by_report(
     module_service: ModuleService = Depends(get_module_service)
 ):
     """Get all modules for a specific report"""
-    return await module_service.list_modules(report_id=report_id) 
+    return await module_service.list_modules(report_id=report_id)

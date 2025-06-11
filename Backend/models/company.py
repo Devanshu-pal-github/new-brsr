@@ -55,4 +55,4 @@ class CompanyInDB(Company):
     _id: str
 
 class CompanyWithPlants(Company):
-    plants: List[Dict] = [] 
+    plants: List[Dict] = []

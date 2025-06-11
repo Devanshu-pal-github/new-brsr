@@ -29,7 +29,8 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="BRSR API",
     description="API for BRSR and Greenhouse Report Management System",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False
 )
 
 # Background task for session cleanup
@@ -124,4 +125,4 @@ app.include_router(user_access.router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

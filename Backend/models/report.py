@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
@@ -14,6 +14,9 @@ class Report(BaseModel):
     module_ids: List[str] = []
     basic_modules: List[str] = []
     calc_modules: List[str] = []
+    status: str = REPORT_STATUS_ACTIVE
+    version: str = "1.0.0"
+    metadata: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -22,6 +25,7 @@ class ReportSummary(BaseModel):
     name: str
     type: str
     version: str
+    status: str
     company_count: int
     submission_count: int
     last_submission: Optional[datetime] = None
@@ -31,9 +35,15 @@ class ReportCreate(BaseModel):
     module_ids: List[str] = []
     basic_modules: List[str] = []
     calc_modules: List[str] = []
+    status: str = REPORT_STATUS_ACTIVE
+    version: str = "1.0.0"
+    metadata: Optional[Dict[str, Any]] = None
 
 class ReportUpdate(BaseModel):
     name: Optional[str] = None
     module_ids: Optional[List[str]] = None
     basic_modules: Optional[List[str]] = None
-    calc_modules: Optional[List[str]] = None 
+    calc_modules: Optional[List[str]] = None
+    status: Optional[str] = None
+    version: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
