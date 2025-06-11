@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from models.auth import UserCreate, UserInDB, Token, UserUpdate
@@ -184,8 +184,8 @@ async def read_users_me(
 
 @router.put("/users/me", response_model=UserInDB)
 async def update_user(
-    user_update,
-    db,
+    user_update: UserUpdate = Body(...),
+    db = Depends(get_database),
     current_user = Depends(get_current_active_user)
 ):
     """Update current user information"""
@@ -194,8 +194,8 @@ async def update_user(
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
     if update_data:
         db["users"].update_one(
-            {"_id": current_user.id},
+            {"_id": current_user["_id"]},
             {"$set": update_data}
         )
-    updated_user = db["users"].find_one({"_id": current_user.id})
-    return UserInDB(**updated_user) 
+    updated_user = db["users"].find_one({"_id": current_user["_id"]})
+    return UserInDB(**updated_user)
