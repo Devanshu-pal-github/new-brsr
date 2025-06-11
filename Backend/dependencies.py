@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from pymongo.database import Database
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Annotated, Optional, Dict
 from models.auth import TokenData, UserInDB
 from services.auth import decode_token, verify_token
@@ -8,7 +8,7 @@ import uuid
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-def get_database(request: Request):
+async def get_database(request: Request) -> AsyncIOMotorDatabase:
     db = getattr(request.app, "mongodb", None)
     if db is None:
         raise RuntimeError("Database not initialized on app.")
@@ -23,12 +23,12 @@ def generate_uuid() -> str:
     """
     return str(uuid.uuid4())
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Database = Depends(get_database)) -> Dict:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotorDatabase = Depends(get_database)) -> Dict:
     """
     Get current authenticated user
     """
     payload = verify_token(token)
-    user = db.users.find_one({"_id": payload["user_id"]})
+    user = await db.users.find_one({"_id": payload["user_id"]})
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -77,11 +77,11 @@ def check_super_admin_access(user: Dict = Depends(get_current_active_user)) -> N
             detail="User does not have super admin access"
         )
 
-def get_document_by_id(collection: str, doc_id: str, db) -> dict:
+async def get_document_by_id(collection: str, doc_id: str, db: AsyncIOMotorDatabase) -> dict:
     """
     Generic function to get a document by its ID
     """
-    document = db[collection].find_one({"_id": doc_id})
+    document = await db[collection].find_one({"_id": doc_id})
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -89,9 +89,9 @@ def get_document_by_id(collection: str, doc_id: str, db) -> dict:
         )
     return document
 
-def check_document_exists(collection: str, doc_id: str, db) -> bool:
+async def check_document_exists(collection: str, doc_id: str, db: AsyncIOMotorDatabase) -> bool:
     """
     Check if a document exists in a collection
     """
-    document = db[collection].find_one({"_id": doc_id})
+    document = await db[collection].find_one({"_id": doc_id})
     return document is not None

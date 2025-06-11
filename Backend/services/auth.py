@@ -7,6 +7,8 @@ from models.auth import UserInDB, TokenData
 import os
 from dotenv import load_dotenv
 import uuid
+from datetime import datetime, timedelta
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 load_dotenv()
 
@@ -30,11 +32,11 @@ except AttributeError:
     pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 class SessionManager:
-    def __init__(self, db):
+    def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.collection = db.sessions
 
-    def create_session(self, user_id: str, refresh_token: str) -> str:
+    async def create_session(self, user_id: str, refresh_token: str) -> str:
         """
         Create a new session for a user with a refresh token.
         Why: Supports secure session management and token refresh.
@@ -48,15 +50,15 @@ class SessionManager:
             "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
             "is_active": True
         }
-        self.collection.insert_one(session)
+        await self.collection.insert_one(session)
         return session_id
 
-    def validate_session(self, session_id: str, refresh_token: str) -> bool:
+    async def validate_session(self, session_id: str, refresh_token: str) -> bool:
         """
         Validate a session by ID and refresh token.
         Why: Ensures only valid, active, and unexpired sessions are used for token refresh.
         """
-        session = self.collection.find_one({
+        session = await self.collection.find_one({
             "_id": session_id,
             "refresh_token": refresh_token,
             "is_active": True,
@@ -64,12 +66,12 @@ class SessionManager:
         })
         return session is not None
 
-    def invalidate_session(self, session_id: str) -> None:
+    async def invalidate_session(self, session_id: str) -> None:
         """
         Invalidate a session by setting is_active to False.
         Why: Supports logout and session revocation.
         """
-        self.collection.update_one(
+        await self.collection.update_one(
             {"_id": session_id},
             {"$set": {"is_active": False}}
         )
@@ -117,9 +119,9 @@ def verify_token(token: str) -> Dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-def authenticate_user(db, email: str, password: str) -> dict | None:
+async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str) -> dict | None:
     """Authenticate user and return user data if valid, else None."""
-    user = db.users.find_one({"email": email})
+    user = await db.users.find_one({"email": email})
     if not user:
         return None
     from services.auth import verify_password  # avoid circular import

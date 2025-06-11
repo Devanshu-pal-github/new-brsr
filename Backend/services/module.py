@@ -37,12 +37,12 @@ class ModuleService:
             category_ids = [cat for sub in module.get("submodules", []) for cat in sub.get("categories", [])]
             categories = []
             if category_ids:
-                cursor = self.db.categories.find({"_id": {"$in": category_ids}})
-                categories = [cat async for cat in cursor]
+                categories = []
+                async for cat in self.db.categories.find({"_id": {"$in": category_ids}}):
+                    categories.append(cat)
             # Get report references
             reports = []
-            cursor = self.db.reports.find({"modules.module_id": module_id}, {"_id": 1})
-            async for report in cursor:
+            async for report in self.db.reports.find({"modules.module_id": module_id}, {"_id": 1}):
                 reports.append(report)
             # Count questions
             question_count = sum(len(cat.get("question_ids", [])) for cat in categories)
@@ -206,4 +206,4 @@ class ModuleService:
         if category_ids:
             await self.db.categories.delete_many({"_id": {"$in": category_ids}})
         result = await self.collection.delete_one({"_id": module_id})
-        return result.deleted_count > 0 
+        return result.deleted_count > 0

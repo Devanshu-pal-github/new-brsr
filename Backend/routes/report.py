@@ -11,7 +11,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def get_report_service(db = Depends(get_database)):
+def get_report_service(db = Depends(get_database)):
     return ReportService(db)
 
 @router.post("/", response_model=Report, status_code=status.HTTP_201_CREATED)

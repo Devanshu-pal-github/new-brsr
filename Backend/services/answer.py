@@ -31,6 +31,11 @@ class AnswerService:
         """
         # Check if question exists
         question = await self.question_service.get_question(question_id)
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
 
         # Check if answer already exists
         existing = await self.collection.find_one({
@@ -135,16 +140,16 @@ class AnswerService:
             questions = []
             if category_id:
                 # Find all questions in the category
-                category_questions = self.db.questions.find({"category_id": category_id})
-                questions.extend([q["_id"] async for q in category_questions])
+                async for q in self.db.questions.find({"category_id": category_id}):
+                    questions.append(q["_id"])
             elif module_id:
                 # Find all questions in the module's categories
                 module = await self.db.modules.find_one({"_id": module_id})
                 if module:
                     for submodule in module.get("submodules", []):
                         for category in submodule.get("categories", []):
-                            category_questions = self.db.questions.find({"category_id": category["_id"]})
-                            questions.extend([q["_id"] async for q in category_questions])
+                            async for q in self.db.questions.find({"category_id": category["_id"]}):
+                                questions.append(q["_id"])
             if questions:
                 query["question_id"] = {"$in": questions}
             else:
@@ -353,4 +358,4 @@ class AnswerService:
         })
         if c001_answer:
             return Answer(**c001_answer)
-        return None 
+        return None

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
 from routes import (
@@ -33,6 +33,53 @@ app = FastAPI(
     redirect_slashes=False
 )
 
+# Database connection URL
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "brsr_db")
+
+# Database connection handler
+@app.on_event("startup")
+async def startup_db_client():
+    app.mongodb_client = AsyncIOMotorClient(MONGODB_URL)
+    app.mongodb = app.mongodb_client[DB_NAME]
+    
+    # Create indexes for Reports collection
+    await app.mongodb.reports.create_index("name", unique=True)
+    await app.mongodb.reports.create_index([("module_ids", 1)])
+    
+    # Create indexes for Modules collection
+    await app.mongodb.modules.create_index("name", unique=True)
+    await app.mongodb.modules.create_index("module_type")
+    
+    # Create indexes for Answers collection
+    await app.mongodb.answers.create_index([
+        ("company_id", 1),
+        ("plant_id", 1),
+        ("financial_year", 1)
+    ])
+    await app.mongodb.answers.create_index("question_id")
+    await app.mongodb.answers.create_index("validation_status")
+    
+    # Create indexes for Companies collection
+    await app.mongodb.companies.create_index("name", unique=True)
+    await app.mongodb.companies.create_index("plant_ids")
+    
+    # Create indexes for Plants collection
+    await app.mongodb.plants.create_index([("company_id", 1), ("plant_code", 1)], unique=True)
+    await app.mongodb.plants.create_index("plant_type")
+    
+    # Create indexes for Questions collection
+    await app.mongodb.questions.create_index("module_id")
+    await app.mongodb.questions.create_index("question_number", unique=True)
+    
+    # Create indexes for User Access collection
+    await app.mongodb.user_access.create_index([
+        ("user_id", 1),
+        ("company_id", 1),
+        ("plant_id", 1)
+    ], unique=True)
+    app.mongodb.user_access.create_index("role")
+
 # Background task for session cleanup
 @app.on_event("startup")
 @repeat_every(seconds=60 * 60 * 24)  # Run once per day
@@ -52,53 +99,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Database connection URL
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "brsr_db")
-
-# Database connection handler
-@app.on_event("startup")
-async def startup_db_client():
-    app.mongodb_client = MongoClient(MONGODB_URL)
-    app.mongodb = app.mongodb_client[DB_NAME]
-    
-    # Create indexes for Reports collection
-    app.mongodb.reports.create_index("name", unique=True)
-    app.mongodb.reports.create_index([("module_ids", 1)])
-    
-    # Create indexes for Modules collection
-    app.mongodb.modules.create_index("name", unique=True)
-    app.mongodb.modules.create_index("module_type")
-    
-    # Create indexes for Answers collection
-    app.mongodb.answers.create_index([
-        ("company_id", 1),
-        ("plant_id", 1),
-        ("financial_year", 1)
-    ])
-    app.mongodb.answers.create_index("question_id")
-    app.mongodb.answers.create_index("validation_status")
-    
-    # Create indexes for Companies collection
-    app.mongodb.companies.create_index("name", unique=True)
-    app.mongodb.companies.create_index("plant_ids")
-    
-    # Create indexes for Plants collection
-    app.mongodb.plants.create_index([("company_id", 1), ("plant_code", 1)], unique=True)
-    app.mongodb.plants.create_index("plant_type")
-    
-    # Create indexes for Questions collection
-    app.mongodb.questions.create_index("module_id")
-    app.mongodb.questions.create_index("question_number", unique=True)
-    
-    # Create indexes for User Access collection
-    app.mongodb.user_access.create_index([
-        ("user_id", 1),
-        ("company_id", 1),
-        ("plant_id", 1)
-    ], unique=True)
-    app.mongodb.user_access.create_index("role")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

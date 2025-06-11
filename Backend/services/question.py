@@ -195,8 +195,8 @@ class QuestionService:
 
         categories = []
         for submodule in module.get("submodules", []):
-            for category in submodule.get("categories", []):
-                categories.append(category["_id"])
+            for category_id in submodule.get("categories", []):
+                categories.append(category_id)
         return categories
 
     async def update_question_order(
@@ -430,4 +430,4 @@ class QuestionService:
                     if not re.match(email_pattern, str(value)):
                         errors.append(error_message)
 
-        return (len(errors) == 0, errors) 
+        return (len(errors) == 0, errors)

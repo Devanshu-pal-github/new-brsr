@@ -44,7 +44,7 @@ async def login(
     }
     """
     # Authenticate user (sync)
-    user = authenticate_user(db, form_data.username, form_data.password)
+    user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,7 +66,7 @@ async def login(
     refresh_token = secrets.token_urlsafe(32)
     # Store session in DB (sync)
     session_manager = SessionManager(db)
-    session_manager.create_session(user["_id"], refresh_token)
+    await session_manager.create_session(user["_id"], refresh_token)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -87,7 +87,7 @@ async def verify_auth(token):
 async def refresh_token(token, db = Depends(get_database)):
     """Refresh JWT token"""
     payload = verify_token(token)
-    user = db.users.find_one({"_id": payload["user_id"]})
+    user = await db.users.find_one({"_id": payload["user_id"]})
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -142,14 +142,14 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
     }
     """
     # Check if email already exists
-    if db["users"].find_one({"email": user_data["email"]}):
+    if await db["users"].find_one({"email": user_data["email"]}):
         raise HTTPException(
             status_code=400,
             detail="Email already registered"
         )
     
     # Check if this is the first user (no users in the database)
-    user_count = db["users"].count_documents({})
+    user_count = await db["users"].count_documents({})
     
     # If this is the first user and no role is specified, make them a super_admin
     if user_count == 0 and "role" not in user_data:
@@ -193,7 +193,7 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
     # Store the string value of role in the database
     user_data["role"] = role_str
     
-    db["users"].insert_one(user_data)
+    await db["users"].insert_one(user_data)
     
     # For the response, we need to create a UserInDB object
     # The UserInDB model will handle the conversion of role string to enum
