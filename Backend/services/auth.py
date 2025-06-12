@@ -96,9 +96,14 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
+    
+    # Ensure user_name is in the token payload
+    if "user_name" not in to_encode and "full_name" in to_encode:
+        to_encode["user_name"] = to_encode["full_name"]
+    
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)  # type: ignore
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def verify_token(token: str) -> Dict:
@@ -124,9 +129,17 @@ async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str)
     user = await db.users.find_one({"email": email})
     if not user:
         return None
-    from services.auth import verify_password  # avoid circular import
     if not verify_password(password, user["hashed_password"]):
         return None
+    
+    # Convert MongoDB _id to string if it exists
+    if "_id" in user:
+        user["_id"] = str(user["_id"])
+    
+    # Ensure full_name is present
+    if "full_name" not in user:
+        user["full_name"] = user.get("username", email.split("@")[0])
+        
     return user
 
 def decode_token(token: str) -> TokenData:

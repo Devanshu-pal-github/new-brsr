@@ -32,14 +32,18 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { user, access_token } = action.payload;
-      state.user = user;
+      const { user, access_token, user_name } = action.payload;
+      state.user = {
+        ...user,
+        user_name: user_name
+      };
       state.token = access_token;
       state.isAuthenticated = true;
       
       // Store in localStorage
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(state.user));
       localStorage.setItem('token', access_token);
+      localStorage.setItem('user_name', user_name);
     },
     logout: (state) => {
       state.user = null;
@@ -49,6 +53,7 @@ const authSlice = createSlice({
       // Remove from localStorage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      localStorage.removeItem('user_name');
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -73,15 +78,19 @@ const authSlice = createSlice({
           state.isAuthenticated = true;
           state.user = {
             id: payload.user_id,
-            username: payload.username,
+            user_name: payload.user_name,
             email: payload.email,
             roles: payload.roles,
+            role: payload.role,
+            company_id: payload.company_id,
+            plant_id: payload.plant_id
           };
           state.token = payload.access_token;
           
           // Store in localStorage
           localStorage.setItem('user', JSON.stringify(state.user));
           localStorage.setItem('token', payload.access_token);
+          localStorage.setItem('user_name', payload.user_name);
         }
       )
       .addMatcher(
@@ -103,3 +112,4 @@ export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectAuthError = (state) => state.auth.error;
 export const selectIsLoading = (state) => state.auth.isLoading;
+export const selectUserName = (state) => state.auth.user?.user_name || 'User';

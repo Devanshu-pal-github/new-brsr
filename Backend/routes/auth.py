@@ -47,30 +47,35 @@ async def login(
         "plant_id": "..."
     }
     """
-    # Authenticate user (sync)
+    # Authenticate user
     user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
+    
     # Create access token (JWT)
-    access_token = create_access_token(
-        data={
-            "sub": user["email"],
-            "user_id": user["_id"],
-            "username": user["full_name"],
-            "email": user["email"],
-            "roles": [user["role"]],
-            "company_id": user.get("company_id"),
-            "plant_id": user.get("plant_id")
-        }
-    )
-    # Create refresh token (secure random string)
+    token_data = {
+        "sub": user["email"],
+        "user_id": user["_id"],
+        "user_name": user["full_name"],
+        "email": user["email"],
+        "roles": [user["role"]],
+        "company_id": user.get("company_id"),
+        "plant_id": user.get("plant_id")
+    }
+    
+    print(user["full_name"])
+    
+    access_token = create_access_token(data=token_data)
     refresh_token = secrets.token_urlsafe(32)
-    # Store session in DB (sync)
+    
+    # Store session in DB
     session_manager = SessionManager(db)
     await session_manager.create_session(user["_id"], refresh_token)
+    
+    # Return response with user name
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -79,7 +84,8 @@ async def login(
         "user_id": user["_id"],
         "role": user["role"],
         "company_id": user.get("company_id"),
-        "plant_id": user.get("plant_id")
+        "plant_id": user.get("plant_id"),
+        "user_name": user["full_name"]
     }
 
 @router.get("/verify")

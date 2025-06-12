@@ -10,11 +10,12 @@ const Navbar = () => {
   const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   
-  // Get user name from localStorage
-  const userName = localStorage.getItem('user_name') || 'User';
   const user = useSelector(selectCurrentUser);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Get user name from user object in Redux store
+  const userName = user?.user_name || 'User';
 
   // Available report types
   const reportTypes = [
@@ -37,7 +38,6 @@ const Navbar = () => {
   const selectReport = (reportName) => {
     setSelectedReport(reportName);
     setIsReportDropdownOpen(false);
-    // Add navigation logic here if needed
   };
 
   return (
@@ -87,7 +87,9 @@ const Navbar = () => {
                   {getUserInitials(userName)}
                 </div>
                 <div className="hidden sm:flex items-center gap-1">
-                  <span className="text-[#FFFFFF] text-[12px] font-medium">{userName}</span>
+                  <span className="text-[#FFFFFF] text-[12px] font-medium">
+                    {userName}
+                  </span>
                   <ChevronDown className={`w-5 h-5 text-[#FFFFFF] transition-transform duration-300 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>

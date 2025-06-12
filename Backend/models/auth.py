@@ -63,15 +63,14 @@ class TokenData(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
     user_id: str
-    username: str
-    email: str
-    roles: List[str] = []
+    role: str
     company_id: Optional[str] = None
     plant_id: Optional[str] = None
-    exp: datetime
+    user_name: str
 
 class LoginRequest(BaseModel):
     username: str
@@ -79,14 +78,14 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
     user_id: str
-    username: str
-    email: str
-    roles: List[str] = []
+    role: str
     company_id: Optional[str] = None
     plant_id: Optional[str] = None
+    user_name: str
 
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
