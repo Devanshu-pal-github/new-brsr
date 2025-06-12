@@ -113,15 +113,14 @@ async def root():
         "version": "1.0.0"
     }
 
-# Import and include routers
-app.include_router(auth.router)  # Include auth router first
-app.include_router(report.router)
 app.include_router(module.router)
 app.include_router(company.router)
 app.include_router(plant.router)
 app.include_router(question.router)
 app.include_router(answer.router)
 app.include_router(user_access.router)
+app.include_router(auth.router)  # Add auth router
+app.include_router(report.router)  # Add report router
 
 if __name__ == "__main__":
     import uvicorn
