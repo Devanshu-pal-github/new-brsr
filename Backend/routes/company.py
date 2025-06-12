@@ -5,6 +5,7 @@ from models.company import CompanyCreate, Company, CompanyUpdate, CompanyWithPla
 from services.company import CompanyService
 
 router = APIRouter(
+    prefix="/companies",
     tags=["companies"],
     responses={404: {"description": "Not found"}},
 )
@@ -14,7 +15,7 @@ from dependencies import get_database
 def get_company_service(db = Depends(get_database)):
     return CompanyService(db)
 
-@router.post("/", response_model=Company, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=Company, status_code=status.HTTP_201_CREATED)
 async def create_company(
     company: CompanyCreate,
     company_service: CompanyService = Depends(get_company_service),

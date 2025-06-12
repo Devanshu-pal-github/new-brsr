@@ -6,6 +6,7 @@ from models.report import REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_S
 from services.report import ReportService
 
 router = APIRouter(
+    prefix="/reports",
     tags=["reports"],
     responses={404: {"description": "Not found"}},
 )
@@ -13,7 +14,7 @@ router = APIRouter(
 def get_report_service(db = Depends(get_database)):
     return ReportService(db)
 
-@router.post("/", response_model=Report, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=Report, status_code=status.HTTP_201_CREATED)
 async def create_report(
     report: ReportCreate,
     current_user = Depends(check_super_admin_access),

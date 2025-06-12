@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.company import CompanyCreate, CompanyUpdate, Company, ActiveReport
-from models.plant import Plant, PlantCreate, PlantType
+from models.plant import Plant, PlantCreate, PlantType, AccessLevel
 from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
@@ -32,37 +32,50 @@ class CompanyService:
             name=f"{company_data.name} - Aggregator Plant",
             company_id=company_id,
             type=PlantType.AGGREGATOR,
-            address="",
-            contact_email="",
-            contact_phone=""
+            address=company_data.address,
+            contact_email=company_data.contact_email,
+            contact_phone=company_data.contact_phone
         )
         p001 = PlantCreate(
             code="P001",
             name=f"{company_data.name} - Home Plant",
             company_id=company_id,
             type=PlantType.HOME,
-            address="",
-            contact_email="",
-            contact_phone=""
+            address=company_data.address,
+            contact_email=company_data.contact_email,
+            contact_phone=company_data.contact_phone
         )
         c001_id = str(uuid.uuid4())
         p001_id = str(uuid.uuid4())
+        
+        # Prepare C001 plant document
         c001_dict = c001.model_dump()
         c001_dict["id"] = c001_id
         c001_dict["created_at"] = now
         c001_dict["updated_at"] = now
         c001_dict["plant_type"] = PlantType.AGGREGATOR.value
-        c001_dict["access_level"] = "all_modules"
+        c001_dict["access_level"] = AccessLevel.ALL_MODULES.value
+        c001_dict["plant_code"] = c001_dict.pop("code")
+        c001_dict["plant_name"] = c001_dict.pop("name")
+        c001_dict.pop("type")  # Remove type as it's replaced by plant_type
+        
+        # Prepare P001 plant document
         p001_dict = p001.model_dump()
         p001_dict["id"] = p001_id
         p001_dict["created_at"] = now
         p001_dict["updated_at"] = now
         p001_dict["plant_type"] = PlantType.HOME.value
-        p001_dict["access_level"] = "all_modules"
+        p001_dict["access_level"] = AccessLevel.ALL_MODULES.value
+        p001_dict["plant_code"] = p001_dict.pop("code")
+        p001_dict["plant_name"] = p001_dict.pop("name")
+        p001_dict.pop("type")  # Remove type as it's replaced by plant_type
+        
         company_dict["plant_ids"] = [c001_id, p001_id]
 
+        # Insert company and plants into database
         await self.db.companies.insert_one(company_dict)
         await self.db.plants.insert_many([c001_dict, p001_dict])
+        
         return Company(**company_dict)
 
     async def get_company(self, company_id: str) -> Optional[Company]:

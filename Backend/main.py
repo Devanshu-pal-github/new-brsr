@@ -122,13 +122,13 @@ async def root():
 
 # Include routers
 app.include_router(module_router, prefix="/modules")
-app.include_router(company_router, prefix="/companies")
+app.include_router(company_router)
 app.include_router(plant_router, prefix="/plants")
 app.include_router(question_router, prefix="/questions")
 app.include_router(answer_router, prefix="/answers")
 app.include_router(user_access_router, prefix="/user-access")
 app.include_router(auth_router, prefix="/auth")
-app.include_router(report_router, prefix="/reports")
+app.include_router(report_router)
 
 if __name__ == "__main__":
     import uvicorn
