@@ -13,6 +13,9 @@ from services.auth import (
 from dependencies import DB, get_current_active_user, generate_uuid, get_database
 import secrets
 from pydantic import BaseModel
+from models.company import Company, CompanyWithPlants
+from services.company import CompanyService
+from routes.company import get_company_service # Import the dependency for CompanyService
 
 router = APIRouter(tags=["Authentication"])
 
@@ -287,6 +290,35 @@ async def forgot_password(
     # TODO: Send email with reset link
     # For now, just return token (in production, send via email)
     return {"message": "Reset instructions sent", "token": reset_token}
+
+@router.get("/users/{user_id}/company-details", response_model=CompanyWithPlants)
+async def get_company_details_by_user_id(
+    user_id: str,
+    db = Depends(get_database),
+    company_service: CompanyService = Depends(get_company_service)
+):
+    """Get company details associated with a user ID"""
+    user = await db["users"].find_one({"_id": user_id})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found"
+        )
+
+    company_id = user.get("company_id")
+    if not company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} is not associated with any company"
+        )
+
+    company = await company_service.get_company(company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Company with ID {company_id} not found"
+        )
+    return company
 
 @router.post("/reset-password")
 async def reset_password(
