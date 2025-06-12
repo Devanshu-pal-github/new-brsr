@@ -15,6 +15,7 @@ class Report(BaseModel):
     module_ids: List[str] = []
     basic_modules: List[str] = []
     calc_modules: List[str] = []
+    module_names: Optional[Dict[str, str]] = None
     status: str = REPORT_STATUS_ACTIVE
     version: str = "1.0.0"
     metadata: Optional[Dict[str, Any]] = None
@@ -36,6 +37,7 @@ class ReportCreate(BaseModel):
     module_ids: List[str] = []
     basic_modules: List[str] = []
     calc_modules: List[str] = []
+    module_names: Optional[Dict[str, str]] = None
     status: str = REPORT_STATUS_ACTIVE
     version: str = "1.0.0"
     metadata: Optional[Dict[str, Any]] = None
@@ -45,6 +47,7 @@ class ReportUpdate(BaseModel):
     module_ids: Optional[List[str]] = None
     basic_modules: Optional[List[str]] = None
     calc_modules: Optional[List[str]] = None
+    module_names: Optional[Dict[str, str]] = None
     status: Optional[str] = None
     version: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None

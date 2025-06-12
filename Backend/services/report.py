@@ -209,6 +209,7 @@ class ReportService:
         module_ids = []
         basic_modules = []
         calc_modules = []
+        module_names = {}  # Dictionary to store module names by ID
         
         for module in modules:
             module_id = module.id
@@ -221,6 +222,9 @@ class ReportService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Module ID {module_id} not found"
                 )
+            
+            # Store module name
+            module_names[module_id] = db_module.get("name")
             
             # Categorize based on provided type
             if module.module_type.value == "basic":
@@ -237,6 +241,7 @@ class ReportService:
             "module_ids": module_ids, 
             "basic_modules": basic_modules,
             "calc_modules": calc_modules,
+            "module_names": module_names,  # Add module names to the update data
             "updated_at": datetime.utcnow()
         }
         
@@ -268,6 +273,7 @@ class ReportService:
         # Validate module IDs and categorize them
         basic_modules = []
         calc_modules = []
+        module_names = {}  # Dictionary to store module names by ID
         
         for module_id in module_ids:
             # Try to find module by either _id or id field
@@ -277,6 +283,9 @@ class ReportService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Module ID {module_id} not found"
                 )
+            
+            # Store module name
+            module_names[module_id] = module.get("name")
             
             # Categorize module based on its type
             if module.get("module_type") == "basic":
@@ -293,6 +302,7 @@ class ReportService:
             "module_ids": module_ids, 
             "basic_modules": basic_modules,
             "calc_modules": calc_modules,
+            "module_names": module_names,  # Add module names to the update data
             "updated_at": datetime.utcnow()
         }
 
