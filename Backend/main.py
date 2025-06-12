@@ -121,7 +121,7 @@ async def root():
     }
 
 # Include routers
-app.include_router(module_router, prefix="/modules")
+app.include_router(module_router)
 app.include_router(company_router)
 app.include_router(plant_router, prefix="/plants")
 app.include_router(question_router, prefix="/questions")
