@@ -131,6 +131,22 @@ async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str)
         return None
     if not verify_password(password, user["hashed_password"]):
         return None
+
+    # Fetch user access information to get company_id and plant_id
+    user_access_entry = await db.user_access.find_one({"user_id": user["_id"], "is_active": True})
+    if user_access_entry:
+        # Update user document with company_id and plant_id from user_access
+        update_fields = {}
+        if "company_id" in user_access_entry and user_access_entry["company_id"] != user.get("company_id"):
+            update_fields["company_id"] = user_access_entry["company_id"]
+        if "plant_id" in user_access_entry and user_access_entry["plant_id"] != user.get("plant_id"):
+            update_fields["plant_id"] = user_access_entry["plant_id"]
+
+        if update_fields:
+            await db.users.update_one({"_id": user["_id"]}, {"$set": update_fields})
+            # Refresh user object after update
+            user = await db.users.find_one({"email": email})
+
     
     # Convert MongoDB _id to string if it exists
     if "_id" in user:

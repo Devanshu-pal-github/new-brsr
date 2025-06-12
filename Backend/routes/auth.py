@@ -202,6 +202,10 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
     
     # Store the string value of role in the database
     user_data["role"] = role_str
+
+    # Ensure company_id and plant_id are always present in user_data, even if None
+    user_data["company_id"] = user_data.get("company_id")
+    user_data["plant_id"] = user_data.get("plant_id")
     
     await db["users"].insert_one(user_data)
     
