@@ -66,13 +66,19 @@ class ModuleService:
                 for category in submodule.get("categories", [])
             )
 
-            # Get associated reports
+            # Get associated reports - extract just the report IDs as strings
             reports = []
             async for report in self.db.reports.find(
-                {"modules.module_id": module_id},
-                {"_id": 1, "name": 1}
+                {"$or":[
+                    {"module_ids": module_id},
+                    {"basic_modules": module_id},
+                    {"calc_modules": module_id}
+                ]},
+                {"_id": 1, "name": 1, "id": 1}
             ):
-                reports.append(report)
+                # Use the UUID id field if available, otherwise use _id as string
+                report_id = report.get("id") or str(report.get("_id"))
+                reports.append(report_id)
 
             return ModuleWithDetails(
                 **module,

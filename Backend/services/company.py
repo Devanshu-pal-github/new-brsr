@@ -2,6 +2,8 @@ from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.company import CompanyCreate, CompanyUpdate, Company, ActiveReport
 from models.plant import Plant, PlantCreate, PlantType, AccessLevel
+from models.module import ModuleType
+from services.module import ModuleService
 from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
@@ -121,21 +123,18 @@ class CompanyService:
 
     async def assign_report(self, company_id: str, report_id: str, financial_year: str, modules: List[str] = None) -> Company:
         """Assign a report to a company with module assignments and update plant access levels."""
-        if modules is None:
-            modules = []
-            
         # Check if company exists
         company = await self.get_company(company_id)
         if not company:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
             
         # Check if report exists - first try UUID (id field)
-        report = await self.db.reports.find_one({"id": report_id})
+        report_doc = await self.db.reports.find_one({"id": report_id})
         
         # If not found, try MongoDB ObjectId (_id field)
-        if not report:
-            report = await self.db.reports.find_one({"_id": report_id})
-        if not report:
+        if not report_doc:
+            report_doc = await self.db.reports.find_one({"_id": report_id})
+        if not report_doc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
             
         # Check if report is already assigned to this company
@@ -143,10 +142,27 @@ class CompanyService:
             if isinstance(active_report, dict) and active_report.get("report_id") == report_id:
                 raise ValueError(f"Report with ID {report_id} is already assigned to this company")
         
-        # Create assigned modules structure
-        # For simplicity, we'll put all modules in basic_modules for now
-        # This can be enhanced later to properly categorize modules
-        assigned_modules = {"basic_modules": modules, "calc_modules": []}
+        basic_modules = []
+        calc_modules = []
+
+        if modules:
+            # If modules are provided, categorize them
+            module_service = ModuleService(self.db)
+            for module_id in modules:
+                module_doc = await module_service.get_module_document(module_id)
+                if module_doc:
+                    if module_doc.get("module_type") == ModuleType.BASIC.value:
+                        basic_modules.append(module_id)
+                    elif module_doc.get("module_type") == ModuleType.CALC.value:
+                        calc_modules.append(module_id)
+        else:
+            # If no modules are provided, use the default modules from the report definition
+            if report_doc.get("basic_modules"):
+                basic_modules.extend(report_doc["basic_modules"])
+            if report_doc.get("calc_modules"):
+                calc_modules.extend(report_doc["calc_modules"])
+
+        assigned_modules = {"basic_modules": basic_modules, "calc_modules": calc_modules}
         
         active_report = {
             "report_id": report_id,
