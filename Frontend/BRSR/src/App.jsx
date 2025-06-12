@@ -7,6 +7,7 @@ import { store } from './store/store';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
+import PlantsPage from './pages/PlantsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -31,6 +32,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/plants/:moduleId" 
+            element={
+              <ProtectedRoute>
+                <PlantsPage />
               </ProtectedRoute>
             } 
           />

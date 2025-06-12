@@ -1,47 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
 import {
     LayoutDashboard,
     Building,
-    FileText,
-    Menu,
+    Leaf,
     X
 } from 'lucide-react';
-import { useGetReportModulesQuery } from '../../store/api/apiSlice';
-import { selectCurrentUser } from '../../store/slices/authSlice';
 
 const Sidebar = ({ isOpen, onClose }) => {
-    const [selectedModuleId, setSelectedModuleId] = useState(null);
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    
-    const user = useSelector(selectCurrentUser);
-    const [selectedReport, setSelectedReport] = useState(null);
 
-    // Get the selected report from localStorage or state management
-    useEffect(() => {
-        const storedReport = localStorage.getItem('selectedReport');
-        if (storedReport) {
-            setSelectedReport(JSON.parse(storedReport));
-        }
-    }, []);
+    // Hardcoded environment module
+    const environmentModule = {
+        id: "35ae8d37-8263-46d5-b674-2cff3a3fd241",
+        name: "Environment",
+        icon: "Leaf"
+    };
 
-    // Fetch modules for the selected report
-    const { data: reportModules, isLoading } = useGetReportModulesQuery(
-        {
-            reportId: selectedReport?.id,
-            companyId: user?.company_id
-        },
-        { 
-            skip: !selectedReport?.id || !user?.company_id
-        }
-    );
-
-    // Handle module click
     const handleModuleClick = (moduleId) => {
-        setSelectedModuleId(moduleId);
-        navigate(`/reports/${selectedReport?.id}/modules/${moduleId}`);
+        navigate(`/plants/${moduleId}`);
     };
 
     const handleLogout = () => {
@@ -57,9 +34,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {/* Header */}
                 <div className="flex items-center gap-3 pl-5 mb-5">
                     <Building className="w-5 h-5 text-green-300 flex-shrink-0" />
-                    <h2 className="text-[1rem] font-bold text-[#E5E7EB]">
-                        {selectedReport?.report_name || 'ESG'}
-                    </h2>
+                    <h2 className="text-[1rem] font-bold text-[#E5E7EB]">BRSR</h2>
                 </div>
 
                 {/* Navigation */}
@@ -82,29 +57,23 @@ const Sidebar = ({ isOpen, onClose }) => {
                             </NavLink>
                         </li>
 
-                        {/* Dynamic Modules */}
-                        {isLoading ? (
-                            <li className="pl-10 text-sm">Loading modules...</li>
-                        ) : (
-                            reportModules?.map((module) => (
-                                <li key={module.id} className="w-full">
-                                    <NavLink
-                                        to={`/reports/${selectedReport?.id}/modules/${module.id}`}
-                                        className={(navData) =>
-                                            `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
-                                                navData.isActive
-                                                    ? 'bg-[#20305D] text-white'
-                                                    : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'
-                                            }`
-                                        }
-                                        onClick={() => handleModuleClick(module.id)}
-                                    >
-                                        <FileText className="w-4 h-4 flex-shrink-0" />
-                                        <span className="text-left">{module.name}</span>
-                                    </NavLink>
-                                </li>
-                            ))
-                        )}
+                        {/* Environment Module */}
+                        <li className="w-full">
+                            <NavLink
+                                to={`/plants/${environmentModule.id}`}
+                                className={(navData) =>
+                                    `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
+                                        navData.isActive
+                                            ? 'bg-[#20305D] text-white'
+                                            : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'
+                                    }`
+                                }
+                                onClick={() => handleModuleClick(environmentModule.id)}
+                            >
+                                <Leaf className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-left">{environmentModule.name}</span>
+                            </NavLink>
+                        </li>
                     </ul>
                 </nav>
 

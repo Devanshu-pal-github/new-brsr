@@ -73,6 +73,21 @@ export const apiSlice = createApi({
           : [{ type: 'Modules', id: 'LIST' }],
       keepUnusedDataFor: 300, // Keep data for 5 minutes
     }),
+    getCompanyPlants: builder.query({
+      query: (companyId) => ({
+        url: '/plants',
+        method: 'GET',
+        params: {
+          company_id: companyId,
+          limit: 100 // Get all plants, adjust if needed
+        }
+      }),
+      transformResponse: (response) => {
+        console.log('🌿 Plants Response:', response);
+        return Array.isArray(response) ? response : [];
+      },
+      providesTags: ['Plants']
+    }),
     // Add more endpoints as needed
   }),
 });
@@ -85,7 +100,8 @@ export const {
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
   useGetReportModulesQuery,
-  useLazyGetReportModulesQuery
+  useLazyGetReportModulesQuery,
+  useGetCompanyPlantsQuery
 } = apiSlice;
 
 export default apiSlice;
