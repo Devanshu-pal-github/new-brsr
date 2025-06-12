@@ -27,7 +27,8 @@ const initialState = {
   error: null,
   refreshToken: null,
   tokenType: 'bearer',
-  expiresIn: null
+  expiresIn: null,
+  companyDetails: null
 };
 
 const authSlice = createSlice({
@@ -73,12 +74,18 @@ const authSlice = createSlice({
       state.tokenType = 'bearer';
       state.expiresIn = null;
       state.isAuthenticated = false;
+      state.companyDetails = null;
       
       // Remove from localStorage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_name');
+      localStorage.removeItem('companyDetails');
+    },
+    setCompanyDetails: (state, action) => {
+      state.companyDetails = action.payload;
+      localStorage.setItem('companyDetails', JSON.stringify(action.payload));
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -130,7 +137,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, logout, setError, clearError } = authSlice.actions;
+export const { setCredentials, logout, setError, clearError, setCompanyDetails } = authSlice.actions;
 
 export default authSlice.reducer;
 
@@ -146,3 +153,4 @@ export const selectPlantId = (state) => state.auth.user?.plant_id;
 export const selectToken = (state) => state.auth.token;
 export const selectRefreshToken = (state) => state.auth.refreshToken;
 export const selectTokenExpiration = (state) => state.auth.expiresIn;
+export const selectCompanyDetails = (state) => state.auth.companyDetails;

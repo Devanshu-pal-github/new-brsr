@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { logout, selectCurrentUser } from '../../store/slices/authSlice';
+import { logout, selectCurrentUser, selectCompanyDetails } from '../../store/slices/authSlice';
 import { Menu, ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
@@ -9,19 +9,37 @@ const Navbar = () => {
   const [selectedReport, setSelectedReport] = useState('BRSR');
   const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [reportTypes, setReportTypes] = useState([]);
   
   const user = useSelector(selectCurrentUser);
+  const companyDetails = useSelector(selectCompanyDetails);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Get user name from user object in Redux store
   const userName = user?.user_name || 'User';
 
-  // Available report types
-  const reportTypes = [
-    { id: 'brsr', name: 'BRSR' },
-    { id: 'cge', name: 'CGE' }
-  ];
+  // Process company details to extract report names when companyDetails changes
+  useEffect(() => {
+    if (companyDetails && companyDetails.active_reports && companyDetails.active_reports.length > 0) {
+      const reports = companyDetails.active_reports.map(report => ({
+        id: report.report_id,
+        name: report.report_name || 'Report'
+      }));
+      setReportTypes(reports);
+      
+      // Set the first report as selected if we have reports and none is selected yet
+      if (reports.length > 0 && selectedReport === 'BRSR') {
+        setSelectedReport(reports[0].name);
+      }
+    } else {
+      // Fallback to default reports if no company details available
+      setReportTypes([
+        { id: 'brsr', name: 'BRSR' },
+        { id: 'cge', name: 'CGE' }
+      ]);
+    }
+  }, [companyDetails, selectedReport]);
 
   const handleLogout = () => {
     dispatch(logout());

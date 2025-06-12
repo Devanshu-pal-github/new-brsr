@@ -27,6 +27,9 @@ export const apiSlice = createApi({
         formData: credentials instanceof FormData,
       }),
     }),
+    getCompanyDetails: builder.query({
+      query: (userId) => `/auth/users/${userId}/company-details`,
+    }),
     updatePassword: builder.mutation({
       query: (passwordData) => ({
         url: '/auth/users/me',
@@ -54,6 +57,8 @@ export const apiSlice = createApi({
 
 export const { 
   useLoginMutation,
+  useGetCompanyDetailsQuery,
+  useLazyGetCompanyDetailsQuery,
   useUpdatePasswordMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation

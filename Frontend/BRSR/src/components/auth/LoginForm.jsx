@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useLoginMutation } from '../../store/api/apiSlice';
+import { useLoginMutation, useLazyGetCompanyDetailsQuery } from '../../store/api/apiSlice';
 import { useDispatch } from 'react-redux';
-import { setCredentials, setError } from '../../store/slices/authSlice';
+import { setCredentials, setError, setCompanyDetails } from '../../store/slices/authSlice';
 import { Link } from 'react-router-dom';
 
 const LoginForm = () => {
@@ -11,6 +11,7 @@ const LoginForm = () => {
   });
   
   const [login, { isLoading }] = useLoginMutation();
+  const [getCompanyDetails, { isLoading: isLoadingCompanyDetails }] = useLazyGetCompanyDetailsQuery();
   const dispatch = useDispatch();
   
   const handleChange = (e) => {
@@ -29,6 +30,15 @@ const LoginForm = () => {
       
       const result = await login(formDataObj).unwrap();
       dispatch(setCredentials(result));
+      
+      // After successful login, fetch company details
+      try {
+        const companyDetails = await getCompanyDetails(result.user_id).unwrap();
+        dispatch(setCompanyDetails(companyDetails));
+      } catch (companyErr) {
+        console.error('Error fetching company details:', companyErr);
+        // Don't block the login flow if company details fetch fails
+      }
     } catch (err) {
       console.error('Login error:', err);
       dispatch(setError(err.data?.detail || 'Login failed. Please check your credentials.'));

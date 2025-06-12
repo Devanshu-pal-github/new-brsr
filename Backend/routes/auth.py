@@ -298,12 +298,16 @@ async def get_company_details_by_user_id(
     company_service: CompanyService = Depends(get_company_service)
 ):
     """Get company details associated with a user ID"""
+    # Try to find user by _id first, then by id if not found
     user = await db["users"].find_one({"_id": user_id})
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found"
-        )
+        # If not found by _id, try to find by id field
+        user = await db["users"].find_one({"id": user_id})
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {user_id} not found"
+            )
 
     company_id = user.get("company_id")
     if not company_id:
