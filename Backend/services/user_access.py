@@ -18,7 +18,7 @@ class UserAccessService:
         Why: Ensures RBAC and access integrity for the platform.
         """
         # Verify company exists
-        company = await self.db.companies.find_one({"_id": user_access.company_id})
+        company = await self.db.companies.find_one({"id": user_access.company_id})
         if not company:
             raise ValueError(f"Company with ID {user_access.company_id} not found")
 
@@ -239,4 +239,4 @@ class UserAccessService:
             **access,
             company_name=company["name"] if company else "Unknown",
             plant_name=plant["name"] if plant else None
-        ) 
+        )

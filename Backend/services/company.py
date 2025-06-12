@@ -5,7 +5,8 @@ from models.plant import Plant, PlantCreate, PlantType, AccessLevel
 from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
-
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
 class CompanyService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -78,8 +79,21 @@ class CompanyService:
         
         return Company(**company_dict)
 
+
+
     async def get_company(self, company_id: str) -> Optional[Company]:
-        doc = await self.collection.find_one({"id": company_id})
+        doc = None
+        # Try to find by MongoDB's _id first
+        try:
+            if len(company_id) == 24: # ObjectId strings are 24 hex characters
+                doc = await self.collection.find_one({"_id": ObjectId(company_id)})
+        except InvalidId:
+            pass # Not a valid ObjectId string, proceed to try 'id' field
+
+        if not doc:
+            # If not found by _id, try to find by the 'id' field (UUID string)
+            doc = await self.collection.find_one({"id": company_id})
+
         if not doc:
             return None
         return Company(**doc)

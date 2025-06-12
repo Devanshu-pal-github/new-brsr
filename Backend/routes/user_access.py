@@ -12,7 +12,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-def get_user_access_service(db):
+from dependencies import get_database
+
+def get_user_access_service(db = Depends(get_database)):
     return UserAccessService(db)
 
 @router.post("/", response_model=UserAccess, status_code=status.HTTP_201_CREATED)
