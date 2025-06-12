@@ -2,44 +2,77 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, selectCurrentUser, selectCompanyDetails } from '../../store/slices/authSlice';
+import { useGetReportModulesQuery } from '../../store/api/apiSlice';
 import { Menu, ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState('BRSR');
+  const [selectedReport, setSelectedReport] = useState(() => {
+    // Initialize from localStorage if available
+    const stored = localStorage.getItem('selectedReport');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [reportTypes, setReportTypes] = useState([]);
   
   const user = useSelector(selectCurrentUser);
   const companyDetails = useSelector(selectCompanyDetails);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Query for modules with proper skip condition
+  const { data: reportModules, isLoading: isLoadingModules, error: modulesError } = useGetReportModulesQuery(
+    {
+      reportId: selectedReport?.id,
+      companyId: user?.company_id
+    },
+    { 
+      skip: !selectedReport?.id || !user?.company_id,
+      refetchOnMountOrArgChange: true
+    }
+  );
+
+  // Effect to log state changes
+  useEffect(() => {
+    console.log('🎯 Selected Report:', selectedReport);
+    console.log('👤 User:', user);
+    console.log('📦 Report Modules Data:', reportModules);
+    console.log('⚠️ Modules Error:', modulesError);
+    
+    if (selectedReport?.id && user?.company_id) {
+      console.log('🔍 Making API call with:', {
+        reportId: selectedReport.id,
+        companyId: user.company_id
+      });
+    }
+  }, [reportModules, selectedReport, user, modulesError]);
+
+  // Handle report selection
+  const handleReportSelect = (report) => {
+    console.log('🎯 Selecting Report:', report);
+    setSelectedReport(report);
+    localStorage.setItem('selectedReport', JSON.stringify(report));
+    setIsReportDropdownOpen(false);
+    
+    if (report.id) {
+      console.log('🚀 Navigating to report:', report.id);
+      navigate(`/reports/${report.id}`);
+    }
+  };
+
+  // Effect to handle modules data
+  useEffect(() => {
+    if (reportModules) {
+      console.log('✅ Modules loaded successfully:', reportModules);
+      // Here you can handle the modules data, e.g., store in state or Redux
+    }
+  }, [reportModules]);
+
   // Get user name from user object in Redux store
   const userName = user?.user_name || 'User';
 
-  // Process company details to extract report names when companyDetails changes
-  useEffect(() => {
-    if (companyDetails && companyDetails.active_reports && companyDetails.active_reports.length > 0) {
-      const reports = companyDetails.active_reports.map(report => ({
-        id: report.report_id,
-        name: report.report_name || 'Report'
-      }));
-      setReportTypes(reports);
-      
-      // Set the first report as selected if we have reports and none is selected yet
-      if (reports.length > 0 && selectedReport === 'BRSR') {
-        setSelectedReport(reports[0].name);
-      }
-    } else {
-      // Fallback to default reports if no company details available
-      setReportTypes([
-        { id: 'brsr', name: 'BRSR' },
-        { id: 'cge', name: 'CGE' }
-      ]);
-    }
-  }, [companyDetails, selectedReport]);
+  // Get available reports from company details
+  const availableReports = companyDetails?.active_reports || [];
 
   const handleLogout = () => {
     dispatch(logout());
@@ -51,11 +84,6 @@ const Navbar = () => {
     const names = name.trim().split(' ');
     if (names.length === 1) return names[0].charAt(0).toUpperCase();
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-  };
-
-  const selectReport = (reportName) => {
-    setSelectedReport(reportName);
-    setIsReportDropdownOpen(false);
   };
 
   return (
@@ -72,26 +100,43 @@ const Navbar = () => {
             <div className="relative">
               <button
                 onClick={() => setIsReportDropdownOpen(!isReportDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors min-w-[120px]"
               >
-                <span>{selectedReport}</span>
+                <span>{selectedReport?.report_name || 'Select Report'}</span>
                 <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isReportDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               
               {isReportDropdownOpen && (
-                <ul className="absolute top-12 left-0 w-32 bg-white rounded-[8px] shadow-lg z-50 overflow-hidden">
-                  {reportTypes.map((report) => (
-                    <li
-                      key={report.id}
-                      onClick={() => selectReport(report.name)}
-                      className={`px-4 py-2 text-[#000D30] text-[12px] cursor-pointer hover:bg-[#20305D] hover:text-white font-medium transition-colors ${selectedReport === report.name ? 'bg-[#FFFFFF]' : ''}`}
-                    >
-                      {report.name}
+                <ul className="absolute top-12 left-0 w-48 bg-white rounded-[8px] shadow-lg z-50 overflow-hidden">
+                  {availableReports.length > 0 ? (
+                    availableReports.map((report) => (
+                      <li
+                        key={report.report_id}
+                        onClick={() => handleReportSelect({
+                          id: report.report_id,
+                          report_name: report.report_name,
+                          financial_year: report.financial_year
+                        })}
+                        className={`px-4 py-2 text-[#000D30] text-[12px] cursor-pointer hover:bg-[#20305D] hover:text-white font-medium transition-colors
+                          ${selectedReport?.id === report.report_id ? 'bg-[#20305D] text-white' : ''}`}
+                      >
+                        <div>{report.report_name}</div>
+                        <div className="text-[10px] opacity-75">{report.financial_year}</div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-2 text-[#000D30] text-[12px]">
+                      No reports available
                     </li>
-                  ))}
+                  )}
                 </ul>
               )}
             </div>
+
+            {/* Loading indicator for modules */}
+            {selectedReport && isLoadingModules && (
+              <div className="text-white text-sm">Loading modules...</div>
+            )}
           </div>
 
           {/* Right side - User Profile & Logout */}
@@ -153,16 +198,20 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-[#20305D]">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {reportTypes.map((report) => (
+            {availableReports.map((report) => (
               <button
-                key={report.id}
+                key={report.report_id}
                 onClick={() => {
-                  selectReport(report.name);
+                  handleReportSelect({
+                    id: report.report_id,
+                    report_name: report.report_name,
+                    financial_year: report.financial_year
+                  });
                   setIsMenuOpen(false);
                 }}
                 className="block w-full text-left px-3 py-2 rounded-md text-[12px] text-white hover:bg-[#345678] transition-colors"
               >
-                {report.name}
+                {report.report_name}
               </button>
             ))}
             <button

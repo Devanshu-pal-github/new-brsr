@@ -1,0 +1,126 @@
+import { useState, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+    LayoutDashboard,
+    Building,
+    FileText,
+    Menu,
+    X
+} from 'lucide-react';
+import { useGetReportModulesQuery } from '../../store/api/apiSlice';
+import { selectCurrentUser } from '../../store/slices/authSlice';
+
+const Sidebar = ({ isOpen, onClose }) => {
+    const [selectedModuleId, setSelectedModuleId] = useState(null);
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+    
+    const user = useSelector(selectCurrentUser);
+    const [selectedReport, setSelectedReport] = useState(null);
+
+    // Get the selected report from localStorage or state management
+    useEffect(() => {
+        const storedReport = localStorage.getItem('selectedReport');
+        if (storedReport) {
+            setSelectedReport(JSON.parse(storedReport));
+        }
+    }, []);
+
+    // Fetch modules for the selected report
+    const { data: reportModules, isLoading } = useGetReportModulesQuery(
+        {
+            reportId: selectedReport?.id,
+            companyId: user?.company_id
+        },
+        { 
+            skip: !selectedReport?.id || !user?.company_id
+        }
+    );
+
+    // Handle module click
+    const handleModuleClick = (moduleId) => {
+        setSelectedModuleId(moduleId);
+        navigate(`/reports/${selectedReport?.id}/modules/${moduleId}`);
+    };
+
+    const handleLogout = () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        navigate('/login');
+    };
+
+    return (
+        <div className={`h-screen min-h-full w-full bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out
+            ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <div className="pt-3 pb-3 flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
+                {/* Header */}
+                <div className="flex items-center gap-3 pl-5 mb-5">
+                    <Building className="w-5 h-5 text-green-300 flex-shrink-0" />
+                    <h2 className="text-[1rem] font-bold text-[#E5E7EB]">
+                        {selectedReport?.report_name || 'ESG'}
+                    </h2>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1">
+                    <ul className="space-y-1 flex flex-col items-start pl-0">
+                        {/* Dashboard */}
+                        <li className="w-full">
+                            <NavLink
+                                to="/dashboard"
+                                className={(navData) =>
+                                    `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
+                                        navData.isActive
+                                            ? 'bg-[#20305D] text-white'
+                                            : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'
+                                    }`
+                                }
+                            >
+                                <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-left">Dashboard</span>
+                            </NavLink>
+                        </li>
+
+                        {/* Dynamic Modules */}
+                        {isLoading ? (
+                            <li className="pl-10 text-sm">Loading modules...</li>
+                        ) : (
+                            reportModules?.map((module) => (
+                                <li key={module.id} className="w-full">
+                                    <NavLink
+                                        to={`/reports/${selectedReport?.id}/modules/${module.id}`}
+                                        className={(navData) =>
+                                            `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
+                                                navData.isActive
+                                                    ? 'bg-[#20305D] text-white'
+                                                    : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'
+                                            }`
+                                        }
+                                        onClick={() => handleModuleClick(module.id)}
+                                    >
+                                        <FileText className="w-4 h-4 flex-shrink-0" />
+                                        <span className="text-left">{module.name}</span>
+                                    </NavLink>
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                </nav>
+
+                {/* Logout Button */}
+                <div className="mt-auto px-5">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 text-[0.92rem] font-medium text-[#E5E7EB] hover:text-white transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Sidebar;

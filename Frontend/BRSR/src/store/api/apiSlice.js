@@ -51,6 +51,28 @@ export const apiSlice = createApi({
         body: { token, password }
       }),
     }),
+    getReportModules: builder.query({
+      query: ({reportId, companyId}) => ({
+        url: `/companies/${companyId}/reports/${reportId}/modules`,
+        method: 'GET',
+      }),
+      transformResponse: (response) => {
+        console.log('🔵 Raw API Response:', response);
+        return Array.isArray(response) ? response : [];
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 API Error:', response);
+        return response;
+      },
+      providesTags: (result) => 
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Modules', id })),
+              { type: 'Modules', id: 'LIST' },
+            ]
+          : [{ type: 'Modules', id: 'LIST' }],
+      keepUnusedDataFor: 300, // Keep data for 5 minutes
+    }),
     // Add more endpoints as needed
   }),
 });
@@ -61,5 +83,9 @@ export const {
   useLazyGetCompanyDetailsQuery,
   useUpdatePasswordMutation,
   useRequestPasswordResetMutation,
-  useResetPasswordMutation
+  useResetPasswordMutation,
+  useGetReportModulesQuery,
+  useLazyGetReportModulesQuery
 } = apiSlice;
+
+export default apiSlice;
