@@ -161,7 +161,7 @@ class UserAccessService:
         async for access in access_list:
             company_id = access["company_id"]
             if company_id not in companies:
-                company = await self.db.companies.find_one({"_id": company_id})
+                company = await self.db.companies.find_one({"id": company_id})
                 if company:
                     companies[company_id] = UserCompanyAccess(
                         company_id=company_id,
@@ -171,7 +171,7 @@ class UserAccessService:
                         plants=[]
                     )
             if access["plant_id"]:
-                plant = await self.db.plants.find_one({"_id": access["plant_id"]})
+                plant = await self.db.plants.find_one({"id": access["plant_id"]})
                 if plant and company_id in companies:
                     companies[company_id].plants.append({
                         "id": plant["_id"],
