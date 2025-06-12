@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
+from datetime import timedelta, datetime
 from models.auth import UserCreate, UserInDB, Token, UserUpdate
 from services.auth import (
     authenticate_user,
@@ -12,8 +12,12 @@ from services.auth import (
 )
 from dependencies import DB, get_current_active_user, generate_uuid, get_database
 import secrets
+from pydantic import BaseModel
 
 router = APIRouter(tags=["Authentication"])
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
 
 @router.post("/login")
 async def login(
@@ -248,3 +252,59 @@ async def update_user(
         )
     updated_user = db["users"].find_one({"_id": current_user["_id"]})
     return UserInDB(**updated_user)
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest = Body(...),
+    db = Depends(get_database)
+):
+    """Request password reset"""
+    user = await db["users"].find_one({"email": request.email})
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If the email exists, reset instructions will be sent"}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    
+    # Store token in DB with expiry (e.g., 1 hour)
+    await db["password_resets"].insert_one({
+        "user_id": user["_id"],
+        "token": reset_token,
+        "expires_at": datetime.utcnow() + timedelta(hours=1)
+    })
+    
+    # TODO: Send email with reset link
+    # For now, just return token (in production, send via email)
+    return {"message": "Reset instructions sent", "token": reset_token}
+
+@router.post("/reset-password")
+async def reset_password(
+    token: str = Body(...),
+    password: str = Body(...),
+    db = Depends(get_database)
+):
+    """Reset password using token"""
+    # Find valid reset token
+    reset_data = await db["password_resets"].find_one({
+        "token": token,
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not reset_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Update user password
+    hashed_password = get_password_hash(password)
+    await db["users"].update_one(
+        {"_id": reset_data["user_id"]},
+        {"$set": {"hashed_password": hashed_password}}
+    )
+    
+    # Delete used token
+    await db["password_resets"].delete_one({"token": token})
+    
+    return {"message": "Password reset successful"}

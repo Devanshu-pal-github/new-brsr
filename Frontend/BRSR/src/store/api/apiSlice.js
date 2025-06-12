@@ -20,18 +20,12 @@ export const apiSlice = createApi({
   }),
   endpoints: (builder) => ({
     login: builder.mutation({
-      query: (credentials) => {
-        // Check if credentials is FormData
-        const isFormData = credentials instanceof FormData;
-        
-        return {
-          url: '/auth/login',
-          method: 'POST',
-          // Don't set Content-Type for FormData, browser will set it with boundary
-          body: credentials,
-          formData: isFormData,
-        };
-      },
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+        formData: credentials instanceof FormData,
+      }),
     }),
     updatePassword: builder.mutation({
       query: (passwordData) => ({
@@ -40,11 +34,27 @@ export const apiSlice = createApi({
         body: { password: passwordData.password },
       }),
     }),
+    requestPasswordReset: builder.mutation({
+      query: (email) => ({
+        url: '/auth/forgot-password',
+        method: 'POST',
+        body: { email }
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: ({ token, password }) => ({
+        url: '/auth/reset-password',
+        method: 'POST',
+        body: { token, password }
+      }),
+    }),
     // Add more endpoints as needed
   }),
 });
 
 export const { 
   useLoginMutation,
-  useUpdatePasswordMutation 
+  useUpdatePasswordMutation,
+  useRequestPasswordResetMutation,
+  useResetPasswordMutation
 } = apiSlice;

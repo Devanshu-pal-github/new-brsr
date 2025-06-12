@@ -2,111 +2,161 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, selectCurrentUser } from '../../store/slices/authSlice';
+import { Menu, ChevronDown } from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState('BRSR');
+  const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  
+  // Get user name from localStorage
+  const userName = localStorage.getItem('user_name') || 'User';
   const user = useSelector(selectCurrentUser);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Available report types
+  const reportTypes = [
+    { id: 'brsr', name: 'BRSR' },
+    { id: 'cge', name: 'CGE' }
+  ];
 
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
   };
 
+  const getUserInitials = (name) => {
+    if (!name || name === 'User') return 'U';
+    const names = name.trim().split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
+  const selectReport = (reportName) => {
+    setSelectedReport(reportName);
+    setIsReportDropdownOpen(false);
+    // Add navigation logic here if needed
+  };
+
   return (
-    <nav className="bg-gradient-to-r from-teal-500 to-blue-600 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
+    <nav className="bg-[#000D30] shadow-md">
+      <div className="w-full px-3 md:px-5">
+        <div className="flex items-center justify-between h-[48px]">
+          {/* Left side - Report Type and Logo */}
+          <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
-              <Link to="/dashboard" className="text-white text-xl font-bold">BRSR</Link>
+              <Link to="/dashboard" className="text-white text-xl font-bold">ESG</Link>
             </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link to="/dashboard" className="text-white hover:bg-teal-600 hover:bg-opacity-50 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </Link>
-                {/* Add more navigation links as needed */}
-              </div>
+            
+            {/* Report Type Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setIsReportDropdownOpen(!isReportDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors"
+              >
+                <span>{selectedReport}</span>
+                <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isReportDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isReportDropdownOpen && (
+                <ul className="absolute top-12 left-0 w-32 bg-white rounded-[8px] shadow-lg z-50 overflow-hidden">
+                  {reportTypes.map((report) => (
+                    <li
+                      key={report.id}
+                      onClick={() => selectReport(report.name)}
+                      className={`px-4 py-2 text-[#000D30] text-[12px] cursor-pointer hover:bg-[#20305D] hover:text-white font-medium transition-colors ${selectedReport === report.name ? 'bg-[#FFFFFF]' : ''}`}
+                    >
+                      {report.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
-          
-          <div className="hidden md:block">
-            <div className="ml-4 flex items-center md:ml-6">
-              <div className="relative">
-                <div className="flex items-center">
-                  <span className="text-white mr-4">{user?.username}</span>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg
-                             border border-white border-opacity-30 rounded-md px-3 py-1
-                             text-sm text-white hover:bg-opacity-30 focus:outline-none"
+
+          {/* Right side - User Profile & Logout */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="flex items-center gap-2 focus:outline-none group"
+              >
+                <div className="w-8 h-8 bg-[#20305D] rounded-full flex items-center justify-center text-white text-[12px] font-semibold group-hover:bg-[#345678] transition-colors">
+                  {getUserInitials(userName)}
+                </div>
+                <div className="hidden sm:flex items-center gap-1">
+                  <span className="text-[#FFFFFF] text-[12px] font-medium">{userName}</span>
+                  <ChevronDown className={`w-5 h-5 text-[#FFFFFF] transition-transform duration-300 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              
+              {isUserDropdownOpen && (
+                <ul className="absolute right-0 mt-2 w-36 sm:w-44 bg-[#000D30] rounded-md shadow-md z-50 overflow-hidden">
+                  <li
+                    className="px-4 py-2 text-[12px] text-white cursor-pointer hover:bg-[#20305D] transition-colors"
+                    onClick={() => {
+                      navigate('/profile');
+                      setIsUserDropdownOpen(false);
+                    }}
+                  >
+                    Profile
+                  </li>
+                  <li
+                    className="px-4 py-2 text-[12px] text-white cursor-pointer hover:bg-[#20305D] transition-colors"
+                    onClick={() => {
+                      handleLogout();
+                      setIsUserDropdownOpen(false);
+                    }}
                   >
                     Logout
-                  </button>
-                </div>
-              </div>
+                  </li>
+                </ul>
+              )}
             </div>
-          </div>
-          
-          <div className="-mr-2 flex md:hidden">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-white
-                         hover:bg-teal-600 hover:bg-opacity-50 focus:outline-none"
-            >
-              <span className="sr-only">Open main menu</span>
-              {/* Hamburger icon */}
-              <svg
-                className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-white focus:outline-none"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              {/* Close icon */}
-              <svg
-                className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+                <Menu className={`w-5 h-5 transition-transform duration-300 ${isMenuOpen ? 'rotate-0' : 'rotate-180'}`} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-teal-600 bg-opacity-90">
-          <Link to="/dashboard" className="text-white block px-3 py-2 rounded-md text-base font-medium">
-            Dashboard
-          </Link>
-          {/* Add more mobile navigation links as needed */}
-        </div>
-        <div className="pt-4 pb-3 border-t border-teal-700 bg-teal-600 bg-opacity-90">
-          <div className="flex items-center px-5">
-            <div className="ml-3">
-              <div className="text-base font-medium leading-none text-white">{user?.username}</div>
-              <div className="text-sm font-medium leading-none text-teal-200 mt-1">{user?.email}</div>
-            </div>
-          </div>
-          <div className="mt-3 px-2 space-y-1">
+      {isMenuOpen && (
+        <div className="md:hidden bg-[#20305D]">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {reportTypes.map((report) => (
+              <button
+                key={report.id}
+                onClick={() => {
+                  selectReport(report.name);
+                  setIsMenuOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 rounded-md text-[12px] text-white hover:bg-[#345678] transition-colors"
+              >
+                {report.name}
+              </button>
+            ))}
             <button
-              onClick={handleLogout}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-white hover:bg-teal-700"
+              onClick={() => {
+                handleLogout();
+                setIsMenuOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 rounded-md text-[12px] text-white hover:bg-[#345678] transition-colors"
             >
               Logout
             </button>
           </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };
