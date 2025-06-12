@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.module import (
     Module, ModuleCreate, ModuleUpdate, SubModule,
     Category, ModuleWithDetails, ModuleType
 )
+from models.question import QuestionCreate, Question
 from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
@@ -226,3 +227,117 @@ class ModuleService:
         )
         
         return structure
+
+    async def create_temp_question(
+        self,
+        category_id: str,
+        question_data: QuestionCreate
+    ) -> Question:
+        """
+        Temporary method to create a question in a category.
+        This is a temporary solution until the question router is fixed.
+        """
+        # Find the category within the module's submodule structure
+        module = await self.collection.find_one({
+            "submodules.categories.id": category_id
+        })
+        
+        if not module:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found in any module"
+            )
+
+        # Find the specific category
+        category = None
+        for submodule in module.get("submodules", []):
+            for cat in submodule.get("categories", []):
+                if cat.get("id") == category_id:
+                    category = cat
+                    break
+            if category:
+                break
+
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+
+        # Get the order (last question's order + 1)
+        last_question = await self.db.questions.find_one(
+            {"category_id": category_id},
+            sort=[("order", -1)]
+        )
+        order = (last_question["order"] + 1) if last_question else 0
+
+        # Convert validation rules to dictionary format
+        validation_rules_dict = {}
+        for rule in question_data.validation_rules:
+            rule_dict = rule.model_dump()
+            if rule.data_type:
+                validation_rules_dict["data_type"] = rule.data_type
+            if rule.range_constraints:
+                validation_rules_dict["range_constraints"] = rule.range_constraints
+            if rule.required:
+                validation_rules_dict["required"] = rule.required
+            if rule.custom_validation:
+                validation_rules_dict["custom_validation"] = rule.custom_validation
+
+        # Create question document using the Question model
+        question_dict = {
+            "_id": str(uuid.uuid4()),
+            "id": str(uuid.uuid4()),
+            "category_id": category_id,
+            "question_number": f"Q{order + 1}",  # Generate question number
+            "question_text": question_data.text,
+            "question_type": question_data.type.value,
+            "validation_rules": validation_rules_dict,  # Use the dictionary format
+            "module_id": module["_id"],  # Use the module's _id
+            "order": order,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        # Add optional fields if they exist
+        if question_data.help_text:
+            question_dict["help_text"] = question_data.help_text
+        if question_data.placeholder:
+            question_dict["placeholder"] = question_data.placeholder
+        if question_data.default_value is not None:
+            question_dict["default_value"] = question_data.default_value
+        if question_data.metadata:
+            question_dict["metadata"] = question_data.metadata
+
+        # Handle type-specific fields
+        if question_data.type.value in ["select", "multiselect"] and question_data.options:
+            question_dict["options"] = [option.model_dump() for option in question_data.options]
+        elif question_data.type.value == "table" and question_data.table_columns:
+            question_dict["table_columns"] = [col.model_dump() for col in question_data.table_columns]
+        elif question_data.type.value == "formula" and question_data.formula:
+            question_dict["formula"] = question_data.formula.model_dump()
+        elif question_data.type.value == "number" and question_data.unit:
+            question_dict["unit"] = question_data.unit
+        elif question_data.type.value == "file":
+            if question_data.file_types:
+                question_dict["file_types"] = question_data.file_types
+            if question_data.max_file_size:
+                question_dict["max_file_size"] = question_data.max_file_size
+
+        # Insert into database
+        await self.db.questions.insert_one(question_dict)
+
+        # Update category's question_ids
+        await self.collection.update_one(
+            {
+                "submodules.categories.id": category_id
+            },
+            {
+                "$push": {
+                    "submodules.$[].categories.$[category].question_ids": question_dict["_id"]
+                }
+            },
+            array_filters=[{"category.id": category_id}]
+        )
+
+        return Question(**question_dict)

@@ -5,6 +5,7 @@ from models.module import (
     ModuleCreate, Module, ModuleUpdate, ModuleWithDetails,
     SubModule, Category, ModuleType
 )
+from models.question import QuestionCreate
 from services.module import ModuleService
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -204,3 +205,21 @@ async def get_module_structure(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+@router.post("/{module_id}/categories/{category_id}/questions", status_code=status.HTTP_201_CREATED)
+async def create_temp_question(
+    module_id: str,
+    category_id: str,
+    question_data: QuestionCreate = Body(...),
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Temporary endpoint to create a question in a category"""
+    try:
+        return await module_service.create_temp_question(category_id, question_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+        

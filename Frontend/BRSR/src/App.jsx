@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import PlantsPage from './pages/PlantsPage';
+import PlantDetails from '../Environment/components/PlantDetails';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -43,8 +44,20 @@ function App() {
               </ProtectedRoute>
             } 
           />
+
+          <Route 
+            path="/plants/:moduleId/:plantId" 
+            element={
+              <ProtectedRoute>
+                <PlantDetails />
+              </ProtectedRoute>
+            } 
+          />
+
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
+          
+          
         </Routes>
       </Router>
     </Provider>
