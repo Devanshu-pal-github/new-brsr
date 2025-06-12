@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
-from dependencies import DB
+from dependencies import get_database, get_current_user
 from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, PlantWithAnswers
 from services.plant import PlantService
 
@@ -94,5 +94,29 @@ async def delete_plant(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.get("/company/{company_id}", response_model=List[Plant])
+async def get_company_plants(
+    company_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Get all plants for a specific company
+    Args:
+        company_id: The ID of the company
+        current_user: The current authenticated user
+    Returns:
+        List of Plant objects
+    """
+    try:
+        plant_service = PlantService(db)
+        plants = await plant_service.get_plants_by_company(company_id)
+        return plants
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )

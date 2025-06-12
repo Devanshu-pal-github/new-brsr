@@ -75,12 +75,8 @@ export const apiSlice = createApi({
     }),
     getCompanyPlants: builder.query({
       query: (companyId) => ({
-        url: '/plants',
+        url: `/plants/company/${companyId}`,
         method: 'GET',
-        params: {
-          company_id: companyId,
-          limit: 100 // Get all plants, adjust if needed
-        }
       }),
       transformResponse: (response) => {
         console.log('🌿 Plants Response:', response);

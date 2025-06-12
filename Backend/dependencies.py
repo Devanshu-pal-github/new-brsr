@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Annotated, Optional, Dict
 from models.auth import TokenData, UserInDB
 from services.auth import decode_token, verify_token
+from services.plant import PlantService
 import uuid
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -16,6 +17,16 @@ async def get_database(request: Request) -> AsyncIOMotorDatabase:
 
 # Database dependency
 DB = Depends(get_database)
+
+async def get_plant_service(request: Request) -> PlantService:
+    """
+    Get an instance of the PlantService
+    Args:
+        request: The FastAPI request object
+    Returns:
+        PlantService instance
+    """
+    return PlantService(request.app.mongodb)
 
 def generate_uuid() -> str:
     """

@@ -21,6 +21,8 @@ const PlantsPage = () => {
         skip: !user?.company_id
     });
 
+    console.log("plants", plants); 
+
     const LoadingState = () => (
         <div className="flex-1 p-8">
             <div className="text-center text-gray-600">Loading plants...</div>
@@ -65,37 +67,15 @@ const PlantsPage = () => {
                                             className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
                                         >
                                             <div className="p-6">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <div className="flex items-center">
-                                                        <Building className="w-6 h-6 text-[#20305D] mr-3" />
-                                                        <h3 className="text-lg font-semibold text-gray-800">
-                                                            {plant.name}
-                                                        </h3>
-                                                    </div>
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                        plant.status === 'active' 
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                        {plant.status}
-                                                    </span>
+                                                <div className="flex items-center mb-4">
+                                                    <Building className="w-6 h-6 text-[#20305D] mr-3" />
+                                                    <h3 className="text-lg font-semibold text-gray-800">
+                                                        {plant.plant_name}
+                                                    </h3>
                                                 </div>
-
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center text-gray-600">
-                                                        <MapPin className="w-4 h-4 mr-2" />
-                                                        <span className="text-sm">{plant.location || 'Location not specified'}</span>
-                                                    </div>
-                                                    <div className="flex items-center text-gray-600">
-                                                        <Users className="w-4 h-4 mr-2" />
-                                                        <span className="text-sm">{plant.employee_count || 0} Employees</span>
-                                                    </div>
-                                                    <div className="flex items-center text-gray-600">
-                                                        <Calendar className="w-4 h-4 mr-2" />
-                                                        <span className="text-sm">Established: {new Date(plant.established_date).getFullYear() || 'N/A'}</span>
-                                                    </div>
+                                                <div className="text-sm text-gray-600 mb-4">
+                                                    Plant Code: {plant.plant_code}
                                                 </div>
-
                                                 <div className="mt-6">
                                                     <button
                                                         onClick={() => navigate(`/plants/${plant.id}/details`)}

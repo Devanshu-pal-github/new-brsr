@@ -5,6 +5,7 @@ from models.plant import PlantCreate, PlantUpdate, Plant, PlantWithCompany, Plan
 from datetime import datetime
 from fastapi import HTTPException, status
 import uuid
+from bson import ObjectId
 
 class PlantService:
     def __init__(self, db: AsyncIOMotorDatabase):  # type: ignore
@@ -247,4 +248,19 @@ class PlantService:
                     "answered_questions": answered_questions,
                     "completion_percentage": (answered_questions / total_questions * 100) if total_questions > 0 else 0
                 })
-        return reports_data 
+        return reports_data
+
+    async def get_plants_by_company(self, company_id: str) -> List[Plant]:
+        """
+        Get all plants for a company with their details
+        Args:
+            company_id: The ID of the company
+        Returns:
+            List of Plant objects
+        """
+        try:
+            cursor = self.db.plants.find({"company_id": company_id})
+            plants = [Plant(**plant) async for plant in cursor]
+            return plants
+        except Exception as e:
+            raise Exception(f"Error fetching plants: {str(e)}") 
