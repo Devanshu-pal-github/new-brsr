@@ -13,7 +13,7 @@ from services.auth import (
 from dependencies import DB, get_current_active_user, generate_uuid, get_database
 import secrets
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 @router.post("/login")
 async def login(

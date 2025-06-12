@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import logging
+import uuid
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.report import ReportCreate, ReportUpdate, Report, ReportSummary
@@ -63,19 +64,27 @@ class ReportService:
         report_dict["created_at"] = datetime.utcnow()
         report_dict["updated_at"] = report_dict["created_at"]
         
-        # Generate ID and insert
-        report_id = str(report_dict.get("id", None)) or str(report_dict.get("_id", None))
-        if not report_id:
-            report_id = report_dict["id"]
-        logger.debug(f"Inserting new report into database: {report.name}")
+        # Ensure we have a UUID in the 'id' field
+        if "id" not in report_dict or not report_dict["id"]:
+            report_dict["id"] = str(uuid.uuid4())
+        
+        logger.debug(f"Inserting new report into database: {report.name} with UUID: {report_dict['id']}")
         result = await self.collection.insert_one(report_dict)
-        logger.info(f"Report '{report.name}' inserted with ID: {result.inserted_id}")
+        logger.info(f"Report '{report.name}' inserted with MongoDB ID: {result.inserted_id} and UUID: {report_dict['id']}")
+        
+        # Keep both IDs in the response
         report_dict["_id"] = str(result.inserted_id)
         return Report(**report_dict)
 
     async def get_report(self, report_id: str) -> Optional[Report]:
-        """Get a report by ID."""
-        report = await self.collection.find_one({"_id": report_id})
+        """Get a report by ID. Supports both UUID (id) and MongoDB ObjectId (_id) lookups."""
+        # First try to find by UUID (id field)
+        report = await self.collection.find_one({"id": report_id})
+        
+        # If not found, try by MongoDB ObjectId (_id field)
+        if not report:
+            report = await self.collection.find_one({"_id": report_id})
+            
         if report:
             return Report(**report)
         return None
@@ -99,8 +108,13 @@ class ReportService:
 
     async def update_report(self, report_id: str, report_update: ReportUpdate) -> Optional[Report]:
         """Update a report after validating module IDs and status."""
-        # Check if report exists
-        existing_report = await self.collection.find_one({"_id": report_id})
+        # Check if report exists - first try UUID (id field)
+        existing_report = await self.collection.find_one({"id": report_id})
+        
+        # If not found, try MongoDB ObjectId (_id field)
+        if not existing_report:
+            existing_report = await self.collection.find_one({"_id": report_id})
+            
         if not existing_report:
             return None
             
@@ -137,11 +151,22 @@ class ReportService:
             )
             
         update_data["updated_at"] = datetime.utcnow()
+        
+        # Try to update by UUID (id field) first
         result = await self.collection.find_one_and_update(
-            {"_id": report_id},
+            {"id": report_id},
             {"$set": update_data},
             return_document=True
         )
+        
+        # If not found, try by MongoDB ObjectId (_id field)
+        if not result:
+            result = await self.collection.find_one_and_update(
+                {"_id": report_id},
+                {"$set": update_data},
+                return_document=True
+            )
+            
         if result:
             return Report(**result)
         return None
@@ -155,8 +180,14 @@ class ReportService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Cannot delete report as it is being used by company: {company_using_report['name']}"
             )
+        
+        # Try to delete by UUID (id field) first
+        result = await self.collection.delete_one({"id": report_id})
+        
+        # If not found, try by MongoDB ObjectId (_id field)
+        if result.deleted_count == 0:
+            result = await self.collection.delete_one({"_id": report_id})
             
-        result = await self.collection.delete_one({"_id": report_id})
         return result.deleted_count > 0
         
     async def change_report_status(self, report_id: str, new_status: str) -> Optional[Report]:
@@ -166,12 +197,22 @@ class ReportService:
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail=f"Invalid status: {new_status}. Must be one of: active, inactive, archived"
             )
-            
+        
+        # Try to update by UUID (id field) first
         result = await self.collection.find_one_and_update(
-            {"_id": report_id},
+            {"id": report_id},
             {"$set": {"status": new_status, "updated_at": datetime.utcnow()}},
             return_document=True
         )
+        
+        # If not found, try by MongoDB ObjectId (_id field)
+        if not result:
+            result = await self.collection.find_one_and_update(
+                {"_id": report_id},
+                {"$set": {"status": new_status, "updated_at": datetime.utcnow()}},
+                return_document=True
+            )
+            
         if result:
             return Report(**result)
         return None

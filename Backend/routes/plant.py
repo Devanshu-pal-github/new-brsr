@@ -5,7 +5,6 @@ from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, Plan
 from services.plant import PlantService
 
 router = APIRouter(
-    prefix="/plants",
     tags=["plants"],
     responses={404: {"description": "Not found"}},
 )
@@ -96,4 +95,4 @@ async def delete_plant(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        ) 
+        )

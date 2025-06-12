@@ -3,9 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
-from routes import (
-    report, module, company, plant, question, answer, user_access, auth
-)
+# Import routers directly
+from routes.report import router as report_router
+from routes.module import router as module_router
+from routes.company import router as company_router
+from routes.plant import router as plant_router
+from routes.question import router as question_router
+from routes.answer import router as answer_router
+from routes.user_access import router as user_access_router
+from routes.auth import router as auth_router
+
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -113,14 +120,15 @@ async def root():
         "version": "1.0.0"
     }
 
-app.include_router(module.router)
-app.include_router(company.router)
-app.include_router(plant.router)
-app.include_router(question.router)
-app.include_router(answer.router)
-app.include_router(user_access.router)
-app.include_router(auth.router)  # Add auth router
-app.include_router(report.router)  # Add report router
+# Include routers
+app.include_router(module_router, prefix="/modules")
+app.include_router(company_router, prefix="/companies")
+app.include_router(plant_router, prefix="/plants")
+app.include_router(question_router, prefix="/questions")
+app.include_router(answer_router, prefix="/answers")
+app.include_router(user_access_router, prefix="/user-access")
+app.include_router(auth_router, prefix="/auth")
+app.include_router(report_router, prefix="/reports")
 
 if __name__ == "__main__":
     import uvicorn

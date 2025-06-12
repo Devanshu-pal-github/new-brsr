@@ -1,5 +1,4 @@
-@tailwind base;
-@tailwind components;
+@import "tailwindcss";
 @tailwind utilities;
 
 /* Custom styles for better text visibility */
@@ -23,4 +22,3 @@ input:-webkit-autofill:active {
   border: 1px solid rgba(255, 255, 255, 0.5) !important;
   color: white !important;
 }
-@import "tailwindcss";

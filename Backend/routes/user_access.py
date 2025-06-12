@@ -8,7 +8,6 @@ from models.user_access import (
 from services.user_access import UserAccessService
 
 router = APIRouter(
-    prefix="/user-access",
     tags=["user-access"],
     responses={404: {"description": "Not found"}},
 )
@@ -124,4 +123,4 @@ async def check_user_permission(
         company_id=company_id,
         permission=permission,
         plant_id=plant_id
-    ) 
+    )

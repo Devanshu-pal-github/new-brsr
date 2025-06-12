@@ -6,7 +6,6 @@ from models.report import REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_S
 from services.report import ReportService
 
 router = APIRouter(
-    prefix="/reports",
     tags=["reports"],
     responses={404: {"description": "Not found"}},
 )

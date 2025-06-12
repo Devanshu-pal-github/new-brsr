@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.company import CompanyCreate, CompanyUpdate, Company, ActiveReport
 from models.plant import Plant, PlantCreate, PlantType
@@ -92,37 +92,64 @@ class CompanyService:
         result = await self.collection.delete_one({"id": company_id})
         return result.deleted_count > 0
 
-    async def assign_report(self, company_id: str, report_id: str, basic_modules: List[str], calc_modules: List[str], financial_year: str) -> Company:
+    async def assign_report(self, company_id: str, report_id: str, financial_year: str, modules: List[str] = None) -> Company:
         """Assign a report to a company with module assignments and update plant access levels."""
+        if modules is None:
+            modules = []
+            
+        # Check if company exists
         company = await self.get_company(company_id)
         if not company:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+            
+        # Check if report exists - first try UUID (id field)
         report = await self.db.reports.find_one({"id": report_id})
+        
+        # If not found, try MongoDB ObjectId (_id field)
+        if not report:
+            report = await self.db.reports.find_one({"_id": report_id})
         if not report:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-        assigned_modules = {"basic_modules": basic_modules, "calc_modules": calc_modules}
+            
+        # Check if report is already assigned to this company
+        for active_report in company.active_reports:
+            if active_report.report_id == report_id:
+                raise ValueError(f"Report with ID {report_id} is already assigned to this company")
+        
+        # Create assigned modules structure
+        # For simplicity, we'll put all modules in basic_modules for now
+        # This can be enhanced later to properly categorize modules
+        assigned_modules = {"basic_modules": modules, "calc_modules": []}
+        
         active_report = {
             "report_id": report_id,
             "assigned_modules": assigned_modules,
             "financial_year": financial_year,
             "status": "active"
         }
+        
+        # Add the report to the company's active_reports
         await self.collection.update_one(
             {"id": company_id},
-            {" $push": {"active_reports": active_report}, "$set": {"updated_at": datetime.utcnow()}}
+            {"$push": {"active_reports": active_report}, "$set": {"updated_at": datetime.utcnow()}}
         )
+        
         # Update plant access levels
         await self.db.plants.update_many(
             {"company_id": company_id, "plant_type": "regular"},
-            {" $set": {"access_level": "calc_modules_only"}}
+            {"$set": {"access_level": "calc_modules_only"}}
         )
+        
         await self.db.plants.update_many(
             {"company_id": company_id, "plant_type": {"$in": ["C001", "P001"]}},
-            {" $set": {"access_level": "all_modules"}}
+            {"$set": {"access_level": "all_modules"}}
         )
+        
+        # Return the updated company
         company = await self.get_company(company_id)
         if not company:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+            
         return company
 
     async def get_company_plants(self, company_id: str) -> List[Plant]:
@@ -130,3 +157,28 @@ class CompanyService:
         async for doc in self.db.plants.find({"company_id": company_id}):
             plants.append(Plant(**doc))
         return plants
+        
+    async def remove_report(self, company_id: str, report_id: str) -> Optional[Company]:
+        """Remove a report from a company's active reports"""
+        # Check if company exists
+        company = await self.get_company(company_id)
+        if not company:
+            return None
+            
+        # Check if report is assigned to the company
+        report_exists = False
+        for report in company.active_reports:
+            if report.report_id == report_id:
+                report_exists = True
+                break
+                
+        if not report_exists:
+            raise ValueError(f"Report with ID {report_id} is not assigned to this company")
+            
+        # Remove the report from active_reports
+        await self.collection.update_one(
+            {"id": company_id},
+            {"$pull": {"active_reports": {"report_id": report_id}}, "$set": {"updated_at": datetime.utcnow()}}
+        )
+        
+        return await self.get_company(company_id)

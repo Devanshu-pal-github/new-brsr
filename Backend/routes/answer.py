@@ -8,7 +8,6 @@ from models.answer import (
 from services.answer import AnswerService
 
 router = APIRouter(
-    prefix="/answers",
     tags=["answers"],
     responses={404: {"description": "Not found"}},
 )
@@ -129,4 +128,4 @@ async def delete_answer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Answer with ID {answer_id} not found"
         )
-    return None 
+    return None

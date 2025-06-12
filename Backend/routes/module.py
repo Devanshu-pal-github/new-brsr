@@ -5,7 +5,6 @@ from models.module import ModuleCreate, Module, ModuleUpdate, ModuleWithDetails
 from services.module import ModuleService
 
 router = APIRouter(
-    prefix="/modules",
     tags=["modules"],
     responses={404: {"description": "Not found"}},
 )

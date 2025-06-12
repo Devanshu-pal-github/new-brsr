@@ -5,7 +5,6 @@ from models.question import QuestionCreate, Question, QuestionUpdate, QuestionWi
 from services.question import QuestionService
 
 router = APIRouter(
-    prefix="/questions",
     tags=["questions"],
     responses={404: {"description": "Not found"}},
 )

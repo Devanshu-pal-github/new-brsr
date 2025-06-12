@@ -4,7 +4,14 @@ import { apiSlice } from '../api/apiSlice';
 // Get user data from localStorage if available
 const getUserFromStorage = () => {
   const userData = localStorage.getItem('user');
-  return userData ? JSON.parse(userData) : null;
+  if (!userData) return null;
+  try {
+    return JSON.parse(userData);
+  } catch (error) {
+    // If parsing fails, remove the invalid data and return null
+    localStorage.removeItem('user');
+    return null;
+  }
 };
 
 // Get token from localStorage if available

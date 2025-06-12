@@ -5,7 +5,6 @@ from models.company import CompanyCreate, Company, CompanyUpdate, CompanyWithPla
 from services.company import CompanyService
 
 router = APIRouter(
-    prefix="/companies",
     tags=["companies"],
     responses={404: {"description": "Not found"}},
 )
@@ -92,38 +91,48 @@ async def delete_company(
         )
     return None
 
-# @router.post("/{company_id}/reports/{report_id}", response_model=Company)
-# async def add_report_to_company(
-#     company_id: str,
-#     report_id: str,
-#     company_service: CompanyService = Depends(get_company_service)
-# ):
-#     """Add a report to a company's active reports"""
-#     try:
-#         company = await company_service.add_report_to_company(company_id, report_id)
-#         if not company:
-#             raise HTTPException(
-#                 status_code=status.HTTP_404_NOT_FOUND,
-#                 detail=f"Company with ID {company_id} not found"
-#             )
-#         return company
-#     except ValueError as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail=str(e)
-#         )
+@router.post("/{company_id}/reports/{report_id}", response_model=Company)
+async def add_report_to_company(
+    company_id: str,
+    report_id: str,
+    financial_year: str = Query(..., description="Financial year for the report (e.g., '2023-2024')"),
+    modules: List[str] = Query([], description="List of module IDs to assign"),
+    company_service: CompanyService = Depends(get_company_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Add a report to a company's active reports"""
+    try:
+        company = await company_service.assign_report(company_id, report_id, financial_year, modules)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Company with ID {company_id} not found"
+            )
+        return company
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
-# @router.delete("/{company_id}/reports/{report_id}", response_model=Company)
-# async def remove_report_from_company(
-#     company_id: str,
-#     report_id: str,
-#     company_service: CompanyService = Depends(get_company_service)
-# ):
-#     """Remove a report from a company's active reports"""
-#     company = await company_service.remove_report_from_company(company_id, report_id)
-#     if not company:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail=f"Company with ID {company_id} not found"
-#         )
-#     return company
+@router.delete("/{company_id}/reports/{report_id}", response_model=Company)
+async def remove_report_from_company(
+    company_id: str,
+    report_id: str,
+    company_service: CompanyService = Depends(get_company_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Remove a report from a company's active reports"""
+    try:
+        company = await company_service.remove_report(company_id, report_id)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Company with ID {company_id} not found"
+            )
+        return company
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
