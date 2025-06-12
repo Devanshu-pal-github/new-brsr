@@ -20,6 +20,7 @@ class AssignedModules(BaseModel):
 
 class ActiveReport(BaseModel):
     report_id: str
+    report_name: str = ""
     assigned_modules: AssignedModules
     financial_year: str
     status: ReportStatus = ReportStatus.ACTIVE

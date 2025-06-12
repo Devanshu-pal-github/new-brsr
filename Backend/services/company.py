@@ -140,7 +140,7 @@ class CompanyService:
             
         # Check if report is already assigned to this company
         for active_report in company.active_reports:
-            if active_report.report_id == report_id:
+            if isinstance(active_report, dict) and active_report.get("report_id") == report_id:
                 raise ValueError(f"Report with ID {report_id} is already assigned to this company")
         
         # Create assigned modules structure
@@ -150,6 +150,7 @@ class CompanyService:
         
         active_report = {
             "report_id": report_id,
+            "report_name": report.get("name", ""),  # Add report name to the response
             "assigned_modules": assigned_modules,
             "financial_year": financial_year,
             "status": "active"
