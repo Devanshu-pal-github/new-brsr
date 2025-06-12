@@ -19,6 +19,19 @@ const getTokenFromStorage = () => {
   return localStorage.getItem('token') || null;
 };
 
+// Get company details from localStorage if available
+const getCompanyDetailsFromStorage = () => {
+  const companyDetails = localStorage.getItem('companyDetails');
+  if (!companyDetails) return null;
+  try {
+    return JSON.parse(companyDetails);
+  } catch (error) {
+    // If parsing fails, remove the invalid data and return null
+    localStorage.removeItem('companyDetails');
+    return null;
+  }
+};
+
 const initialState = {
   user: getUserFromStorage(),
   token: getTokenFromStorage(),
@@ -28,7 +41,7 @@ const initialState = {
   refreshToken: null,
   tokenType: 'bearer',
   expiresIn: null,
-  companyDetails: null
+  companyDetails: getCompanyDetailsFromStorage()
 };
 
 const authSlice = createSlice({
