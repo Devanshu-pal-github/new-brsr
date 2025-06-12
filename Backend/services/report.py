@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from models.report import ReportCreate, ReportUpdate, Report, ReportSummary
+from models.report import ReportCreate, ReportUpdate, Report, ReportSummary, ModuleAssignment
 from models.report import REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_STATUS_ARCHIVED
 from datetime import datetime
 from fastapi import HTTPException, status
@@ -197,6 +197,122 @@ class ReportService:
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail=f"Invalid status: {new_status}. Must be one of: active, inactive, archived"
             )
+
+    async def assign_modules_to_report_with_types(self, report_id: str, modules: List[ModuleAssignment]) -> Optional[Report]:
+        """Assign modules to a report with explicit module types specified in the request."""
+        # Check if report exists
+        report = await self.get_report(report_id)
+        if not report:
+            return None
+
+        # Extract module IDs and categorize by type
+        module_ids = []
+        basic_modules = []
+        calc_modules = []
+        
+        for module in modules:
+            module_id = module.id
+            module_ids.append(module_id)
+            
+            # Validate that module exists
+            db_module = await self.modules_collection.find_one({"$or": [{"_id": module_id}, {"id": module_id}]})
+            if not db_module:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Module ID {module_id} not found"
+                )
+            
+            # Categorize based on provided type
+            if module.module_type.value == "basic":
+                basic_modules.append(module_id)
+            elif module.module_type.value == "calc":
+                calc_modules.append(module_id)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid module type: {module.module_type}. Must be either 'basic' or 'calc'"
+                )
+
+        update_data = {
+            "module_ids": module_ids, 
+            "basic_modules": basic_modules,
+            "calc_modules": calc_modules,
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Update the report
+        result = await self.collection.find_one_and_update(
+            {"id": report_id},
+            {"$set": update_data},
+            return_document=True
+        )
+
+        if not result:
+            result = await self.collection.find_one_and_update(
+                {"_id": report_id},
+                {"$set": update_data},
+                return_document=True
+            )
+
+        if result:
+            return Report(**result)
+        return None
+        
+    async def assign_modules_to_report(self, report_id: str, module_ids: List[str]) -> Optional[Report]:
+        """Assign modules to a report and categorize them as basic or calc."""
+        # Check if report exists
+        report = await self.get_report(report_id)
+        if not report:
+            return None
+
+        # Validate module IDs and categorize them
+        basic_modules = []
+        calc_modules = []
+        
+        for module_id in module_ids:
+            # Try to find module by either _id or id field
+            module = await self.modules_collection.find_one({"$or": [{"_id": module_id}, {"id": module_id}]})
+            if not module:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Module ID {module_id} not found"
+                )
+            
+            # Categorize module based on its type
+            if module.get("module_type") == "basic":
+                basic_modules.append(module_id)
+            elif module.get("module_type") == "calc":
+                calc_modules.append(module_id)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Module ID {module_id} has invalid type: {module.get('module_type')}. Must be either 'basic' or 'calc'"
+                )
+
+        update_data = {
+            "module_ids": module_ids, 
+            "basic_modules": basic_modules,
+            "calc_modules": calc_modules,
+            "updated_at": datetime.utcnow()
+        }
+
+        # Update the report
+        result = await self.collection.find_one_and_update(
+            {"id": report_id},
+            {"$set": update_data},
+            return_document=True
+        )
+
+        if not result:
+            result = await self.collection.find_one_and_update(
+                {"_id": report_id},
+                {"$set": update_data},
+                return_document=True
+            )
+
+        if result:
+            return Report(**result)
+        return None
         
         # Try to update by UUID (id field) first
         result = await self.collection.find_one_and_update(

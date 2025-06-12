@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
+from models.module import ModuleType
 
 # Report status constants
 REPORT_STATUS_ACTIVE = "active"
@@ -47,3 +48,7 @@ class ReportUpdate(BaseModel):
     status: Optional[str] = None
     version: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+
+class ModuleAssignment(BaseModel):
+    id: str
+    module_type: ModuleType

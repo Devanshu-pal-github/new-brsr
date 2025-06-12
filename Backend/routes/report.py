@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from typing import List, Optional
-from dependencies import get_database, get_current_active_user, check_super_admin_access
-from models.report import ReportCreate, Report, ReportUpdate, ReportSummary
+from datetime import datetime
+
+from dependencies import check_super_admin_access, get_database, get_current_active_user
+from models.report import ReportCreate, Report, ReportUpdate, ReportSummary, ModuleAssignment
 from models.report import REPORT_STATUS_ACTIVE, REPORT_STATUS_INACTIVE, REPORT_STATUS_ARCHIVED
 from services.report import ReportService
 
@@ -95,6 +97,22 @@ async def change_report_status(
         )
     
     report = await report_service.change_report_status(report_id, new_status)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report with ID {report_id} not found"
+        )
+    return report
+
+@router.patch("/{report_id}/assign-modules", response_model=Report)
+async def assign_modules_to_report_api(
+    report_id: str,
+    modules: List[ModuleAssignment] = Body(..., description="List of modules with IDs and types to assign"),
+    current_user = Depends(check_super_admin_access),
+    report_service: ReportService = Depends(get_report_service)
+):
+    """Assign modules to a report with explicit module types"""
+    report = await report_service.assign_modules_to_report_with_types(report_id, modules)
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
