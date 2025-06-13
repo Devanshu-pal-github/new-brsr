@@ -9,18 +9,18 @@ export const apiSlice = createApi({
     prepareHeaders: (headers, { getState }) => {
       // Get token from auth state
       const token = getState().auth.token;
-      
+
       // If token exists, add authorization header
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      
+
       // For login requests, ensure content type is properly set
       if (headers.get('Content-Type') === 'multipart/form-data') {
         // Remove content-type header for FormData to let the browser set it with the boundary
         headers.delete('Content-Type');
       }
-      
+
       return headers;
     }
   }),
@@ -33,14 +33,14 @@ export const apiSlice = createApi({
           method: 'POST',
           body: credentials,
         };
-        
+
         // Set appropriate headers for URLSearchParams
         if (credentials instanceof URLSearchParams) {
           requestConfig.headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
           };
         }
-        
+
         return requestConfig;
       },
     }),
@@ -69,7 +69,7 @@ export const apiSlice = createApi({
       }),
     }),
     getReportModules: builder.query({
-      query: ({reportId, companyId}) => ({
+      query: ({ reportId, companyId }) => ({
         url: `/companies/${companyId}/reports/${reportId}/modules`,
         method: 'GET',
       }),
@@ -81,12 +81,12 @@ export const apiSlice = createApi({
         console.error('🔴 API Error:', response);
         return response;
       },
-      providesTags: (result) => 
+      providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Modules', id })),
-              { type: 'Modules', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Modules', id })),
+            { type: 'Modules', id: 'LIST' },
+          ]
           : [{ type: 'Modules', id: 'LIST' }],
       keepUnusedDataFor: 300, // Keep data for 5 minutes
     }),
@@ -102,10 +102,29 @@ export const apiSlice = createApi({
       providesTags: ['Plants']
     }),
     // Add more endpoints as needed
+
+    getCompanyReports: builder.query({
+      query: () => ({
+        url: `/environment/reports`,
+        method: 'GET',
+      }),
+      transformResponse: (response) => {
+        console.log('🌍 Environment Reports Response:', response);
+        return Array.isArray(response) ? response : [];
+      },
+      providesTags: (result) =>
+        result
+          ? [
+            ...result.map((report) => ({ type: 'EnvironmentReports', id: report.id })),
+            { type: 'EnvironmentReports', id: 'LIST' },
+          ]
+          : [{ type: 'EnvironmentReports', id: 'LIST' }],
+    }),
+
   }),
 });
 
-export const { 
+export const {
   useLoginMutation,
   useGetCompanyDetailsQuery,
   useLazyGetCompanyDetailsQuery,
@@ -114,7 +133,8 @@ export const {
   useResetPasswordMutation,
   useGetReportModulesQuery,
   useLazyGetReportModulesQuery,
-  useGetCompanyPlantsQuery
+  useGetCompanyPlantsQuery,
+  useGetCompanyReportsQuery
 } = apiSlice;
 
 export default apiSlice;

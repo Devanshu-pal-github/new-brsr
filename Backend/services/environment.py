@@ -44,6 +44,7 @@ class EnvironmentService:
         financial_year: str
     ) -> Optional[EnvironmentReport]:
         """Get an environment report"""
+        
         doc = await self.collection.find_one({
             "companyId": company_id,
             "financialYear": financial_year

@@ -8,6 +8,7 @@ import moduleData from '../data/moduleData.json';
 
 const PlantDetails = () => {
     const { plantId } = useParams();
+    
     const [activeSubmodule, setActiveSubmodule] = useState('Energy Management');
 
     // Get current submodule

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from services.environment import EnvironmentService
-from dependencies import get_database
+from dependencies import get_database, get_current_active_user
 from models.environment import EnvironmentReport, QuestionAnswer
 from pydantic import BaseModel
 
@@ -15,14 +15,15 @@ router = APIRouter(
 def get_environment_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> EnvironmentService:
     return EnvironmentService(db)
 
-@router.post("/reports/{company_id}/{financial_year}", response_model=dict)
+@router.post("/reports/{financial_year}", response_model=dict)
 async def create_environment_report(
-    company_id: str,
     financial_year: str,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Create a new environment report"""
     try:
+        company_id = current_user["company_id"]
         report_id = await service.create_report(
             company_id=company_id,
             financial_year=financial_year
@@ -31,21 +32,23 @@ async def create_environment_report(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/reports/{company_id}", response_model=List[EnvironmentReport])
+@router.get("/reports", response_model=List[EnvironmentReport])
 async def get_company_reports(
-    company_id: str,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Get all environment reports for a company"""
+    company_id = current_user["company_id"]
     return await service.get_company_reports(company_id)
 
-@router.get("/reports/{company_id}/{financial_year}", response_model=Optional[EnvironmentReport])
+@router.get("/reports/{financial_year}", response_model=Optional[EnvironmentReport])
 async def get_report(
-    company_id: str,
     financial_year: str,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Get a specific environment report"""
+    company_id = current_user["company_id"]
     report = await service.get_report(company_id, financial_year)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -54,15 +57,16 @@ async def get_report(
 class AnswerUpdate(BaseModel):
     answer_data: Dict[str, Any]
 
-@router.put("/reports/{company_id}/{financial_year}/answers/{question_id}")
+@router.put("/reports/{financial_year}/answers/{question_id}")
 async def update_answer(
-    company_id: str,
     financial_year: str,
     question_id: str,
     update: AnswerUpdate,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Update answer for a specific question"""
+    company_id = current_user["company_id"]
     success = await service.update_answer(
         company_id=company_id,
         financial_year=financial_year,
@@ -73,15 +77,16 @@ async def update_answer(
         raise HTTPException(status_code=404, detail="Question not found or update failed")
     return {"message": "Answer updated successfully"}
 
-@router.post("/reports/{company_id}/{financial_year}/comments/{question_id}")
+@router.post("/reports/{financial_year}/comments/{question_id}")
 async def add_comment(
-    company_id: str,
     financial_year: str,
     question_id: str,
     comment: Dict[str, Any],
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Add a comment to a specific question"""
+    company_id = current_user["company_id"]
     success = await service.add_comment(
         company_id=company_id,
         financial_year=financial_year,
@@ -95,14 +100,15 @@ async def add_comment(
 class StatusUpdate(BaseModel):
     status: str
 
-@router.put("/reports/{company_id}/{financial_year}/status")
+@router.put("/reports/{financial_year}/status")
 async def update_status(
-    company_id: str,
     financial_year: str,
     update: StatusUpdate,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Update report status"""
+    company_id = current_user["company_id"]
     success = await service.update_status(
         company_id=company_id,
         financial_year=financial_year,
@@ -115,14 +121,15 @@ async def update_status(
 class BulkAnswerUpdate(BaseModel):
     answers: Dict[str, Dict[str, Any]]
 
-@router.put("/reports/{company_id}/{financial_year}/bulk-answers")
+@router.put("/reports/{financial_year}/bulk-answers")
 async def bulk_update_answers(
-    company_id: str,
     financial_year: str,
     update: BulkAnswerUpdate,
+    current_user: Dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
     """Bulk update answers for multiple questions"""
+    company_id = current_user["company_id"]
     success = await service.bulk_update_answers(
         company_id=company_id,
         financial_year=financial_year,
