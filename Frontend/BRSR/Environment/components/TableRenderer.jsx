@@ -1,18 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const TableRenderer = ({ metadata, data = {}, isEditing = false, onSave }) => {
+  const [localData, setLocalData] = useState(data);
+
+  useEffect(() => {
+    setLocalData(data);
+  }, [data]);
+
   const handleCellChange = (rowIndex, colKey, value) => {
-    const newData = { ...data };
-    if (!newData[rowIndex]) {
-      newData[rowIndex] = {};
-    }
-    newData[rowIndex][colKey] = value;
+    setLocalData(prevData => {
+      const newData = { ...prevData };
+      if (!newData[rowIndex]) {
+        newData[rowIndex] = {};
+      }
+      newData[rowIndex][colKey] = value;
+      return newData;
+    });
+
+    // Pass changes up immediately for parent component to handle
     if (onSave) {
-      onSave(newData);
+      onSave(localData);
     }
   };
 
-  // Check if the first column should be editable
   const isFirstColumnEditable = metadata.columns[0]?.key === 'category_of_waste' || 
                                metadata.columns[0]?.key === 'waste_category';
 
@@ -38,15 +48,23 @@ const TableRenderer = ({ metadata, data = {}, isEditing = false, onSave }) => {
                   {isEditing && (colIdx > 0 || isFirstColumnEditable) ? (
                     <input
                       type="text"
-                      value={colIdx === 0 ? (data[idx]?.category_of_waste || '') : (data[idx]?.[col.key] || '')}
-                      onChange={(e) => handleCellChange(idx, colIdx === 0 ? 'category_of_waste' : col.key, e.target.value)}
+                      value={colIdx === 0 ? 
+                        (localData[idx]?.category_of_waste || '') : 
+                        (localData[idx]?.[col.key] || '')}
+                      onChange={(e) => handleCellChange(
+                        idx, 
+                        colIdx === 0 ? 'category_of_waste' : col.key, 
+                        e.target.value
+                      )}
                       className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
-                      placeholder={colIdx === 0 ? "Enter waste category" : "Enter value"}
+                      placeholder={colIdx === 0 ? "Enter category" : "Enter value"}
                     />
                   ) : (
-                    colIdx === 0 ? 
-                      (data[idx]?.category_of_waste || row.parameter || '') :
-                      (data[idx]?.[col.key] || '')
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: colIdx === 0 ? 
+                        (localData[idx]?.category_of_waste || row.parameter || '') :
+                        (localData[idx]?.[col.key] || '')
+                    }} />
                   )}
                 </td>
               ))}

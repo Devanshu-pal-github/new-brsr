@@ -11,7 +11,7 @@ const AuditBadge = ({ isAuditRequired }) => (
   </div>
 );
 
-const EditModal = ({ isOpen, onClose, children, title }) => {
+const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
   if (!isOpen) return null;
 
   return (
@@ -30,6 +30,20 @@ const EditModal = ({ isOpen, onClose, children, title }) => {
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
+          <div className="mt-4 flex justify-end space-x-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(tempData)}
+              className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -40,27 +54,58 @@ const QuestionRenderer = ({ question }) => {
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(question.answer || {});
+  const [tempData, setTempData] = useState(questionData);
 
   const handleSave = (data) => {
+    console.log('Saving question data:', {
+      questionId: question.id,
+      questionTitle: title,
+      updatedData: data
+    });
     setQuestionData(data);
     setIsEditModalOpen(false);
+  };
+
+  const handleDataChange = (newData) => {
+    setTempData(newData);
   };
 
   const renderEditableContent = () => {
     switch (metadata?.type) {
       case 'table':
-        return <TableRenderer metadata={metadata} data={questionData} isEditing={true} onSave={handleSave} />;
+        return (
+          <TableRenderer 
+            metadata={metadata} 
+            data={tempData} 
+            isEditing={true} 
+            onSave={handleDataChange} 
+          />
+        );
       case 'multi-table':
-        return <MultiTableRenderer metadata={metadata} data={questionData} isEditing={true} onSave={handleSave} />;
+        return (
+          <MultiTableRenderer 
+            metadata={metadata} 
+            data={tempData} 
+            isEditing={true} 
+            onSave={handleDataChange} 
+          />
+        );
       case 'dynamic-table':
-        return <DynamicTableRenderer metadata={metadata} data={questionData} isEditing={true} onSave={handleSave} />;
+        return (
+          <DynamicTableRenderer 
+            metadata={metadata} 
+            data={tempData} 
+            isEditing={true} 
+            onSave={handleDataChange} 
+          />
+        );
       default:
         return (
           <textarea
             className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
             placeholder="Enter your response here..."
-            value={questionData.text || ''}
-            onChange={(e) => setQuestionData({ text: e.target.value })}
+            value={tempData.text || ''}
+            onChange={(e) => setTempData({ text: e.target.value })}
           />
         );
     }
@@ -81,7 +126,10 @@ const QuestionRenderer = ({ question }) => {
         <div className="flex items-center space-x-3 ml-4">
           <AuditBadge isAuditRequired={isAuditRequired} />
           <button
-            onClick={() => setIsEditModalOpen(true)}
+            onClick={() => {
+              setTempData(questionData); // Reset temp data when opening modal
+              setIsEditModalOpen(true);
+            }}
             className="px-3 py-1 bg-[#20305D] text-white text-sm rounded hover:bg-[#162442] transition-colors"
           >
             Edit Response
@@ -105,22 +153,10 @@ const QuestionRenderer = ({ question }) => {
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)}
         title={`Edit - ${title}`}
+        onSave={handleSave}
+        tempData={tempData}
       >
         {renderEditableContent()}
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={() => setIsEditModalOpen(false)}
-            className="px-4 py-2 mr-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => handleSave(questionData)}
-            className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
-          >
-            Save Changes
-          </button>
-        </div>
       </EditModal>
     </div>
   );
