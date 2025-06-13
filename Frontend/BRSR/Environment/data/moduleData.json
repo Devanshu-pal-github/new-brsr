@@ -127,7 +127,60 @@
               "id": "WU-2",
               "type": "Leadership",
               "title": "Water in Areas of Water Stress",
-              "description": "For facilities in areas of water stress, provide details of the area, nature of operations, water withdrawal by source, total volume of water withdrawal and consumption (in kilolitres), water intensity per rupee of turnover, optional water intensity metrics, and water discharge by destination and treatment level. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency."
+              "description": "For facilities in areas of water stress, provide details of the area, nature of operations, water withdrawal by source, total volume of water withdrawal and consumption (in kilolitres), water intensity per rupee of turnover, optional water intensity metrics, and water discharge by destination and treatment level. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "metadata": {
+                "type": "multi-table",
+                "tables": [
+                  {
+                    "title": "Water withdrawal by source (in kilolitres)",
+                    "columns": [
+                      { "label": "Parameter", "key": "parameter" },
+                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
+                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                    ],
+                    "rows": [
+                      { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true },
+                      { "parameter": "(i) Surface water" },
+                      { "parameter": "(ii) Groundwater" },
+                      { "parameter": "(iii) Third party water" },
+                      { "parameter": "(iv) Seawater / desalinated water" },
+                      { "parameter": "(v) Others" },
+                      { "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>" },
+                      { "parameter": "<b>Total volume of water consumption (in kilolitres)</b>" },
+                      { "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>" },
+                      { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity" }
+                    ]
+                  },
+                  {
+                    "title": "Water discharge by destination and level of treatment (in kilolitres)",
+                    "columns": [
+                      { "label": "Parameter", "key": "parameter" },
+                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
+                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                    ],
+                    "rows": [
+                      { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
+                      { "parameter": "(i) Into Surface water" },
+                      { "parameter": "- No treatment" },
+                      { "parameter": "- With treatment – please specify level of treatment" },
+                      { "parameter": "(ii) Into Groundwater" },
+                      { "parameter": "- No treatment" },
+                      { "parameter": "- With treatment – please specify level of treatment" },
+                      { "parameter": "(iii) Into Seawater" },
+                      { "parameter": "- No treatment" },
+                      { "parameter": "- With treatment – please specify level of treatment" },
+                      { "parameter": "(iv) Sent to third-parties" },
+                      { "parameter": "- No treatment" },
+                      { "parameter": "- With treatment – please specify level of treatment" },
+                      { "parameter": "(v) Others" },
+                      { "parameter": "- No treatment" },
+                      { "parameter": "- With treatment – please specify level of treatment" },
+                      { "parameter": "<b>Total water discharged (in kilolitres)</b>" }
+                    ]
+                  }
+                ],
+                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              }
             }
           ]
         },
@@ -145,7 +198,35 @@
               "id": "WD-2",
               "type": "Leadership",
               "title": "Water Discharge Details",
-              "description": "Details of water discharge by destination (surface water, groundwater, seawater, third parties, others) and level of treatment (no treatment or specify treatment level), including total water discharged (in kilolitres). Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency."
+              "description": "Details of water discharge by destination (surface water, groundwater, seawater, third parties, others) and level of treatment (no treatment or specify treatment level), including total water discharged (in kilolitres). Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "metadata": {
+                "type": "table",
+                "columns": [
+                  { "label": "Parameter", "key": "parameter" },
+                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                ],
+                "rows": [
+                  { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
+                  { "parameter": "(i) To Surface water" },
+                  { "parameter": "- No treatment" },
+                  { "parameter": "- With treatment – please specify level of treatment" },
+                  { "parameter": "(ii) To Groundwater" },
+                  { "parameter": "- No treatment" },
+                  { "parameter": "- With treatment – please specify level of treatment" },
+                  { "parameter": "(iii) To Seawater" },
+                  { "parameter": "- No treatment" },
+                  { "parameter": "- With treatment – please specify level of treatment" },
+                  { "parameter": "(iv) Sent to third-parties" },
+                  { "parameter": "- No treatment" },
+                  { "parameter": "- With treatment – please specify level of treatment" },
+                  { "parameter": "(v) Others" },
+                  { "parameter": "- No treatment" },
+                  { "parameter": "- With treatment – please specify level of treatment" },
+                  { "parameter": "<b>Total water discharged (in kilolitres)</b>" }
+                ],
+                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              }
             }
           ]
         }
@@ -227,7 +308,31 @@
               "id": "GHG-2",
               "type": "Leadership",
               "title": "Scope 3 Emissions",
-              "description": "Details of total Scope 3 emissions, including break-up of GHG (CO2, CH4, N2O, HFCs, PFCs, SF6, NF3) in metric tonnes of CO2 equivalent, total Scope 3 emissions per rupee of turnover, and optional emission intensity metrics. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency."
+              "description": "Details of total Scope 3 emissions, including break-up of GHG (CO2, CH4, N2O, HFCs, PFCs, SF6, NF3) in metric tonnes of CO2 equivalent, total Scope 3 emissions per rupee of turnover, and optional emission intensity metrics. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "metadata": {
+                "type": "table",
+                "columns": [
+                  { "label": "Parameter", "key": "parameter" },
+                  { "label": "Unit", "key": "unit" },
+                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                ],
+                "rows": [
+                  {
+                    "parameter": "<b>Total Scope 3 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "unit": "<i>Metric tonnes of CO2 equivalent</i>"
+                  },
+                  {
+                    "parameter": "<b>Total Scope 3 emissions per rupee of turnover</b>",
+                    "unit": ""
+                  },
+                  {
+                    "parameter": "<b>Total Scope 3 emission intensity (optional)</b> – the relevant metric may be selected by the entity",
+                    "unit": ""
+                  }
+                ],
+                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              }
             }
           ]
         },
@@ -245,7 +350,18 @@
               "id": "ERI-2",
               "type": "Leadership",
               "title": "Resource Efficiency and Emission Reduction Initiatives",
-              "description": "Details of specific initiatives or innovative technologies to improve resource efficiency or reduce emissions/effluent discharge/waste, including initiative details (with web links, if any) and outcomes."
+              "description": "Details of specific initiatives or innovative technologies to improve resource efficiency or reduce emissions/effluent discharge/waste, including initiative details (with web links, if any) and outcomes.",
+              "metadata": {
+                "type": "dynamic-table",
+                "columns": [
+                  { "label": "Sr. No", "key": "sr_no" },
+                  { "label": "Initiative undertaken", "key": "initiative" },
+                  { "label": "Details of the initiative <i>(Web-link, if any, may be provided along-with summary)</i>", "key": "details" },
+                  { "label": "Outcome of the initiative", "key": "outcome" }
+                ],
+                "allowAddRows": true,
+                "note": ""
+              }
             }
           ]
         }

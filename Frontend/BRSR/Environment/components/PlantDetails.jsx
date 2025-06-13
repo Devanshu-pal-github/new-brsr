@@ -42,7 +42,7 @@ const PlantDetails = () => {
                                 {currentSubmodule.categories.map((category) => (
                                     <QuestionCategory 
                                         key={category.id}
-                                        categoryName={category.name}
+                                        category={category}
                                     />
                                 ))}
                             </div>

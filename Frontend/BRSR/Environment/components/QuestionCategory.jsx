@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import CategoryRenderer from './CategoryRenderer';
 
-const QuestionCategory = ({ categoryName }) => {
+const QuestionCategory = ({ category }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -12,7 +13,7 @@ const QuestionCategory = ({ categoryName }) => {
                 style={{marginTop: '-12px'}}
             >
                 <span className="flex-1 flex items-center h-full font-semibold text-[1rem] text-[#000D30] hover:text-[#20305D] transition-colors leading-none" style={{paddingTop: '2px'}}>
-                    {categoryName}
+                    {category.name}
                 </span>
                 {isExpanded ? (
                     <ChevronUp className="w-5 h-5" />
@@ -21,7 +22,9 @@ const QuestionCategory = ({ categoryName }) => {
                 )}
             </div>
             {isExpanded && (
-                <div className="py-4" />
+                <div className="py-4">
+                    <CategoryRenderer category={category} />
+                </div>
             )}
         </div>
     );
