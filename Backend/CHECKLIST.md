@@ -518,13 +518,22 @@ Raw Data → Validation → Aggregation
 
 2. **Access Control**
    - Company Admin:
-     * Access to all modules
+     * Access to all modules (both basic and calc)
      * All plants view
      * Configuration rights
+     * Automatically receives access to all modules assigned to reports in their company
    - Plant Admin:
-     * Calc modules only
+     * Calc modules only (restricted from basic modules)
      * Single plant view
      * Data submission rights
+     * Automatically receives access to calc modules assigned to reports in their company
+   - Module Assignment Logic:
+     * When modules are assigned to a report, they are categorized as basic or calc
+     * When a report is assigned to a company, all its modules are automatically assigned to the company
+     * Company admins receive access to all modules (both basic and calc)
+     * Plant admins receive access to calc modules only
+     * When modules are added to a report, they are combined with existing modules (not overwritten)
+     * When a report is deleted, module access is removed if those modules are not available through other reports
 
 ### 3. Validation Framework
 
