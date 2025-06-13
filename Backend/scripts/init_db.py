@@ -42,6 +42,12 @@ def init_db():
             ("plant_id", {}),
             ("company_id", {}),
             (("user_id", "plant_id"), {"unique": True})
+        ],
+        "environment": [
+            (("companyId", "financialYear"), {"unique": True}),
+            ("companyId", {}),
+            ("financialYear", {}),
+            ("status", {}),
         ]
     }
 
@@ -75,4 +81,4 @@ def init_db():
         print(f"{collection_name}: {count} documents")
 
 if __name__ == "__main__":
-    init_db() 
+    init_db()

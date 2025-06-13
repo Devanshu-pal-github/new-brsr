@@ -85,7 +85,8 @@
               "id": "EES-1",
               "type": "Essential",
               "title": "PAT Scheme Participation",
-              "description": "Does the entity have sites/facilities identified as designated consumers (DCs) under the Performance, Achieve and Trade (PAT) Scheme? (Y/N) If yes, disclose whether targets set under the PAT scheme have been achieved, and if not, provide remedial actions taken."
+              "description": "Does the entity have sites/facilities identified as designated consumers (DCs) under the Performance, Achieve and Trade (PAT) Scheme? (Y/N) If yes, disclose whether targets set under the PAT scheme have been achieved, and if not, provide remedial actions taken.",
+              "isAuditRequired": true
             }
           ]
         }
@@ -196,7 +197,8 @@
               "id": "WD-1",
               "type": "Essential",
               "title": "Zero Liquid Discharge Mechanism",
-              "description": "Has the entity implemented a mechanism for Zero Liquid Discharge? If yes, provide details of its coverage and implementation."
+              "description": "Has the entity implemented a mechanism for Zero Liquid Discharge? If yes, provide details of its coverage and implementation.",
+              "isAuditRequired": true
             },
             {
               "id": "WD-2",
@@ -352,13 +354,15 @@
               "id": "ERI-1",
               "type": "Essential",
               "title": "GHG Emission Reduction Projects",
-              "description": "Does the entity have any project related to reducing greenhouse gas emissions? If yes, provide details."
+              "description": "Does the entity have any project related to reducing greenhouse gas emissions? If yes, provide details.",
+              "isAuditRequired": true
             },
             {
               "id": "ERI-2",
               "type": "Leadership",
               "title": "Resource Efficiency and Emission Reduction Initiatives",
               "description": "Details of specific initiatives or innovative technologies to improve resource efficiency or reduce emissions/effluent discharge/waste, including initiative details (with web links, if any) and outcomes.",
+              "isAuditRequired": true,
               "metadata": {
                 "type": "dynamic-table",
                 "columns": [
@@ -448,7 +452,8 @@
               "id": "WM-2",
               "type": "Essential",
               "title": "Waste Management Practices",
-              "description": "Description of waste management practices, including strategies to reduce hazardous and toxic chemical usage in products/processes and practices to manage such wastes."
+              "description": "Description of waste management practices, including strategies to reduce hazardous and toxic chemical usage in products/processes and practices to manage such wastes.",
+              "isAuditRequired": true
             }
           ]
         }
@@ -486,7 +491,8 @@
               "id": "ESA-2",
               "type": "Leadership",
               "title": "Biodiversity Impact in Ecologically Sensitive Areas",
-              "description": "Details of significant direct and indirect impacts on biodiversity in ecologically sensitive areas reported in Essential Indicator 10, along with prevention and remediation activities."
+              "description": "Details of significant direct and indirect impacts on biodiversity in ecologically sensitive areas reported in Essential Indicator 10, along with prevention and remediation activities.",
+              "isAuditRequired": true
             }
           ]
         },
@@ -554,13 +560,15 @@
               "id": "VCEI-1",
               "type": "Leadership",
               "title": "Environmental Impact of Value Chain",
-              "description": "Disclose any significant adverse environmental impact arising from the entity's value chain and mitigation or adaptation measures taken."
+              "description": "Disclose any significant adverse environmental impact arising from the entity's value chain and mitigation or adaptation measures taken.",
+              "isAuditRequired": true
             },
             {
               "id": "VCEI-2",
               "type": "Leadership",
               "title": "Assessment of Value Chain Partners",
-              "description": "Percentage of value chain partners (by value of business done) assessed for environmental impacts."
+              "description": "Percentage of value chain partners (by value of business done) assessed for environmental impacts.",
+              "isAuditRequired": true
             }
           ]
         },
@@ -572,7 +580,8 @@
               "id": "BCDM-1",
               "type": "Leadership",
               "title": "Business Continuity and Disaster Management Plan",
-              "description": "Does the entity have a business continuity and disaster management plan? Provide details in 100 words or a web link."
+              "description": "Does the entity have a business continuity and disaster management plan? Provide details in 100 words or a web link.",
+              "isAuditRequired": true
             }
           ]
         }
