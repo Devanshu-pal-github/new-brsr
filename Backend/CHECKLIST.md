@@ -115,6 +115,8 @@ This project is a complete rewrite of the previous system, designed to be more e
      - Hierarchical structure (Module → Sub-module → Categories → Questions)
      - Support for both Basic and Calc modules
      - Fixed sub-module, categories, and question mappings
+     - JSON structure format for easier frontend consumption
+     - Bulk operations for efficient management
    - Fields:
      - UUID (Primary Key)
      - Module Name
@@ -131,6 +133,8 @@ This project is a complete rewrite of the previous system, designed to be more e
      - Sub-modules, categories, and questions are fixed per module
      - Modules can be assigned to multiple reports
      - Two-way referencing with Reports collection
+     - JSON structure endpoints provide hierarchical representation
+     - Bulk operations available for submodules, categories, and questions
 
 3. **Answers Collection**
    - Purpose: Store module-specific responses
@@ -314,7 +318,12 @@ This project is a complete rewrite of the previous system, designed to be more e
 - [x] Plant routes
 - [x] Report routes
 - [x] Module routes
+  - [x] Basic CRUD operations
+  - [x] JSON structure endpoints
+  - [x] Hierarchical operations (submodules, categories, questions)
+  - [x] Bulk operations for submodules, categories, and questions
 - [x] Question routes
+  - [x] Questions with UUID and human-readable IDs
 - [x] Answer routes
 - [x] User Access routes
 

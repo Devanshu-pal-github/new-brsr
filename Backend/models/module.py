@@ -31,6 +31,38 @@ class Module(BaseModel):
     report_ids: List[str] = Field(default_factory=list)  # For two-way referencing with Reports
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    def to_json_structure(self) -> Dict:
+        """Convert module to JSON structure as specified in requirements
+        
+        Returns a JSON structure with module at the top level, containing submodules,
+        categories, and question IDs in a hierarchical structure.
+        """
+        result = {
+            "id": self.id,
+            "name": self.name,
+            "module_type": self.module_type.value,
+            "submodules": []
+        }
+        
+        for submodule in self.submodules:
+            submodule_dict = {
+                "id": submodule.id,
+                "name": submodule.name,
+                "categories": []
+            }
+            
+            for category in submodule.categories:
+                category_dict = {
+                    "id": category.id,
+                    "name": category.name,
+                    "question_ids": category.question_ids
+                }
+                submodule_dict["categories"].append(category_dict)
+                
+            result["submodules"].append(submodule_dict)
+            
+        return result
 
     @validator('module_type', pre=True)
     def validate_module_type(cls, v):

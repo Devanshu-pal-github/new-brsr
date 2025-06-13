@@ -101,8 +101,8 @@ class Formula(BaseModel):
 
 class QuestionBase(BaseModel):
     """Base question model"""
-    text: str
-    type: QuestionType
+    text: Optional[str] = None
+    type: Optional[QuestionType] = None
     help_text: Optional[str] = None
     placeholder: Optional[str] = None
     default_value: Optional[Any] = None
@@ -112,6 +112,7 @@ class QuestionBase(BaseModel):
 
 class QuestionCreate(QuestionBase):
     """Question creation model"""
+    human_readable_id: Optional[str] = None # Allow user to pass human-readable ID
     # Type-specific fields
     options: Optional[List[Option]] = None  # For select/multiselect
     table_columns: Optional[List[TableColumn]] = None  # For table type
@@ -138,30 +139,20 @@ class QuestionUpdate(BaseModel):
 
 class Question(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    question_number: str
-    question_text: str
-    question_type: str  # 'subjective', 'table', 'table_with_additional_rows'
-    validation_rules: dict
-    module_id: str
-    category_id: str  # Added for category relationship
-    order: int        # Added for ordering within category
-    table_metadata: Optional[TableMetadata] = None  # For table and table_with_additional_rows
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    human_readable_id: Optional[str] = None
 
-class QuestionInDB(Question):
+
+class QuestionInDB(BaseDBModel):
     """Question model as stored in database"""
-    _id: str
+    id: str
+    human_readable_id: Optional[str] = None
 
-class QuestionWithCategory(Question):
+class QuestionWithCategory(QuestionInDB):
     """Question model with category information"""
-    category_name: str
-    module_id: str
-    module_name: str
 
 class QuestionDependency(BaseModel):
     """Question dependency definition"""
     question_id: str
     operator: str  # e.g., "equals", "not_equals", "greater_than", etc.
     value: Any
-    error_message: Optional[str] = None 
+    error_message: Optional[str] = None
