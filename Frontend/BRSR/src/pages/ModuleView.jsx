@@ -5,6 +5,7 @@ import { selectCurrentUser, selectUserRole, selectCompanyDetails } from '../stor
 import Navbar from '../components/layout/Navbar';
 import { useGetReportModulesQuery } from '../store/api/apiSlice';
 import { Loader2 } from 'lucide-react';
+import PlantsPage from './PlantsPage';
 
 // Import icons for modules
 import {
@@ -20,6 +21,7 @@ import {
 const ModuleView = () => {
   const { reportId } = useParams();
   const navigate = useNavigate();
+  const [selectedModuleId, setSelectedModuleId] = useState(null);
   const user = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const companyDetails = useSelector(selectCompanyDetails);
@@ -70,7 +72,8 @@ const ModuleView = () => {
   };
 
   const handleModuleClick = (moduleId) => {
-    navigate(`/plants/${moduleId}`);
+    setSelectedModuleId(moduleId);
+    console.log('ModuleView selectedModuleId:', moduleId); // Add this line
   };
 
   const handleLogout = () => {
@@ -109,6 +112,18 @@ const ModuleView = () => {
                   >
                     <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                     <span className="text-left">Home</span>
+                  </button>
+                </li>
+
+                {/* Hardcoded Environment Module */}
+                <li className="w-full">
+                  <button
+                    onClick={() => handleModuleClick('environment')}
+                    className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                      text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                  >
+                    {getModuleIcon('environment')}
+                    <span className="text-left">Environment</span>
                   </button>
                 </li>
 
@@ -156,19 +171,38 @@ const ModuleView = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 ml-64 p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-4">
-                {reportId ? 'Select a Module' : 'No Report Selected'}
-              </h1>
-              <p className="text-gray-600">
-                {reportId 
-                  ? 'Please select a module from the sidebar to view its content.'
-                  : 'Please select a report from the navbar dropdown first.'}
-              </p>
+        <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          {selectedModuleId === 'environment' ? (
+            <PlantsPage moduleId={selectedModuleId} />
+          ) : selectedModuleId ? (
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h1 className="text-2xl font-bold text-gray-800 mb-4">
+                    Module: {filteredModules.find(m => m.id === selectedModuleId)?.name || 'Unknown'}
+                  </h1>
+                  <p className="text-gray-600">
+                    Content for module {filteredModules.find(m => m.id === selectedModuleId)?.name || 'Unknown'}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h1 className="text-2xl font-bold text-gray-800 mb-4">
+                    {reportId ? 'Select a Module' : 'No Report Selected'}
+                  </h1>
+                  <p className="text-gray-600">
+                    {reportId 
+                      ? 'Please select a module from the sidebar to view its content.'
+                      : 'Please select a report from the navbar dropdown first.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

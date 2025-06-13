@@ -6,13 +6,12 @@ const QuestionCategory = ({ category }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <div className="bg-white rounded-lg shadow-sm p-3">
+        <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
             <div
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center h-[44px] px-6 cursor-pointer select-none border-b border-gray-200 bg-white"
-                style={{marginTop: '-12px'}}
+                className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-300 ease-in-out border-b border-gray-200"
             >
-                <span className="flex-1 flex items-center h-full font-semibold text-[1rem] text-[#000D30] hover:text-[#20305D] transition-colors leading-none" style={{paddingTop: '2px'}}>
+                <span className="flex-1 font-semibold text-base text-gray-800">
                     {category.name}
                 </span>
                 {isExpanded ? (
@@ -30,4 +29,4 @@ const QuestionCategory = ({ category }) => {
     );
 };
 
-export default QuestionCategory; 
+export default QuestionCategory;

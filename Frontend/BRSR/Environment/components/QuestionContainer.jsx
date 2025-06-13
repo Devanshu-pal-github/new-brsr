@@ -105,18 +105,18 @@ const QuestionContainer = ({ question }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6 mb-6">
+    <div className="bg-white rounded-lg shadow-md p-5 mb-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300">
       {/* Header Section */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold mb-2">{question.title}</h3>
-          <p className="text-sm text-gray-600">{question.description}</p>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">{question.title}</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">{question.description}</p>
         </div>
         <div className="flex items-center space-x-4">
           <AuditBadge isAuditRequired={question.isAuditRequired} />
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-[#000D30] text-white text-sm rounded-md hover:bg-[#20305D] transition-colors duration-300"
           >
             Edit Response
           </button>

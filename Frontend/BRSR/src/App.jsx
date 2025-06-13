@@ -54,14 +54,9 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/plants/:moduleId" 
-            element={
-              <ProtectedRoute>
-                <PlantsPage />
-              </ProtectedRoute>
-            } 
-          />
+
+
+
 
           <Route 
             path="/plants/:moduleId/:plantId" 
