@@ -126,6 +126,7 @@ def verify_token(token: str) -> Dict:
 
 async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str) -> dict | None:
     """Authenticate user and return user data if valid, else None."""
+    print(f"Authenticating user: {email}")
     user = await db.users.find_one({"email": email})
     if not user:
         return None

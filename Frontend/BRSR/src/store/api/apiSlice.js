@@ -15,17 +15,34 @@ export const apiSlice = createApi({
         headers.set('Authorization', `Bearer ${token}`);
       }
       
+      // For login requests, ensure content type is properly set
+      if (headers.get('Content-Type') === 'multipart/form-data') {
+        // Remove content-type header for FormData to let the browser set it with the boundary
+        headers.delete('Content-Type');
+      }
+      
       return headers;
-    },
+    }
   }),
   endpoints: (builder) => ({
     login: builder.mutation({
-      query: (credentials) => ({
-        url: '/auth/login',
-        method: 'POST',
-        body: credentials,
-        formData: credentials instanceof FormData,
-      }),
+      query: (credentials) => {
+        // Set up request configuration
+        const requestConfig = {
+          url: '/auth/login',
+          method: 'POST',
+          body: credentials,
+        };
+        
+        // Set appropriate headers for URLSearchParams
+        if (credentials instanceof URLSearchParams) {
+          requestConfig.headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          };
+        }
+        
+        return requestConfig;
+      },
     }),
     getCompanyDetails: builder.query({
       query: (userId) => `/auth/users/${userId}/company-details`,

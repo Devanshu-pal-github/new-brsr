@@ -5,8 +5,10 @@ import { store } from './store/store';
 
 // Pages
 import Login from './pages/Login';
+import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
+import ModuleView from './pages/ModuleView';
 import PlantsPage from './pages/PlantsPage';
 import PlantDetails from '../Environment/components/PlantDetails';
 
@@ -29,10 +31,26 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route 
+            path="/home" 
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/dashboard" 
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/reports/:reportId" 
+            element={
+              <ProtectedRoute>
+                <ModuleView />
               </ProtectedRoute>
             } 
           />

@@ -3,12 +3,14 @@ import { useLoginMutation, useLazyGetCompanyDetailsQuery } from '../../store/api
 import { useDispatch } from 'react-redux';
 import { setCredentials, setError, setCompanyDetails } from '../../store/slices/authSlice';
 import { Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   
   const [login, { isLoading }] = useLoginMutation();
   const [getCompanyDetails, { isLoading: isLoadingCompanyDetails }] = useLazyGetCompanyDetailsQuery();
@@ -23,17 +25,20 @@ const LoginForm = () => {
     e.preventDefault();
     
     try {
-      // Convert to FormData for FastAPI OAuth2PasswordRequestForm compatibility
-      const formDataObj = new FormData();
-      formDataObj.append('username', formData.username);
-      formDataObj.append('password', formData.password);
+      // Use URLSearchParams for FastAPI OAuth2PasswordRequestForm compatibility
+      // This works better than FormData for this specific backend implementation
+      const urlParams = new URLSearchParams();
+      urlParams.append('username', formData.username);
+      urlParams.append('password', formData.password);
       
-      const result = await login(formDataObj).unwrap();
+      const result = await login(urlParams).unwrap();
       dispatch(setCredentials(result));
       
       // After successful login, fetch company details
       try {
+        console.log('Fetching company details for user:', result.user_id);
         const companyDetails = await getCompanyDetails(result.user_id).unwrap();
+        console.log('Company details fetched:', companyDetails);
         dispatch(setCompanyDetails(companyDetails));
       } catch (companyErr) {
         console.error('Error fetching company details:', companyErr);
@@ -41,7 +46,21 @@ const LoginForm = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      dispatch(setError(err.data?.detail || 'Login failed. Please check your credentials.'));
+      console.error('Login error details:', {
+        status: err.status,
+        data: err.data,
+        error: err.error,
+        message: err.message
+      });
+      
+      // Check for network errors
+      if (!err.status) {
+        dispatch(setError('Network error. Please check your connection and try again.'));
+      } else if (err.status === 401) {
+        dispatch(setError('Invalid username or password. Please try again.'));
+      } else {
+        dispatch(setError(err.data?.detail || err.error || err.message || 'Login failed. Please try again.'));
+      }
     }
   };
   
@@ -69,18 +88,31 @@ const LoginForm = () => {
         <label htmlFor="password" className="block text-sm font-medium text-white mb-1 glassmorphism-text">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-40 border border-white border-opacity-60
-                   text-white placeholder-white placeholder-opacity-80 focus:outline-none focus:ring-2 focus:ring-teal-300
-                   shadow-md input-visible"
-          placeholder="Enter your password"
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-40 border border-white border-opacity-60
+                     text-white placeholder-white placeholder-opacity-80 focus:outline-none focus:ring-2 focus:ring-teal-300
+                     shadow-md input-visible"
+            placeholder="Enter your password"
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-white opacity-70" />
+            ) : (
+              <Eye className="h-5 w-5 text-white opacity-70" />
+            )}
+          </button>
+        </div>
       </div>
       
       <div className="flex justify-end">

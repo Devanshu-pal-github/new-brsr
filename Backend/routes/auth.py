@@ -69,8 +69,6 @@ async def login(
         "plant_id": user.get("plant_id")
     }
     
-    print(user["full_name"])
-    
     access_token = create_access_token(data=token_data)
     refresh_token = secrets.token_urlsafe(32)
     
@@ -79,7 +77,7 @@ async def login(
     await session_manager.create_session(user["_id"], refresh_token)
     
     # Return response with user name
-    return {
+    response_data = {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
@@ -90,6 +88,7 @@ async def login(
         "plant_id": user.get("plant_id"),
         "user_name": user["full_name"]
     }
+    return response_data
 
 @router.get("/verify")
 async def verify_auth(token):

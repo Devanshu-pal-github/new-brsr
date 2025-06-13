@@ -134,17 +134,21 @@ const authSlice = createSlice({
           state.expiresIn = payload.expires_in;
           
           // Store in localStorage
-          localStorage.setItem('user', JSON.stringify(state.user));
-          localStorage.setItem('token', payload.access_token);
-          localStorage.setItem('refresh_token', payload.refresh_token);
-          localStorage.setItem('user_name', payload.user_name);
+          try {
+            localStorage.setItem('user', JSON.stringify(state.user));
+            localStorage.setItem('token', payload.access_token);
+            localStorage.setItem('refresh_token', payload.refresh_token);
+            localStorage.setItem('user_name', payload.user_name);
+          } catch (error) {
+            console.error('Error storing authentication data in localStorage:', error);
+          }
         }
       )
       .addMatcher(
         apiSlice.endpoints.login.matchRejected,
-        (state, { payload }) => {
+        (state, { payload, error }) => {
           state.isLoading = false;
-          state.error = payload?.detail || 'Authentication failed';
+          state.error = payload?.detail || error?.message || 'Authentication failed';
         }
       );
   },

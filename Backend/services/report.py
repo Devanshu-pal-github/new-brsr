@@ -248,11 +248,11 @@ class ReportService:
                             # Update the user's access_modules with only calc modules
                             await self.users_collection.update_one(
                                 {"_id": admin["_id"]},
-                                {"$addToSet": {"access_modules": {"$each": combined_calc_modules}}}
+                                {"$set": {
+                                    "updated_at": datetime.utcnow()
+                                },
+                                 "$addToSet": {"access_modules": {"$each": combined_calc_modules}}}
                             )
-                                "updated_at": datetime.utcnow()
-                            }}
-                        )
                         
                         # Update access_modules for company_admin users of this company
                         company_admins = await self.users_collection.find({

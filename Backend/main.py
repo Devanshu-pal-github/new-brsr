@@ -106,7 +106,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
