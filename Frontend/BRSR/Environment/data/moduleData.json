@@ -1,0 +1,87 @@
+{
+  "name": "Environment",
+  "submodules": [
+    {
+      "name": "Energy Management",
+      "categories": [
+        {
+          "name": "Energy Consumption",
+          "id": "energy-consumption"
+        },
+        {
+          "name": "Energy Efficiency Schemes",
+          "id": "energy-efficiency"
+        }
+      ]
+    },
+    {
+      "name": "Water Management",
+      "categories": [
+        {
+          "name": "Water Usage",
+          "id": "water-usage"
+        },
+        {
+          "name": "Water Discharge",
+          "id": "water-discharge"
+        }
+      ]
+    },
+    {
+      "name": "Emissions Management",
+      "categories": [
+        {
+          "name": "Air Emissions",
+          "id": "air-emissions"
+        },
+        {
+          "name": "Greenhouse Gas Emissions",
+          "id": "ghg-emissions"
+        },
+        {
+          "name": "Emission Reduction Initiatives",
+          "id": "emission-reduction"
+        }
+      ]
+    },
+    {
+      "name": "Waste Management",
+      "categories": [
+        {
+          "name": "Waste Generation and Management",
+          "id": "waste-management"
+        }
+      ]
+    },
+    {
+      "name": "Environmental Compliance and Impact",
+      "categories": [
+        {
+          "name": "Ecologically Sensitive Areas",
+          "id": "sensitive-areas"
+        },
+        {
+          "name": "Environmental Impact Assessments",
+          "id": "eia"
+        },
+        {
+          "name": "Regulatory Compliance",
+          "id": "compliance"
+        }
+      ]
+    },
+    {
+      "name": "Value Chain and Disaster Management",
+      "categories": [
+        {
+          "name": "Value Chain Environmental Impact",
+          "id": "value-chain"
+        },
+        {
+          "name": "Business Continuity and Disaster Management",
+          "id": "disaster-management"
+        }
+      ]
+    }
+  ]
+} 
