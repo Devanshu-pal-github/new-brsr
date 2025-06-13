@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.operations import UpdateOne
-from models.environment import EnvironmentReport, QuestionAnswer
+from models.environment import EnvironmentReport, QuestionAnswer, TableResponse, MultiTableResponse
 from bson import ObjectId
 
 class EnvironmentService:
@@ -44,7 +44,6 @@ class EnvironmentService:
         financial_year: str
     ) -> Optional[EnvironmentReport]:
         """Get an environment report"""
-        
         doc = await self.collection.find_one({
             "companyId": company_id,
             "financialYear": financial_year
@@ -68,7 +67,8 @@ class EnvironmentService:
         self, 
         company_id: str, 
         financial_year: str, 
-        question_id: str, 
+        question_id: str,
+        question_title: str, 
         answer_data: Dict[str, Any]
     ) -> bool:
         """Update answer for a specific question"""
@@ -76,7 +76,8 @@ class EnvironmentService:
         
         question_answer = QuestionAnswer(
             questionId=question_id,
-            answers=answer_data,
+            questionTitle=question_title,
+            updatedData=answer_data,
             lastUpdated=now
         )
 
@@ -181,7 +182,8 @@ class EnvironmentService:
         for question_id, answer_data in answers.items():
             question_answer = QuestionAnswer(
                 questionId=question_id,
-                answers=answer_data,
+                questionTitle=answer_data.get("questionTitle", ""),
+                updatedData=answer_data.get("answer_data", {}),
                 lastUpdated=now
             )
             update_dict[f"answers.{question_id}"] = question_answer.dict()
@@ -194,5 +196,38 @@ class EnvironmentService:
                 "financialYear": financial_year
             },
             {"$set": update_dict}
+        )
+        return result.modified_count > 0
+
+    async def update_table_answer(
+        self,
+        company_id: str,
+        financial_year: str,
+        question_id: str,
+        question_title: str,
+        table_data: Union[List[Dict[str, str]], Dict[str, List[Dict[str, str]]]]
+    ) -> bool:
+        
+        """Update table answer for a specific question"""
+        now = datetime.utcnow()
+          # Store the raw data directly
+        question_answer = QuestionAnswer(
+            questionId=question_id,
+            questionTitle=question_title,
+            updatedData=table_data,  # Store the raw table data as is
+            lastUpdated=now
+        )
+
+        result = await self.collection.update_one(
+            {
+                "companyId": company_id,
+                "financialYear": financial_year
+            },
+            {
+                "$set": {
+                    f"answers.{question_id}": question_answer.dict(),
+                    "updatedAt": now
+                }
+            }
         )
         return result.modified_count > 0

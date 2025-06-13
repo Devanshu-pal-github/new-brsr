@@ -1,12 +1,23 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
+class TableResponse(BaseModel):
+    """Stores the table response data"""
+    current_year: str
+    previous_year: str
+
+class MultiTableResponse(BaseModel):
+    """Stores responses for questions with multiple tables"""
+    table0: List[TableResponse] = Field(default_factory=list)
+    table1: Optional[List[TableResponse]] = None
+
 class QuestionAnswer(BaseModel):
     """Stores the answer data for a specific question"""
     questionId: str
-    answers: Dict[str, Any] = Field(default_factory=dict)
+    questionTitle: Optional[str]
+    updatedData: Any = Field(default_factory=dict)  # Allow any type of data to be stored
     lastUpdated: datetime = Field(default_factory=datetime.utcnow)
     comments: List[Dict[str, Any]] = Field(default_factory=list)
     attachments: List[str] = Field(default_factory=list)
