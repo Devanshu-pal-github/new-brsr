@@ -134,16 +134,40 @@ class QuestionService:
         Delete a question and remove its reference from the category.
         Why: Maintains referential integrity and prevents orphaned data.
         """
-        # Get question to find category_id
+        # Get question to find category_id and module_id
         question = await self.collection.find_one({"_id": question_id})
         if not question:
             return False
             
+        # Get module_id from the question
+        module_id = question.get("module_id")
+        if not module_id:
+            # If module_id is not in the question, try to find it through the category
+            category_id = question.get("category_id")
+            if category_id:
+                # Find the module that contains this category
+                module = await self.db.modules.find_one(
+                    {"submodules.categories.id": category_id},
+                    {"_id": 1}
+                )
+                if module:
+                    module_id = module["_id"]
+        
         # Remove question_id from category
-        await self.db.categories.update_one(
-            {"_id": question.get("category_id")},
-            {"$pull": {"question_ids": question_id}}
+        await self.db.modules.update_one(
+            {"submodules.categories.id": question.get("category_id")},
+            {"$pull": {"submodules.$[].categories.$[cat].question_ids": question_id}},
+            array_filters=[{"cat.id": question.get("category_id")}]
         )
+
+        # Remove question from module answers if module_id is found
+        if module_id:
+            module_answers_collection = self.db[f"module_answers_{module_id}"]
+            # Remove the question ID from all answers in the collection
+            await module_answers_collection.update_many(
+                {}, # Match all documents
+                {"$unset": {f"answers.{question_id}": ""}, "$set": {"updated_at": datetime.utcnow()}}
+            )
 
         # Delete question
         result = await self.collection.delete_one({"_id": question_id})

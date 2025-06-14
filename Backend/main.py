@@ -9,10 +9,10 @@ from routes.module import router as module_router
 from routes.company import router as company_router
 from routes.plant import router as plant_router
 from routes.question import router as question_router
-from routes.answer import router as answer_router
 from routes.user_access import router as user_access_router
 from routes.auth import router as auth_router
 from routes.environment import router as environment_router
+from routes.module_answer import router as module_answer_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -58,15 +58,6 @@ async def startup_db_client():
     # Create indexes for Modules collection
     await app.mongodb.modules.create_index("name", unique=True)
     await app.mongodb.modules.create_index("module_type")
-    
-    # Create indexes for Answers collection
-    await app.mongodb.answers.create_index([
-        ("company_id", 1),
-        ("plant_id", 1),
-        ("financial_year", 1)
-    ])
-    await app.mongodb.answers.create_index("question_id")
-    await app.mongodb.answers.create_index("validation_status")
     
     # Create indexes for Companies collection
     await app.mongodb.companies.create_index("name", unique=True)
@@ -128,11 +119,11 @@ app.include_router(module_router)
 app.include_router(company_router)
 app.include_router(plant_router, prefix="/plants")
 app.include_router(question_router)
-app.include_router(answer_router, prefix="/answers")
 app.include_router(user_access_router, prefix="/user-access")
 app.include_router(auth_router, prefix="/auth")
 app.include_router(report_router)
 app.include_router(environment_router)
+app.include_router(module_answer_router)
 
 if __name__ == "__main__":
     import uvicorn

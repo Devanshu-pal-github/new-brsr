@@ -77,6 +77,17 @@ class ModuleService:
         # Store both the full model and its JSON structure representation
         await self.collection.insert_one(module_dict)
         
+        # Create a dedicated collection for this module's answers
+        module_answers_collection = self.db[f"module_answers_{module_dict['_id']}"]
+        
+        # Create indexes for the module answers collection
+        await module_answers_collection.create_index(
+            [("company_id", 1), ("plant_id", 1), ("financial_year", 1)],
+            unique=True
+        )
+        await module_answers_collection.create_index("status")
+        await module_answers_collection.create_index("validation_status")
+        
         return module_obj
 
     async def get_module(self, module_id: str, include_details: bool = False) -> Module:
@@ -618,6 +629,9 @@ class ModuleService:
             ]
         )
         
+        # Sync the new question ID with all module answers
+        await self._sync_question_id_with_module_answers(module_id, question_id)
+        
         # Get updated module to refresh JSON structure
         updated_module = await self.get_module(module_id)
         # Generate updated JSON structure
@@ -642,6 +656,9 @@ class ModuleService:
         )
         
         if result.modified_count > 0:
+            # Sync the question ID with all module answers
+            await self._sync_question_id_with_module_answers(module_id, question_id)
+            
             # Get updated module to refresh JSON structure
             updated_module = await self.get_module(module_id)
             # Generate updated JSON structure
@@ -649,7 +666,7 @@ class ModuleService:
             return True
         
         return False
-        
+
     async def add_bulk_submodules(self, module_id: str, submodules: List[SubModule]) -> Module:
         """Add multiple submodules to a module at once
         
@@ -766,6 +783,10 @@ class ModuleService:
         )
         
         if result.modified_count > 0:
+            # Sync all question IDs with module answers
+            for question_id in question_ids:
+                await self._sync_question_id_with_module_answers(module_id, question_id)
+                
             # Get updated module to refresh JSON structure
             updated_module = await self.get_module(module_id)
             # Generate updated JSON structure
@@ -840,3 +861,25 @@ class ModuleService:
         )
 
         return Question(**question_dict)
+
+    async def _sync_question_id_with_module_answers(self, module_id: str, question_id: str) -> None:
+        """Sync a new question ID with all existing module answers
+        
+        This ensures that when a new question is added to a module, all existing
+        module answers for that module have an entry for the new question ID.
+        
+        Args:
+            module_id: The ID of the module
+            question_id: The ID of the question to sync
+        """
+        # Get the module answers collection for this module
+        module_answers_collection = self.db[f"module_answers_{module_id}"]
+        
+        # Update all documents in the collection to include the new question ID
+        # with a null value if it doesn't already exist
+        await module_answers_collection.update_many(
+            # Match all documents where the question ID doesn't exist in the answers dict
+            {f"answers.{question_id}": {"$exists": False}},
+            # Set the question ID to null
+            {"$set": {f"answers.{question_id}": None, "updated_at": datetime.utcnow()}}
+        )

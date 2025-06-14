@@ -112,15 +112,14 @@ This project is a complete rewrite of the previous system, designed to be more e
 2. **Modules Collection**
    - Purpose: Central repository for all report modules
    - Key Features:
-     - Hierarchical structure (Module → Sub-module → Categories → Questions)
-     - Support for both Basic and Calc modules
-     - Fixed sub-module, categories, and question mappings
-     - JSON structure format for easier frontend consumption
-     - Bulk operations for efficient management
+     - Hierarchical structure (Module → Sub-modules → Categories → Questions)
+     - Two module types: Basic and Calc
+     - Two-way referencing with Reports
    - Fields:
      - UUID (Primary Key)
      - Module Name
      - Module Type (Basic/Calc)
+     - Report IDs (Array)
      - Sub-modules Array:
        - id (UUID, unique identifier)
        - Name
@@ -132,39 +131,32 @@ This project is a complete rewrite of the previous system, designed to be more e
    - Notes:
      - Sub-modules, categories, and questions are fixed per module
      - Modules can be assigned to multiple reports
-     - Two-way referencing with Reports collection
-     - JSON structure endpoints provide hierarchical representation
-     - Bulk operations available for submodules, categories, and questions
+     - Each module has its own dedicated answer collection (see Module-Specific Answer Collections)
 
-3. **Answers Collection**
-   - Purpose: Store module-specific responses
+3. **Module-Specific Answer Collections**
+   - Purpose: Store answers for each specific module
    - Key Features:
-     - Flexible answer structure for all question types
-     - For subjective: answer_data can include text, boolean, number, link, or combinations
-     - For table: answer_data is a list of row dicts, with keys for each column and special keys for calc columns/rows. Table answers support arbitrary header hierarchies (label, header, subheader1, ..., subheaderN).
-     - For table with additional rows: same as table, but rows can be added dynamically
-     - Company and plant-specific data
-     - Hierarchical data validation flow
-     - **authoritative_source field:** Indicates which plant's answer is authoritative for a given question/year/company. 'P001' can override 'C001' (aggregator) at any time. All business logic must prefer P001's answer if present and authoritative.
+     - One collection per module (named "module_answers_{module_id}")
+     - Modular and reusable design
+     - Efficient storage and retrieval of module-specific answers
    - Fields:
      - UUID (Primary Key)
-     - Company ID (Reference)
-     - Plant ID (Reference)
+     - Company ID
+     - Plant ID
      - Financial Year
-     - Question ID (Reference)
-     - Answer Data (JSON, flexible for all types)
-     - Validation Status:
-       - Raw (from regular plants)
-       - Audited (validated by P001)
-       - Aggregated (stored in C001)
-     - **Authoritative Source:** 'P001', 'C001', or None. Used to determine which answer is final for reporting and aggregation.
+     - Answers (Dictionary mapping question IDs to answer values)
+     - Status (DRAFT, SUBMITTED, REJECTED, APPROVED, etc.)
+     - Validation Status
+     - Validation Errors (Dictionary mapping question IDs to error lists)
      - Created At, Updated At
+     - Created By, Updated By
    - Notes:
-     - Each module has its own answer collection
-     - Data flows: Plant → P001 → C001
-     - Financial year tracking for historical data
+     - Collections are created automatically when a module is created
+     - Multiple companies can have their data in the same collection
+     - Allows for efficient querying of all answers for a specific module
+     - Supports the same data flow as before: Plant → P001 → C001
      - Maintains audit trail of changes
-     - Table answers support header hierarchy of arbitrary depth, calc fields, and dynamic rows
+     - Supports all question types (subjective, table, table_with_additional_rows)
 
 4. **Companies Collection**
    - Purpose: Store company profiles and report assignments

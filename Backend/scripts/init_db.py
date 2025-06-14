@@ -32,11 +32,6 @@ def init_db():
             ("question_number", {"unique": True}),
             ("category_id", {})
         ],
-        "answers": [
-            (("module_id", "question_id", "plant_id"), {"unique": True}),
-            ("plant_id", {}),
-            ("module_id", {})
-        ],
         "user_access": [
             ("user_id", {}),
             ("plant_id", {}),
