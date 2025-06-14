@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 from dependencies import check_super_admin_access
 from models.question import QuestionCreate, Question, QuestionUpdate, QuestionWithCategory
 from services.question import QuestionService
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 router = APIRouter(
     prefix="/questions",
@@ -26,6 +26,11 @@ class QuestionCreateWithCategory(BaseModel):
     question_text: str
     question_type: str
     metadata: Dict = {}
+    
+class QuestionBatchRequest(BaseModel):
+    question_ids: List[str] = Field(..., description="List of question IDs to fetch")
+    category_id: Optional[str] = Field(None, description="Category ID for the questions")
+    include_category: bool = Field(False, description="Include category and module details")
 
 @router.post("/", response_model=Question, status_code=status.HTTP_201_CREATED)
 async def create_question(
@@ -182,6 +187,35 @@ async def update_question_metadata(
         return await question_service.update_question_metadata(question_id, metadata)
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+        
+@router.post("/batch", response_model=List[Question])
+async def get_questions_by_ids(
+    request: QuestionBatchRequest,
+    question_service = Depends(get_question_service)
+):
+    """Get multiple questions by their IDs in a single batch operation
+    
+    This endpoint retrieves multiple questions by their IDs in a single request,
+    optimizing frontend performance by reducing the number of API calls needed.
+    
+    Args:
+        request: QuestionBatchRequest containing question_ids and include_category flag
+        question_service: QuestionService instance
+        
+    Returns:
+        List of Question objects
+    """
+    try:
+        return await question_service.get_questions_by_ids(
+            question_ids=request.question_ids,
+            include_category=request.include_category,
+            category_id=request.category_id
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

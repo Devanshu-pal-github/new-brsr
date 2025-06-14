@@ -129,8 +129,34 @@ export const apiSlice = createApi({
             { type: 'EnvironmentReports', id: 'LIST' },
           ]
           : [{ type: 'EnvironmentReports', id: 'LIST' }],
-    }),   
-       updateTableAnswer: builder.mutation({
+    }),
+    getQuestionsByIds: builder.query({
+      query: ({ questionIds, categoryId }) => ({
+        url: `/questions/batch`,
+        method: 'POST',
+        body: { 
+          question_ids: questionIds, 
+          category_id: categoryId,
+          include_category: true
+        }
+      }),
+      transformResponse: (response) => {
+        console.log('📝 Questions Batch Response:', response);
+        return Array.isArray(response) ? response : [];
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Questions Batch Error:', response);
+        return response;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+            ...result.map(({ id }) => ({ type: 'Questions', id })),
+            { type: 'Questions', id: 'LIST' },
+          ]
+          : [{ type: 'Questions', id: 'LIST' }],
+    }),
+    updateTableAnswer: builder.mutation({
       query: (payload) => {
         console.log('Received payload:', payload);
         const { financialYear, questionId, questionTitle, updatedData } = payload;
@@ -204,6 +230,8 @@ export const {
   useLazyGetReportModulesQuery,
   useGetCompanyPlantsQuery,
   useGetCompanyReportsQuery,
+  useGetQuestionsByIdsQuery,
+  useLazyGetQuestionsByIdsQuery,
   useUpdateTableAnswerMutation,
   useCreatePlantMutation
 } = apiSlice;

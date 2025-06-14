@@ -648,6 +648,70 @@ class QuestionService:
             
         return created_questions
         
+    async def get_questions_by_ids(
+        self,
+        question_ids: List[str],
+        include_category: bool = False,
+        category_id: Optional[str] = None
+    ) -> List[Question]:
+        """
+        Retrieve multiple questions by their IDs in a single batch operation.
+        Why: Optimizes frontend performance by reducing API calls for multiple questions.
+        """
+        if not question_ids:
+            return []
+            
+        # Find all questions matching the provided IDs
+        cursor = self.collection.find({"_id": {"$in": question_ids}})
+        questions = []
+        async for question in cursor:
+            # Ensure each question has a category_id
+            if not question.get("category_id") and category_id:
+                question["category_id"] = category_id
+            questions.append(question)
+            
+        if not questions:
+            return []
+            
+        if include_category:
+            # Get category information for each question
+            result = []
+            for question in questions:
+                # Ensure question has a category_id
+                if not question.get("category_id") and category_id:
+                    question["category_id"] = category_id
+                elif not question.get("category_id") and not category_id:
+                    # If no category_id is available, we can't create a valid Question object
+                    # as category_id is required by the model
+                    raise ValueError("category_id is required for each question")
+                    
+                category_info = await self._get_category_info(question["category_id"])
+                if category_info:
+                    result.append(QuestionWithCategory(
+                        **question,
+                        category_name=category_info["category_name"],
+                        module_name=category_info["module_name"]
+                    ))
+                else:
+                    result.append(Question(**question))
+            return result
+            
+        # Return questions in the same order as requested
+        question_dict = {q["_id"]: q for q in questions}
+        ordered_questions = []
+        for qid in question_ids:
+            if qid in question_dict:
+                # Ensure question has a category_id
+                question = question_dict[qid]
+                if not question.get("category_id") and category_id:
+                    question["category_id"] = category_id
+                elif not question.get("category_id") and not category_id:
+                    # If no category_id is available, we can't create a valid Question object
+                    raise ValueError("category_id is required for each question")
+                ordered_questions.append(Question(**question))
+                
+        return ordered_questions
+        
     async def update_question_metadata(
         self,
         question_id: str,
