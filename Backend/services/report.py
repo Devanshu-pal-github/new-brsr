@@ -497,7 +497,7 @@ class ReportService:
 
         if result:
             # Update module's report_ids field
-            for module_id in module_ids:
+            for module_id in new_module_ids:
                 await self.modules_collection.update_one(
                     {"$or": [{"_id": module_id}, {"id": module_id}]},
                     {"$addToSet": {"report_ids": report_id}}
