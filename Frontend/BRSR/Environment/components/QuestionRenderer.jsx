@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
@@ -53,13 +53,20 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
 };
 
 const QuestionRenderer = ({ question, financialYear }) => {
-
   console.log('Rendering Question:', question);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(question.answer || {});
   const [tempData, setTempData] = useState(questionData);
   const [updateTableAnswer, { isLoading }] = useUpdateTableAnswerMutation();
+
+  // Update questionData when question.answer changes
+  useEffect(() => {
+    if (question.answer) {
+      setQuestionData(question.answer);
+    }
+  }, [question.answer]);
+
   const handleSave = async (data) => {
     console.log('Saving data with:', {
       questionId: question.id,
@@ -83,26 +90,43 @@ const QuestionRenderer = ({ question, financialYear }) => {
       if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
         let formattedData;
         
+        // Create a deep copy of the data to avoid modifying read-only properties
+        const dataCopy = JSON.parse(JSON.stringify(data));
+        
         if (metadata.type === 'table') {
           // Format single table data
-          formattedData = Object.entries(data).map(([rowIndex, rowData]) => ({
+          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
             row_index: parseInt(rowIndex),
             current_year: rowData.current_year || '',
             previous_year: rowData.previous_year || ''
           }));
         } else if (metadata.type === 'multi-table') {
-          // Format multi-table data
-          formattedData = {};
-          Object.entries(data).forEach(([tableKey, tableData]) => {
-            formattedData[tableKey] = Object.entries(tableData).map(([rowIndex, rowData]) => ({
-              row_index: parseInt(rowIndex),
-              current_year: rowData.current_year || '',
-              previous_year: rowData.previous_year || ''
-            }));
-          });
+          // For multi-table, we need to handle the structure differently
+          // The backend expects an array of objects, not a nested structure
+          const tableEntries = Object.entries(dataCopy);
+          
+          if (tableEntries.length > 0) {
+            // Convert the multi-table structure to a flat array for the API
+            const flattenedData = [];
+            
+            tableEntries.forEach(([tableKey, tableData]) => {
+              Object.entries(tableData).forEach(([rowIndex, rowData]) => {
+                flattenedData.push({
+                  table_key: tableKey,
+                  row_index: parseInt(rowIndex),
+                  current_year: rowData.current_year || '',
+                  previous_year: rowData.previous_year || ''
+                });
+              });
+            });
+            
+            formattedData = flattenedData;
+          } else {
+            formattedData = [];
+          }
         } else if (metadata.type === 'dynamic-table') {
           // Format dynamic table data similar to single table
-          formattedData = Object.entries(data).map(([rowIndex, rowData]) => ({
+          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
             row_index: parseInt(rowIndex),
             ...rowData
           }));
@@ -121,7 +145,8 @@ const QuestionRenderer = ({ question, financialYear }) => {
         console.log('Saving non-table data:', data);
       }
 
-      setQuestionData(data);
+      // Create a deep copy before setting state
+      setQuestionData(JSON.parse(JSON.stringify(data)));
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Failed to save answer:', error);
@@ -130,7 +155,8 @@ const QuestionRenderer = ({ question, financialYear }) => {
   };
 
   const handleDataChange = (newData) => {
-    setTempData(newData);
+    // Create a deep copy before setting state
+    setTempData(JSON.parse(JSON.stringify(newData)));
   };
 
   const renderEditableContent = () => {
@@ -190,7 +216,8 @@ const QuestionRenderer = ({ question, financialYear }) => {
           <AuditBadge isAuditRequired={isAuditRequired} />
           <button
             onClick={() => {
-              setTempData(questionData); // Reset temp data when opening modal
+              // Create a deep copy when opening modal
+              setTempData(JSON.parse(JSON.stringify(questionData)));
               setIsEditModalOpen(true);
             }}
             className="px-3 py-1 bg-[#20305D] text-white text-sm rounded hover:bg-[#162442] transition-colors"
@@ -209,9 +236,6 @@ const QuestionRenderer = ({ question, financialYear }) => {
         <MultiTableRenderer 
           metadata={metadata} 
           data={questionData}
-          questionId={question.id}
-          questionTitle={title}
-          financialYear={financialYear}
         />
       )}
       {metadata?.type === 'dynamic-table' && (

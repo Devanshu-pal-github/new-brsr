@@ -1,73 +1,99 @@
 import React, { useState, useEffect } from 'react';
 
-const TableRenderer = ({ metadata, data = {}, isEditing = false, onSave }) => {
-  const [localData, setLocalData] = useState(data);
+const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
+  const [localData, setLocalData] = useState(data || {});
 
+  // Update local data when the prop changes
   useEffect(() => {
-    setLocalData(data);
+    if (data) {
+      setLocalData(data);
+    }
   }, [data]);
 
-  const handleCellChange = (rowIndex, colKey, value) => {
-    setLocalData(prevData => {
-      const newData = { ...prevData };
-      if (!newData[rowIndex]) {
-        newData[rowIndex] = {};
-      }
-      newData[rowIndex][colKey] = value;
-      return newData;
-    });
-
-    // Pass changes up immediately for parent component to handle
+  const handleCellChange = (rowIndex, columnKey, value) => {
+    // Create a deep copy of the data
+    const updatedData = JSON.parse(JSON.stringify(localData));
+    
+    // Ensure the row exists
+    if (!updatedData[rowIndex]) {
+      updatedData[rowIndex] = {};
+    }
+    
+    // Update the cell value
+    updatedData[rowIndex][columnKey] = value;
+    
+    // Update local state
+    setLocalData(updatedData);
+    
+    // Call the parent onSave if provided
     if (onSave) {
-      onSave(localData);
+      onSave(updatedData);
     }
   };
 
-  const isFirstColumnEditable = metadata.columns[0]?.key === 'category_of_waste' || 
-                                metadata.columns[0]?.key === 'waste_category';
+  if (!metadata?.columns || metadata.columns.length === 0) {
+    return <div className="text-sm text-gray-500">No table configuration available</div>;
+  }
+
+  // Check if rows exist in metadata
+  if (!metadata?.rows || metadata.rows.length === 0) {
+    return <div className="text-sm text-gray-500">No rows defined for this table</div>;
+  }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border border-gray-300">
         <thead>
           <tr>
-            {metadata.columns.map((col) => (
-              <th
-                key={col.key}
+            {metadata.columns.map((column, idx) => (
+              <th 
+                key={idx}
+                scope="col"
                 className="border border-gray-300 px-4 py-2 text-sm font-medium bg-gray-50"
-                dangerouslySetInnerHTML={{ __html: col.label }}
+                dangerouslySetInnerHTML={{ __html: column.label }}
               />
             ))}
           </tr>
         </thead>
         <tbody>
-          {metadata.rows.map((row, idx) => (
-            <tr key={idx}>
-              {metadata.columns.map((col, colIdx) => (
-                <td key={col.key} className="border border-gray-300 px-4 py-2 text-sm">
-                  {isEditing && (colIdx > 0 || isFirstColumnEditable) ? (
-                    <input
-                      type="text"
-                      value={colIdx === 0 ? 
-                        (localData[idx]?.category_of_waste || '') : 
-                        (localData[idx]?.[col.key] || '')}
-                      onChange={(e) => handleCellChange(
-                        idx, 
-                        colIdx === 0 ? 'category_of_waste' : col.key, 
-                        e.target.value
-                      )}
-                      className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
-                      placeholder={colIdx === 0 ? "Enter category" : "Enter value"}
+          {metadata.rows.map((row, rowIdx) => (
+            <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              {metadata.columns.map((column, colIdx) => {
+                const columnKey = column.key || `col${colIdx}`;
+                
+                // For the first column (parameter column), display the row parameter
+                if (colIdx === 0) {
+                  return (
+                    <td 
+                      key={colIdx} 
+                      className="border border-gray-300 px-4 py-2 text-sm"
+                      dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
                     />
-                  ) : (
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: colIdx === 0 ? 
-                        (localData[idx]?.category_of_waste || row.parameter || '') :
-                        (localData[idx]?.[col.key] || '')
-                    }} />
-                  )}
-                </td>
-              ))}
+                  );
+                }
+                
+                // For data columns, display the cell value or input field
+                const cellValue = localData[rowIdx]?.[columnKey] || '';
+                
+                return (
+                  <td 
+                    key={colIdx} 
+                    className="border border-gray-300 px-4 py-2 text-sm"
+                  >
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                        value={cellValue}
+                        onChange={(e) => handleCellChange(rowIdx, columnKey, e.target.value)}
+                        placeholder="Enter value"
+                      />
+                    ) : (
+                      <div>{cellValue}</div>
+                    )}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
