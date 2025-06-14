@@ -127,15 +127,34 @@ export const apiSlice = createApi({
         // Process data based on structure
         let cleanedData = updatedData;
 
-        // If it's a simple array of objects with row_index, current_year, previous_year
-        // and doesn't have table_key (indicating it's a single table, not multi-table)
-        if (Array.isArray(updatedData) && updatedData.length > 0 && 
-            'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
-          // For single table data, remove row_index as it's just for frontend use
-          cleanedData = updatedData.map(({ row_index, ...rest }) => rest);
+        // Convert all values to strings to match backend expectations
+        if (Array.isArray(updatedData)) {
+          // For single table data
+          if (updatedData.length > 0 && 'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
+            cleanedData = updatedData.map(({ row_index, ...rest }) => {
+              // Convert all values to strings
+              const stringifiedData = {};
+              Object.entries(rest).forEach(([key, value]) => {
+                stringifiedData[key] = value === null ? '' : String(value);
+              });
+              return stringifiedData;
+            });
+          } 
+          // For multi-table data
+          else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
+            cleanedData = updatedData.map(item => {
+              const result = { ...item };
+              // Convert current_year and previous_year to strings
+              if (result.current_year !== undefined) {
+                result.current_year = result.current_year === null ? '' : String(result.current_year);
+              }
+              if (result.previous_year !== undefined) {
+                result.previous_year = result.previous_year === null ? '' : String(result.previous_year);
+              }
+              return result;
+            });
+          }
         }
-        // For multi-table and dynamic-table, keep the original structure
-        // as it's already processed in QuestionRenderer
 
         console.log('Sending to backend:', {
           questionId,
