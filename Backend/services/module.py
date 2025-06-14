@@ -308,6 +308,18 @@ class ModuleService:
         # Now add the category to the submodule
         return await self.add_category(module_id, submodule_id, category)
         
+    async def add_submodule(self, module_id: str, submodule: SubModule) -> Module:
+        """Add a single submodule to a module
+        
+        Args:
+            module_id: The ID of the module
+            submodule: The SubModule object to add
+            
+        Returns:
+            Updated Module object
+        """
+        return await self.add_bulk_submodules(module_id, [submodule])
+
     async def add_bulk_submodules(self, module_id: str, submodules: List[SubModule]) -> Module:
         """Add multiple submodules to a module in a single operation
         
@@ -348,6 +360,19 @@ class ModuleService:
         # Return the updated module
         return await self.get_module(module_id)
         
+    async def add_category_to_submodule(self, module_id: str, submodule_id: str, category: Category) -> Module:
+        """Add a single category to a submodule
+        
+        Args:
+            module_id: The ID of the module
+            submodule_id: The ID of the submodule
+            category: The Category object to add
+            
+        Returns:
+            Updated Module object
+        """
+        return await self.add_bulk_categories(module_id, submodule_id, [category])
+
     async def add_bulk_categories(self, module_id: str, sub_module_id: str, categories: List[Category]) -> Module:
         """Add multiple categories to a submodule in a single operation
         
@@ -767,6 +792,20 @@ class ModuleService:
             
         return await self.get_module(module_id)
         
+    async def add_question_to_category(self, module_id: str, submodule_id: str, category_id: str, question_id: str) -> bool:
+        """Add a single question to a category
+        
+        Args:
+            module_id: The ID of the module
+            submodule_id: The ID of the submodule
+            category_id: The ID of the category to add the question to
+            question_id: The ID of the question to add
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        return await self.add_bulk_questions_to_category(module_id, submodule_id, category_id, [question_id])
+
     async def add_bulk_questions_to_category(self, module_id: str, submodule_id: str, category_id: str, question_ids: List[str]) -> bool:
         """Add multiple questions to a category at once
         

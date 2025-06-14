@@ -43,6 +43,76 @@ async def create_module(
             detail=str(e)
         )
 
+@router.post("/{module_id}/submodules", response_model=Module, status_code=status.HTTP_200_OK)
+async def add_submodule_to_module(
+    module_id: str,
+    submodule: SubModule,
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """
+    Add a new submodule to an existing module
+    
+    - Only accessible by Super Admin
+    """
+    try:
+        return await module_service.add_submodule(module_id, submodule)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+@router.post("/{module_id}/submodules/{submodule_id}/categories", response_model=Module, status_code=status.HTTP_200_OK)
+async def add_category_to_submodule_route(
+    module_id: str,
+    submodule_id: str,
+    category: Category,
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """
+    Add a new category to an existing submodule within a module
+    
+    - Only accessible by Super Admin
+    """
+    try:
+        return await module_service.add_category_to_submodule(module_id, submodule_id, category)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+@router.post("/{module_id}/submodules/{submodule_id}/categories/{category_id}/questions", status_code=status.HTTP_200_OK)
+async def add_question_to_category_route(
+    module_id: str,
+    submodule_id: str,
+    category_id: str,
+    question_id: str = Query(..., description="The ID of the question to add"),
+    module_service: ModuleService = Depends(get_module_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """
+    Add a question ID to an existing category within a submodule
+    
+    - Only accessible by Super Admin
+    """
+    try:
+        await module_service.add_question_to_category(module_id, submodule_id, category_id, question_id)
+        return {"message": "Question added successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
+
 @router.get("/{module_id}", response_model=ModuleWithDetails)
 async def get_module(
     module_id: str,
