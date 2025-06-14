@@ -5,7 +5,6 @@ import { selectCurrentUser, selectUserRole, selectCompanyDetails } from '../stor
 import Navbar from '../components/layout/Navbar';
 import { useGetReportModulesQuery } from '../store/api/apiSlice';
 import { Loader2 } from 'lucide-react';
-import PlantsPage from './PlantsPage';
 import DynamicPageRenderer from '../dynamic-pages';
 
 // Import icons for modules
@@ -73,9 +72,13 @@ const ModuleView = () => {
   };
 
   const handleModuleClick = (moduleId) => {
-    setSelectedModuleId(moduleId);
-    console.log('ModuleView selectedModuleId:', moduleId);
-    // No navigation - all modules will be rendered in the main content area
+    if (moduleId === 'environment') {
+      // Redirect to plants page for environment module
+      navigate('/plants');
+    } else {
+      setSelectedModuleId(moduleId);
+      console.log('ModuleView selectedModuleId:', moduleId);
+    }
   };
 
   const handleLogout = () => {
@@ -121,8 +124,8 @@ const ModuleView = () => {
                 <li className="w-full">
                   <button
                     onClick={() => handleModuleClick('environment')}
-                    className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                      text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                    className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                      ${selectedModuleId === 'environment' ? 'bg-[#20305D] text-white' : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'}`}
                   >
                     {getModuleIcon('environment')}
                     <span className="text-left">Environment</span>
@@ -147,8 +150,8 @@ const ModuleView = () => {
                     <li key={module.id} className="w-full">
                       <button
                         onClick={() => handleModuleClick(module.id)}
-                        className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                          text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                        className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                          ${selectedModuleId === module.id ? 'bg-[#20305D] text-white' : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'}`}
                       >
                         {getModuleIcon(module.name)}
                         <span className="text-left">{module.name}</span>
@@ -174,9 +177,7 @@ const ModuleView = () => {
 
         {/* Main Content */}
         <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-          {selectedModuleId === 'environment' ? (
-            <PlantsPage moduleId={selectedModuleId} />
-          ) : selectedModuleId ? (
+          {selectedModuleId && selectedModuleId !== 'environment' ? (
             <div className="p-8">
               <div className="max-w-7xl mx-auto">
                 {/* Render the DynamicPageRenderer component directly */}

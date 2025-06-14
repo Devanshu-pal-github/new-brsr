@@ -119,7 +119,8 @@ export const apiSlice = createApi({
             { type: 'EnvironmentReports', id: 'LIST' },
           ]
           : [{ type: 'EnvironmentReports', id: 'LIST' }],
-    }),      updateTableAnswer: builder.mutation({
+    }),   
+       updateTableAnswer: builder.mutation({
       query: (payload) => {
         console.log('Received payload:', payload);
         const { financialYear, questionId, questionTitle, updatedData } = payload;

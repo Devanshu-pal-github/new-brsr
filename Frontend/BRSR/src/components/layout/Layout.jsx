@@ -25,30 +25,36 @@ const Layout = ({ children }) => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#F2F4F5] font-sans text-[#1A1A1A]">
-            {/* Sidebar - fixed width on desktop, slide in/out on mobile */}
-            <div className={`fixed lg:relative h-full z-50
+        <div className="flex h-[100vh] w-screen overflow-hidden bg-[#F2F4F5] font-sans text-[#1A1A1A]">
+            {/* Sidebar - fixed on both desktop and mobile */}
+            <div className={`fixed top-0 left-0 h-screen z-50
                 ${isMobile ? 'w-[200px]' : 'w-[170px] lg:w-[190px]'}
                 ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
                 transition-all duration-300 ease-in-out`}>
                 <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} />
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex flex-col flex-1">
-                {/* Header */}
-                <Navbar />
+            {/* Main Content Area with dynamic margin based on sidebar state */}
+            <div className={`flex flex-col flex-1 min-h-screen w-full
+                ${isMobile ? (isSidebarOpen ? 'ml-[200px]' : 'ml-0') : 'ml-[170px] lg:ml-[190px]'}
+                transition-all duration-300 ease-in-out`}>
+                {/* Fixed Header */}
+                <div className="fixed top-0 right-0 left-0 z-40">
+                    <Navbar />
+                </div>
 
-                {/* Main Content */}
-                <main className="flex-1 min-w-0 overflow-y-auto px-1.5 md:px-2">
-                    {children}
-                </main>
+                {/* Main Content with padding for fixed header */}
+                <div className="flex-1 mt-[48px] relative">
+                    <main className="absolute inset-0 overflow-y-auto px-4 md:px-6">
+                        {children}
+                    </main>
+                </div>
             </div>
 
             {/* Mobile Overlay */}
             {isMobile && isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
                     onClick={toggleSidebar}
                 />
             )}

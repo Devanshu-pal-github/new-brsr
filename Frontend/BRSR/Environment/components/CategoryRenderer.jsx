@@ -4,6 +4,7 @@ import { useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
 
 const CategoryRenderer = ({ category, financialYear }) => {
   const { data: reports, isLoading, error } = useGetCompanyReportsQuery();
+  console.log("reports", reports);
   
   if (!financialYear) {
     console.warn('CategoryRenderer: financialYear prop is required');

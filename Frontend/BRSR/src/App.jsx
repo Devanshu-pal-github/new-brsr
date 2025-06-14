@@ -12,6 +12,8 @@ import ModuleView from './pages/ModuleView';
 import PlantsPage from './pages/PlantsPage';
 import PlantDetails from '../Environment/components/PlantDetails';
 import DynamicPageRenderer from './dynamic-pages';
+import Plants from '../Environment/Pages/Plants';
+import EnvironmentContent from '../Environment/components/EnvironmentContent';
 
 
 // Protected Route Component
@@ -80,8 +82,25 @@ function App() {
 
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-          
-          
+
+          <Route 
+            path="/plants" 
+            element={
+              <ProtectedRoute>
+                <Plants />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* New route for environment content with plant ID */}
+          <Route 
+            path="/environment/:plantId" 
+            element={
+              <ProtectedRoute>
+                <EnvironmentContent />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </Router>
     </Provider>

@@ -17,8 +17,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         icon: "Leaf"
     };
 
-    const handleModuleClick = (moduleId) => {
-        navigate(`/plants/${moduleId}`);
+    const handleModuleClick = () => {
+        navigate('/plants');
     };
 
     const handleLogout = () => {
@@ -60,7 +60,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         {/* Environment Module */}
                         <li className="w-full">
                             <NavLink
-                                to={`/plants/${environmentModule.id}`}
+                                to="/plants"
                                 className={(navData) =>
                                     `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
                                         navData.isActive
@@ -68,7 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                                             : 'text-[#E5E7EB] hover:bg-[#20305D] hover:text-white'
                                     }`
                                 }
-                                onClick={() => handleModuleClick(environmentModule.id)}
+                                onClick={handleModuleClick}
                             >
                                 <Leaf className="w-4 h-4 flex-shrink-0" />
                                 <span className="text-left">{environmentModule.name}</span>
