@@ -178,17 +178,12 @@ class QuestionService:
         Get category information including its module details.
         Why: Used for context-aware question management and UI display.
         """
-        # First find the category
-        category = await self.db.categories.find_one({"_id": category_id})
-        if not category:
-            return None
-            
         # Find the module containing this category
         pipeline = [
-            {"$match": {"submodules.categories._id": category_id}},
+            {"$match": {"submodules.categories.id": category_id}},
             {"$unwind": "$submodules"},
             {"$unwind": "$submodules.categories"},
-            {"$match": {"submodules.categories._id": category_id}},
+            {"$match": {"submodules.categories.id": category_id}},
             {
                 "$project": {
                     "category_name": "$submodules.categories.name",
@@ -486,3 +481,201 @@ class QuestionService:
                         errors.append(error_message)
 
         return (len(errors) == 0, errors)
+        
+    async def create_question_with_category_update(
+        self,
+        human_readable_id: str,
+        category_id: str,
+        question_text: str,
+        question_type: str,
+        metadata: dict = {}
+    ) -> Question:
+        """
+        Create a new question and add its ID to the specified category.
+        This API creates a question in the questions collection and updates the category with both the UUID and human readable ID.
+        """
+        # Check if category exists
+        category_info = await self._get_category_info(category_id)
+        if not category_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+            
+        # Validate question type
+        valid_question_types = ["subjective", "table", "table_with_additional_rows"]
+        if question_type not in valid_question_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Question type must be one of: {', '.join(valid_question_types)}"
+            )
+        
+        # Get the highest question number to start incrementing from
+        highest_question = await self.db.questions.find_one(
+            {"category_id": category_id},
+            sort=[("question_number", -1)]
+        )
+        
+        next_question_number = 1
+        if highest_question and "question_number" in highest_question:
+            next_question_number = int(highest_question["question_number"]) + 1
+            
+        # Prepare question document
+        question_id = str(uuid.uuid4())
+        question_dict = {
+            "_id": question_id,
+            "id": question_id,
+            "human_readable_id": human_readable_id,
+            "category_id": category_id,
+            "module_id": category_info.get("module_id"),
+            "question_text": question_text,
+            "question_type": question_type,
+            "question_number": str(next_question_number),
+            "metadata": metadata,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        # Insert into database
+        await self.db.questions.insert_one(question_dict)
+
+        # Update category's question_ids in the modules collection
+        await self.db.modules.update_one(
+            {"submodules.categories.id": category_id},
+            {"$push": {"submodules.$[].categories.$[cat].question_ids": question_id}},
+            array_filters=[{"cat.id": category_id}]
+        )
+
+        return Question(**question_dict)
+        
+    async def bulk_create_questions(
+        self,
+        questions_data: List[dict]
+    ) -> List[Question]:
+        """
+        Bulk create questions and add their IDs to the specified categories.
+        This API creates multiple questions in the questions collection and updates the categories with the question IDs.
+        """
+        created_questions = []
+        valid_question_types = ["subjective", "table", "table_with_additional_rows"]
+        
+        # Group questions by category_id to handle question_number generation efficiently
+        questions_by_category = {}
+        for question_data in questions_data:
+            category_id = question_data.get("category_id")
+            if category_id not in questions_by_category:
+                questions_by_category[category_id] = []
+            questions_by_category[category_id].append(question_data)
+        
+        # Get the highest question number for each category
+        next_question_numbers = {}
+        for category_id in questions_by_category.keys():
+            highest_question = await self.db.questions.find_one(
+                {"category_id": category_id},
+                sort=[("question_number", -1)]
+            )
+            
+            next_question_number = 1
+            if highest_question and "question_number" in highest_question:
+                next_question_number = int(highest_question["question_number"]) + 1
+            
+            next_question_numbers[category_id] = next_question_number
+        
+        for question_data in questions_data:
+            # Extract data from the question data
+            human_readable_id = question_data.get("human_readable_id")
+            category_id = question_data.get("category_id")
+            question_text = question_data.get("question_text")
+            question_type = question_data.get("question_type")
+            metadata = question_data.get("metadata", {})
+            
+            # Validate required fields
+            if not all([human_readable_id, category_id, question_text, question_type]):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Missing required fields: human_readable_id, category_id, question_text, question_type"
+                )
+                
+            # Check if category exists
+            category_info = await self._get_category_info(category_id)
+            if not category_info:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Category with ID {category_id} not found"
+                )
+                
+            # Validate question type
+            if question_type not in valid_question_types:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Question type must be one of: {', '.join(valid_question_types)}"
+                )
+                
+            # Prepare question document
+            question_id = str(uuid.uuid4())
+            
+            # Get the next question number for this category
+            next_question_number = next_question_numbers[category_id]
+            
+            question_dict = {
+                "_id": question_id,
+                "id": question_id,
+                "human_readable_id": human_readable_id,
+                "category_id": category_id,
+                "module_id": category_info.get("module_id"),
+                "question_text": question_text,
+                "question_type": question_type,
+                "question_number": str(next_question_number),
+                "metadata": metadata,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            
+            # Increment the next question number for this category
+            next_question_numbers[category_id] += 1
+            
+            # Insert into database
+            await self.db.questions.insert_one(question_dict)
+            
+            # Update category's question_ids in the modules collection
+            await self.db.modules.update_one(
+                {"submodules.categories.id": category_id},
+                {"$push": {"submodules.$[].categories.$[cat].question_ids": question_id}},
+                array_filters=[{"cat.id": category_id}]
+            )
+            
+            created_questions.append(Question(**question_dict))
+            
+        return created_questions
+        
+    async def update_question_metadata(
+        self,
+        question_id: str,
+        metadata: dict
+    ) -> Question:
+        """
+        Update the metadata of a question.
+        This API updates only the metadata field of a question.
+        """
+        # Check if question exists
+        question_doc = await self.collection.find_one({"_id": question_id})
+        if not question_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
+            
+        # Update question's metadata
+        await self.collection.update_one(
+            {"_id": question_id},
+            {
+                "$set": {
+                    "metadata": metadata,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Get updated question
+        updated_question = await self.collection.find_one({"_id": question_id})
+        return Question(**updated_question)

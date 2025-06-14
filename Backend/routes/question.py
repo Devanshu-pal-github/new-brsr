@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, Request
 from typing import List, Optional, Dict
-from dependencies import DB, check_super_admin_access
+from dependencies import check_super_admin_access
 from models.question import QuestionCreate, Question, QuestionUpdate, QuestionWithCategory
 from services.question import QuestionService
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/questions",
@@ -10,8 +11,21 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-def get_question_service(db):
-    return QuestionService(db)
+async def get_question_service(request: Request):
+    """Get an instance of the QuestionService
+    Args:
+        request: The FastAPI request object
+    Returns:
+        QuestionService instance
+    """
+    return QuestionService(request.app.mongodb)
+
+class QuestionCreateWithCategory(BaseModel):
+    human_readable_id: str
+    category_id: str
+    question_text: str
+    question_type: str
+    metadata: Dict = {}
 
 @router.post("/", response_model=Question, status_code=status.HTTP_201_CREATED)
 async def create_question(
@@ -94,6 +108,81 @@ async def delete_question(
             )
         return None
     except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.post("/create-with-category", response_model=Question, status_code=status.HTTP_201_CREATED)
+async def create_question_with_category(
+    question_data: QuestionCreateWithCategory,
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Create a new question and add it to the specified category
+    
+    This endpoint creates a question with the specified fields and updates the category with the question IDs.
+    The question is stored in the questions collection and the question ID is added to the category's question_ids array.
+    
+    Supported question types: subjective, table, table_with_additional_rows
+    """
+    try:
+        return await question_service.create_question_with_category_update(
+            human_readable_id=question_data.human_readable_id,
+            category_id=question_data.category_id,
+            question_text=question_data.question_text,
+            question_type=question_data.question_type,
+            metadata=question_data.metadata
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.post("/bulk-create", response_model=List[Question], status_code=status.HTTP_201_CREATED)
+async def bulk_create_questions(
+    questions_data: List[QuestionCreateWithCategory],
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Bulk create questions and add them to their respective categories
+    
+    This endpoint creates multiple questions with the specified fields and updates the categories with the question IDs.
+    The questions are stored in the questions collection and the question IDs are added to the respective category's question_ids array.
+    
+    Supported question types: subjective, table, table_with_additional_rows
+    """
+    try:
+        # Convert Pydantic models to dictionaries
+        questions_data_dicts = [q.dict() for q in questions_data]
+        return await question_service.bulk_create_questions(questions_data_dicts)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.patch("/{question_id}/metadata", response_model=Question)
+async def update_question_metadata(
+    question_id: str,
+    metadata: Dict = Body(..., description="New metadata for the question"),
+    question_service = Depends(get_question_service),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Update the metadata of a question
+    
+    This endpoint updates only the metadata field of a question.
+    """
+    try:
+        return await question_service.update_question_metadata(question_id, metadata)
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
