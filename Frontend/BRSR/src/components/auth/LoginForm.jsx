@@ -66,9 +66,9 @@ const LoginForm = () => {
   
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-white mb-1 glassmorphism-text">
-          Email or Username
+      <div className="space-y-2">
+        <label htmlFor="username" className="block text-[#1E3A8A] text-sm font-semibold">
+          Email or Username <span className="text-red-500">*</span>
         </label>
         <input
           id="username"
@@ -77,16 +77,14 @@ const LoginForm = () => {
           required
           value={formData.username}
           onChange={handleChange}
-          className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-40 border border-white border-opacity-60
-                   text-white placeholder-white placeholder-opacity-80 focus:outline-none focus:ring-2 focus:ring-teal-300
-                   shadow-md input-visible"
+          className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6] text-[#1E3A8A] text-sm shadow-sm transition-all duration-300"
           placeholder="Enter your email or username"
         />
       </div>
       
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-white mb-1 glassmorphism-text">
-          Password
+      <div className="space-y-2">
+        <label htmlFor="password" className="block text-[#1E3A8A] text-sm font-semibold">
+          Password <span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <input
@@ -96,27 +94,28 @@ const LoginForm = () => {
             required
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-40 border border-white border-opacity-60
-                     text-white placeholder-white placeholder-opacity-80 focus:outline-none focus:ring-2 focus:ring-teal-300
-                     shadow-md input-visible"
+            className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6] text-[#1E3A8A] text-sm shadow-sm transition-all duration-300"
             placeholder="Enter your password"
           />
           <button
             type="button"
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#1E3A8A] hover:text-[#14B8A6]"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? (
-              <EyeOff className="h-5 w-5 text-white opacity-70" />
+              <EyeOff className="h-5 w-5 opacity-70" />
             ) : (
-              <Eye className="h-5 w-5 text-white opacity-70" />
+              <Eye className="h-5 w-5 opacity-70" />
             )}
           </button>
         </div>
       </div>
       
       <div className="flex justify-end">
-        <Link to="/forgot-password" className="text-sm text-white hover:text-teal-200 transition-colors duration-200 glassmorphism-text">
+        <Link
+          to="/forgot-password"
+          className="text-sm text-[#14B8A6] hover:text-[#14B8A6]/80 transition-colors"
+        >
           Forgot Password?
         </Link>
       </div>
@@ -124,14 +123,10 @@ const LoginForm = () => {
       <div>
         <button
           type="submit"
-          disabled={isLoading}
-          className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-teal-400 to-blue-500
-                   text-white font-medium shadow-lg hover:from-teal-500 hover:to-blue-600
-                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400
-                   transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed
-                   transform hover:-translate-y-0.5 active:translate-y-0"
+          disabled={isLoading || isLoadingCompanyDetails}
+          className="w-full py-3 bg-[#14B8A6] text-white rounded-lg hover:bg-[#14B8A6]/90 focus:ring-4 focus:ring-[#14B8A6]/50 text-sm font-semibold shadow-sm transition-all duration-300 disabled:bg-[#14B8A6]/50"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isLoading || isLoadingCompanyDetails ? 'Signing in...' : 'Sign In'}
         </button>
       </div>
     </form>
