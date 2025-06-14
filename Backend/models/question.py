@@ -101,54 +101,38 @@ class Formula(BaseModel):
 
 class QuestionBase(BaseModel):
     """Base question model"""
-    text: Optional[str] = None
-    type: Optional[QuestionType] = None
-    help_text: Optional[str] = None
-    placeholder: Optional[str] = None
-    default_value: Optional[Any] = None
-    is_required: bool = False
-    validation_rules: List[ValidationRule] = []
     metadata: Dict = {}
 
 class QuestionCreate(QuestionBase):
     """Question creation model"""
-    human_readable_id: Optional[str] = None # Allow user to pass human-readable ID
-    # Type-specific fields
-    options: Optional[List[Option]] = None  # For select/multiselect
-    table_columns: Optional[List[TableColumn]] = None  # For table type
-    formula: Optional[Formula] = None  # For formula type
-    unit: Optional[str] = None  # For number type
-    file_types: Optional[List[str]] = None  # For file type
-    max_file_size: Optional[int] = None  # For file type
+    human_readable_id: str  # Human readable ID is now required
+    # The metadata field is inherited from QuestionBase
 
 class QuestionUpdate(BaseModel):
     """Question update model"""
-    text: Optional[str] = None
-    help_text: Optional[str] = None
-    placeholder: Optional[str] = None
-    default_value: Optional[Any] = None
-    is_required: Optional[bool] = None
-    validation_rules: Optional[List[ValidationRule]] = None
-    options: Optional[List[Option]] = None
-    table_columns: Optional[List[TableColumn]] = None
-    formula: Optional[Formula] = None
-    unit: Optional[str] = None
-    file_types: Optional[List[str]] = None
-    max_file_size: Optional[int] = None
+    human_readable_id: Optional[str] = None
     metadata: Optional[Dict] = None
 
 class Question(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    human_readable_id: Optional[str] = None
+    human_readable_id: str
+    category_id: str
+    module_id: Optional[str] = None
+    metadata: Dict = {}
 
 
 class QuestionInDB(BaseDBModel):
     """Question model as stored in database"""
     id: str
-    human_readable_id: Optional[str] = None
+    human_readable_id: str
+    category_id: str
+    module_id: Optional[str] = None
+    metadata: Dict = {}
 
 class QuestionWithCategory(QuestionInDB):
     """Question model with category information"""
+    category_name: str
+    module_name: str
 
 class QuestionDependency(BaseModel):
     """Question dependency definition"""

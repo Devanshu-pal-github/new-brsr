@@ -21,9 +21,9 @@ class QuestionService:
         Create a new question and add it to the specified category.
         Why: Enforces category-question relationship and ensures order is maintained.
         """
-        # Check if category exists
-        category = await self.db.categories.find_one({"_id": category_id})
-        if not category:
+        # Check if category exists and find its module
+        category_info = await self._get_category_info(category_id)
+        if not category_info:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Category not found"
@@ -34,15 +34,9 @@ class QuestionService:
         question_dict["_id"] = str(uuid.uuid4())
         question_dict["id"] = question_dict["_id"]
         question_dict["category_id"] = category_id
+        question_dict["module_id"] = category_info.get("module_id")
         question_dict["created_at"] = datetime.utcnow()
         question_dict["updated_at"] = datetime.utcnow()
-
-        # Get the order (last question's order + 1)
-        last_question = await self.db.questions.find_one(
-            {"category_id": category_id},
-            sort=[("order", -1)]
-        )
-        question_dict["order"] = (last_question["order"] + 1) if last_question else 0
 
         # Insert into database
         await self.db.questions.insert_one(question_dict)
@@ -73,19 +67,13 @@ class QuestionService:
 
         if include_category:
             # Get category information
-            category = await self.db.categories.find_one({"_id": question["category_id"]})
-            if category:
-                # Find module containing this category
-                module = await self.db.modules.find_one({
-                    "sub_modules.categories": question["category_id"]
-                })
-                if module:
-                    return QuestionWithCategory(
-                        **question,
-                        category_name=category["name"],
-                        module_id=module["_id"],
-                        module_name=module["name"]
-                    )
+            category_info = await self._get_category_info(question["category_id"])
+            if category_info:
+                return QuestionWithCategory(
+                    **question,
+                    category_name=category_info["category_name"],
+                    module_name=category_info["module_name"]
+                )
 
         return Question(**question)
 
@@ -104,10 +92,7 @@ class QuestionService:
         if category_id:
             query["category_id"] = category_id
         elif module_id:
-            # Find all categories in the module
-            categories = await self._get_module_categories(module_id)
-            if categories:
-                query["category_id"] = {"$in": categories}
+            query["module_id"] = module_id
 
         questions = []
         cursor = self.collection.find(query).skip(skip).limit(limit)
@@ -124,25 +109,24 @@ class QuestionService:
         Update question details.
         Why: Allows admin to correct or improve question metadata/logic.
         """
+        # First check if question exists
+        existing_question = await self.collection.find_one({"_id": question_id})
+        if not existing_question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
+            
         update_data = question_data.model_dump(exclude_unset=True)
         if update_data:
             update_data["updated_at"] = datetime.utcnow()
-            result = await self.collection.update_one(
+            await self.collection.update_one(
                 {"_id": question_id},
                 {"$set": update_data}
             )
-            if result.modified_count == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Question not found"
-                )
 
+        # Get updated question
         question = await self.collection.find_one({"_id": question_id})
-        if not question:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Question not found after update"
-            )
         return Question(**question)
 
     async def delete_question(self, question_id: str) -> bool:
@@ -151,11 +135,13 @@ class QuestionService:
         Why: Maintains referential integrity and prevents orphaned data.
         """
         # Get question to find category_id
-        question = await self.get_question(question_id)
-
+        question = await self.collection.find_one({"_id": question_id})
+        if not question:
+            return False
+            
         # Remove question_id from category
         await self.db.categories.update_one(
-            {"_id": question.category_id},
+            {"_id": question.get("category_id")},
             {"$pull": {"question_ids": question_id}}
         )
 
@@ -168,6 +154,12 @@ class QuestionService:
         Get category information including its module details.
         Why: Used for context-aware question management and UI display.
         """
+        # First find the category
+        category = await self.db.categories.find_one({"_id": category_id})
+        if not category:
+            return None
+            
+        # Find the module containing this category
         pipeline = [
             {"$match": {"submodules.categories._id": category_id}},
             {"$unwind": "$submodules"},
@@ -188,6 +180,8 @@ class QuestionService:
         """
         Get all category IDs in a module.
         Why: Supports listing/filtering questions by module for admin/UI.
+        Note: This method is kept for backward compatibility but is no longer used
+        for filtering questions by module since we now store module_id directly.
         """
         module = await self.db.modules.find_one({"_id": module_id})
         if not module:
@@ -195,8 +189,11 @@ class QuestionService:
 
         categories = []
         for submodule in module.get("submodules", []):
-            for category_id in submodule.get("categories", []):
-                categories.append(category_id)
+            for category in submodule.get("categories", []):
+                if isinstance(category, dict) and "_id" in category:
+                    categories.append(category["_id"])
+                else:
+                    categories.append(category)
         return categories
 
     async def update_question_order(
@@ -209,18 +206,25 @@ class QuestionService:
         Why: Maintains question sequence for UI and business logic.
         """
         # Get question to find current order and category
-        question = await self.get_question(question_id)
-        old_order = question.order
+        question_doc = await self.collection.find_one({"_id": question_id})
+        if not question_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
+            
+        old_order = question_doc.get("order", 0)
+        category_id = question_doc.get("category_id")
 
         if old_order == new_order:
-            return question
+            return Question(**question_doc)
 
         # Update orders of other questions in the category
         if new_order > old_order:
             # Moving down: decrease order of questions in between
             await self.collection.update_many(
                 {
-                    "category_id": question.category_id,
+                    "category_id": category_id,
                     "order": {"$gt": old_order, "$lte": new_order}
                 },
                 {"$inc": {"order": -1}}
@@ -229,14 +233,14 @@ class QuestionService:
             # Moving up: increase order of questions in between
             await self.collection.update_many(
                 {
-                    "category_id": question.category_id,
+                    "category_id": category_id,
                     "order": {"$gte": new_order, "$lt": old_order}
                 },
                 {"$inc": {"order": 1}}
             )
 
         # Update question's order
-        result = await self.collection.update_one(
+        await self.collection.update_one(
             {"_id": question_id},
             {
                 "$set": {
@@ -245,14 +249,10 @@ class QuestionService:
                 }
             }
         )
-
-        if result.modified_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Question not found"
-            )
-
-        return await self.get_question(question_id)
+        
+        # Get updated question
+        updated_question = await self.collection.find_one({"_id": question_id})
+        return Question(**updated_question)
 
     async def add_validation_rule(
         self,
@@ -260,28 +260,39 @@ class QuestionService:
         rule: ValidationRule
     ) -> Question:
         """
-        Add a validation rule to a question.
+        Add a validation rule to a question's metadata.
         Why: Supports dynamic, data-driven validation logic for all question types.
         """
         # Check if question exists
-        _ = await self.get_question(question_id)
-
-        # Add validation rule
-        result = await self.collection.update_one(
-            {"_id": question_id},
-            {
-                "$push": {"validation_rules": rule.model_dump()},
-                "$set": {"updated_at": datetime.utcnow()}
-            }
-        )
-
-        if result.modified_count == 0:
+        question_doc = await self.collection.find_one({"_id": question_id})
+        if not question_doc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Question not found"
             )
+            
+        # Get current metadata
+        metadata = question_doc.get("metadata", {})
+        
+        # Add validation rule to metadata
+        if "validation_rules" not in metadata:
+            metadata["validation_rules"] = []
+        metadata["validation_rules"].append(rule.model_dump())
+        
+        # Update question with new metadata
+        await self.collection.update_one(
+            {"_id": question_id},
+            {
+                "$set": {
+                    "metadata": metadata,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
 
-        return await self.get_question(question_id)
+        # Get updated question
+        updated_question = await self.collection.find_one({"_id": question_id})
+        return Question(**updated_question)
 
     async def add_dependency(
         self,
@@ -289,14 +300,24 @@ class QuestionService:
         dependency: QuestionDependency
     ) -> Question:
         """
-        Add a dependency to a question as a validation rule.
+        Add a dependency to a question's metadata.
         Why: Enables conditional logic and inter-question dependencies.
         """
         # Check if question exists
-        _ = await self.get_question(question_id)
+        question_doc = await self.collection.find_one({"_id": question_id})
+        if not question_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
 
         # Check if dependent question exists
-        dependent_question = await self.get_question(dependency.question_id)
+        dependent_question_doc = await self.collection.find_one({"_id": dependency.question_id})
+        if not dependent_question_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Dependent question with ID {dependency.question_id} not found"
+            )
 
         # Add dependency as a validation rule (custom structure)
         validation_rule = {
@@ -308,25 +329,32 @@ class QuestionService:
             },
             "error_message": (
                 dependency.error_message or
-                f"This question depends on the answer to question {getattr(dependent_question, 'question_text', '')}"
+                f"This question depends on the answer to question {dependent_question_doc.get('human_readable_id', '')}"
             )
         }
 
-        result = await self.collection.update_one(
+        # Get current metadata
+        metadata = question_doc.get("metadata", {})
+        
+        # Add dependency to metadata
+        if "validation_rules" not in metadata:
+            metadata["validation_rules"] = []
+        metadata["validation_rules"].append(validation_rule)
+        
+        # Update question with new metadata
+        await self.collection.update_one(
             {"_id": question_id},
             {
-                "$push": {"validation_rules": validation_rule},
-                "$set": {"updated_at": datetime.utcnow()}
+                "$set": {
+                    "metadata": metadata,
+                    "updated_at": datetime.utcnow()
+                }
             }
         )
 
-        if result.modified_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Question not found"
-            )
-
-        return await self.get_question(question_id)
+        # Get updated question
+        updated_question = await self.collection.find_one({"_id": question_id})
+        return Question(**updated_question)
 
     async def get_category_questions(
         self,
@@ -344,21 +372,18 @@ class QuestionService:
         questions = [q async for q in cursor]
 
         if include_category:
-            category = await self.db.categories.find_one({"_id": category_id})
-            if category:
-                module = await self.db.modules.find_one({
-                    "sub_modules.categories": category_id
-                })
-                if module:
-                    return [
-                        QuestionWithCategory(
-                            **q,
-                            category_name=category["name"],
-                            module_id=module["_id"],
-                            module_name=module["name"]
-                        )
-                        for q in questions
-                    ]
+            # Get category info including module details
+            category_info = await self._get_category_info(category_id)
+            if category_info:
+                return [
+                    QuestionWithCategory(
+                        **q,
+                        category_name=category_info.get("category_name", ""),
+                        module_id=category_info.get("module_id", ""),
+                        module_name=category_info.get("module_name", "")
+                    )
+                    for q in questions
+                ]
 
         return [Question(**q) for q in questions]
 
@@ -372,11 +397,17 @@ class QuestionService:
         Validate a value against a question's validation rules.
         Why: Ensures all business and data integrity rules are enforced at the service layer.
         """
-        question = await self.get_question(question_id)
+        question_doc = await self.collection.find_one({"_id": question_id})
+        if not question_doc:
+            return False, ["Question not found"]
+            
+        # Get validation rules from metadata
+        metadata = question_doc.get("metadata", {})
+        validation_rules = metadata.get("validation_rules", [])
         errors = []
 
         # Each rule is a dict (from DB), not a ValidationRule object
-        for rule in question.validation_rules:
+        for rule in validation_rules:
             rule_type = rule.get("type")
             parameters = rule.get("parameters", {})
             error_message = rule.get("error_message", "Validation failed.")
