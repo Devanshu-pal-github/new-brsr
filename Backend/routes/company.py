@@ -218,3 +218,131 @@ async def remove_report_from_company(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+@router.post("/{company_id}/assign-user", status_code=status.HTTP_201_CREATED)
+async def assign_user_to_company(
+    company_id: str,
+    data: Dict = Body(..., description="Request body containing user_id and optional role"),
+    company_service: CompanyService = Depends(get_company_service),
+    db = Depends(get_database),
+    current_user: Dict = Depends(check_super_admin_access)
+):
+    """Assign a user to a company with a specific role
+    
+    This endpoint creates a new user access record that assigns a user to a company
+    with a specific role (company_admin, plant_admin, or user). The role determines
+    which modules the user will have access to.
+    """
+    from services.user_access import UserAccessService
+    from models.user_access import UserAccessCreate, UserRole, Permission, AccessScope
+    
+    # Extract user_id and role from request body
+    user_id = data.get("user_id")
+    role = data.get("role", "user")  # Default to regular user if not specified
+    
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="user_id is required"
+        )
+    
+    # Validate role
+    valid_roles = [r.value for r in UserRole]
+    if role not in valid_roles:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Role must be one of: {', '.join(valid_roles)}"
+        )
+    
+    # Check if company exists
+    company = await company_service.get_company(company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Company with ID {company_id} not found"
+        )
+    
+    # Check if user exists
+    user = await db.users.find_one({"_id": user_id})
+    if not user:
+        # Try to find by id field if not found by _id
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {user_id} not found"
+            )
+    
+    # Create user access service
+    user_access_service = UserAccessService(db)
+    
+    # Determine access level based on role
+    access_level = Permission.READ
+    if role == UserRole.SUPER_ADMIN.value or role == UserRole.COMPANY_ADMIN.value:
+        access_level = Permission.APPROVE
+    elif role == UserRole.PLANT_ADMIN.value:
+        access_level = Permission.VALIDATE
+    
+    # Create user access record
+    try:
+        user_access = UserAccessCreate(
+            user_id=user_id,
+            company_id=company_id,
+            role=role,
+            access_level=access_level,
+            scope=AccessScope.COMPANY
+        )
+        
+        # Create the user access record
+        result = await user_access_service.create_user_access(user_access)
+        
+        # Update user's company_id in the users collection
+        # For company_admin, set company_id but leave plant_id as null
+        # For plant_admin, set both company_id and plant_id (using first plant if available)
+        update_fields = {"company_id": company_id}
+        
+        # If role is plant_admin, assign to the first plant in the company
+        if role == UserRole.PLANT_ADMIN.value and company.plant_ids and len(company.plant_ids) > 0:
+            update_fields["plant_id"] = company.plant_ids[0]
+        
+        # Update the user document with company_id and plant_id
+        await db.users.update_one(
+            {"_id": user_id},
+            {"$set": update_fields}
+        )
+        
+        # If company has active reports with modules, assign appropriate modules to the user
+        if company.active_reports:
+            for report in company.active_reports:
+                if "assigned_modules" in report and report["assigned_modules"]:
+                    # For company admins, assign all modules
+                    if role == UserRole.COMPANY_ADMIN.value:
+                        basic_modules = report["assigned_modules"].get("basic_modules", [])
+                        calc_modules = report["assigned_modules"].get("calc_modules", [])
+                        
+                        # Update user's access_modules in the users collection
+                        all_modules = basic_modules + calc_modules
+                        if all_modules:
+                            await db.users.update_one(
+                                {"_id": user_id},
+                                {"$addToSet": {"access_modules": {"$each": all_modules}}}
+                            )
+                    
+                    # For plant admins, assign only calc modules
+                    elif role == UserRole.PLANT_ADMIN.value:
+                        calc_modules = report["assigned_modules"].get("calc_modules", [])
+                        
+                        # Update user's access_modules in the users collection
+                        if calc_modules:
+                            await db.users.update_one(
+                                {"_id": user_id},
+                                {"$addToSet": {"access_modules": {"$each": calc_modules}}}
+                            )
+        
+        return {"message": f"User {user_id} assigned to company {company_id} with role {role}", "user_access_id": result.id}
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
