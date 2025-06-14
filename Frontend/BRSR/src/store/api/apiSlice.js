@@ -101,8 +101,18 @@ export const apiSlice = createApi({
       },
       providesTags: ['Plants']
     }),
-    // Add more endpoints as needed
-
+    createPlant: builder.mutation({
+      query: (plantData) => ({
+        url: '/plants/create',
+        method: 'POST',
+        body: plantData
+      }),
+      transformResponse: (response) => {
+        console.log('🌱 Create Plant Response:', response);
+        return response;
+      },
+      invalidatesTags: ['Plants']
+    }),
     getCompanyReports: builder.query({
       query: () => ({
         url: `/environment/reports`,
@@ -194,7 +204,8 @@ export const {
   useLazyGetReportModulesQuery,
   useGetCompanyPlantsQuery,
   useGetCompanyReportsQuery,
-  useUpdateTableAnswerMutation
+  useUpdateTableAnswerMutation,
+  useCreatePlantMutation
 } = apiSlice;
 
 export default apiSlice;

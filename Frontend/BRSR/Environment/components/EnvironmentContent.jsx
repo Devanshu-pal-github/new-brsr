@@ -32,8 +32,8 @@ const EnvironmentContent = () => {
 
   return (
     <Layout>
-      <div className="module-layout min-h-screen p-2 md:p-3 w-[80vw]">
-        <div className="w-full">
+      <div className="module-layout min-h-screen p-2 md:p-3 w-[75%]">
+        <div className="">
           <div className="mb-4">
             <Breadcrumb 
               section={moduleData.name} 

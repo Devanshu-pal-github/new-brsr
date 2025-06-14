@@ -45,8 +45,16 @@ class PlantBase(BaseModel):
     contact_phone: str
     metadata: Dict = {}
 
-class PlantCreate(PlantBase):
+# Assuming the PlantCreate model is already defined as in your code
+class PlantCreate(BaseModel):
     company_id: str
+    name: str
+    code: str
+    type: PlantType = PlantType.REGULAR
+    address: str
+    contact_email: str
+    contact_phone: str
+    metadata: Dict = {}
 
 class PlantUpdate(BaseModel):
     name: Optional[str] = None

@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useGetCompanyPlantsQuery, useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
+import { useGetCompanyPlantsQuery, useGetCompanyReportsQuery , useCreatePlantMutation } from '../../src/store/api/apiSlice';
 import Layout from '../../src/components/layout/Layout';
 import Breadcrumb from '../components/Breadcrumb';
 import SubHeader from '../components/SubHeader';
-import { Building2, Factory, AlertCircle } from 'lucide-react';
+import { Building2, Factory, AlertCircle, Plus, X } from 'lucide-react';
 
 const Plants = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Main Facilities');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        code: '',
+        type: 'regular',
+        address: '',
+        contact_email: '',
+        contact_phone: '',
+        metadata: {}
+    });
+    
     const user = useSelector((state) => state.auth.user);
+    const [createPlant, { isLoading: isCreating }] = useCreatePlantMutation();
 
     // Fetch plants using the API
     const { data: plants = [], isLoading: plantsLoading, error: plantsError } = useGetCompanyPlantsQuery(user?.company_id, {
@@ -19,9 +31,6 @@ const Plants = () => {
 
     // Fetch environment reports
     const { data: environmentReports = [], isLoading: reportsLoading } = useGetCompanyReportsQuery();
-
-    console.log("plants", plants);
-    console.log("environment reports", environmentReports);
 
     // Separate main plants (C001, P001) from other plants
     const mainPlants = plants.filter(plant => 
@@ -33,7 +42,6 @@ const Plants = () => {
     );
 
     const handlePlantClick = (plantId) => {
-        // Navigate to environment content with plant ID and reports
         navigate(`/environment/${plantId}`, {
             state: {
                 plantId,
@@ -42,6 +50,129 @@ const Plants = () => {
             }
         });
     };
+
+    const handleCreatePlant = async (e) => {
+        e.preventDefault();
+        try {
+            await createPlant({
+                ...formData,
+                company_id: user.company_id
+            }).unwrap();
+            setIsModalOpen(false);
+            setFormData({
+                name: '',
+                code: '',
+                type: 'regular',
+                address: '',
+                contact_email: '',
+                contact_phone: '',
+                metadata: {}
+            });
+        } catch (error) {
+            console.error('Failed to create plant:', error);
+        }
+    };
+
+    const CreatePlantCard = () => (
+        <div
+            onClick={() => setIsModalOpen(true)}
+            className="cursor-pointer rounded-lg p-6 bg-gray-100 hover:bg-gray-200
+                hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200
+                flex flex-col items-center justify-center gap-4 text-gray-600 border-2 border-dashed border-gray-300
+                min-h-[200px]"
+        >
+            <Plus className="w-12 h-12" />
+            <span className="text-lg font-semibold">Create New Plant</span>
+        </div>
+    );
+
+    const CreatePlantModal = () => (
+        <div 
+            className={`fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 transition-opacity duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setIsModalOpen(false)}
+        >
+            <div 
+                className="bg-white rounded-lg p-6 w-full max-w-md transform transition-transform duration-300 scale-100"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Create New Plant</h2>
+                    <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <form onSubmit={handleCreatePlant} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Plant Name</label>
+                        <input
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                            autoFocus={isModalOpen} // Add autoFocus when modal opens
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Plant Code</label>
+                        <input
+                            type="text"
+                            value={formData.code}
+                            onChange={(e) => setFormData({...formData, code: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Address</label>
+                        <input
+                            type="text"
+                            value={formData.address}
+                            onChange={(e) => setFormData({...formData, address: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Contact Email</label>
+                        <input
+                            type="email"
+                            value={formData.contact_email}
+                            onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
+                        <input
+                            type="tel"
+                            value={formData.contact_phone}
+                            onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 mt-6">
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isCreating}
+                            className="px-4 py-2 text-sm font-medium text-white bg-[#20305D] rounded-md hover:bg-[#162442] disabled:opacity-50"
+                        >
+                            {isCreating ? 'Creating...' : 'Create Plant'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
 
     const PlantCard = ({ plant }) => (
         <div
@@ -75,7 +206,6 @@ const Plants = () => {
 
     const tabs = ['Main Facilities', 'Other Plants'];
 
-    // Error component
     const ErrorMessage = () => (
         <div className="flex flex-col items-center justify-center h-64 text-red-500">
             <AlertCircle className="w-12 h-12 mb-2" />
@@ -84,7 +214,6 @@ const Plants = () => {
         </div>
     );
 
-    // Empty state component
     const EmptyState = ({ type }) => (
         <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Factory className="w-12 h-12 mb-2 opacity-50" />
@@ -135,15 +264,12 @@ const Plants = () => {
                                             <EmptyState type="Main Facilities" />
                                         )
                                     ) : (
-                                        otherPlants.length > 0 ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {otherPlants.map(plant => (
-                                                    <PlantCard key={plant.id} plant={plant} />
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <EmptyState type="Other Plants" />
-                                        )
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <CreatePlantCard />
+                                            {otherPlants.map(plant => (
+                                                <PlantCard key={plant.id} plant={plant} />
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -151,6 +277,7 @@ const Plants = () => {
                     </div>
                 </div>
             </div>
+            <CreatePlantModal />
         </Layout>
     );
 };

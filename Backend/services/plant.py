@@ -14,8 +14,9 @@ class PlantService:
 
     async def create_plant(self, plant_data: PlantCreate) -> Plant:
         """Create a new plant"""
+    
         # Check if company exists
-        company = await self.db.companies.find_one({"_id": plant_data.company_id})
+        company = await self.db.companies.find_one({"id": plant_data.company_id})
         if not company:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

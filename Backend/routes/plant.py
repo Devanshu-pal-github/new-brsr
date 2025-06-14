@@ -1,29 +1,65 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query , Request
 from typing import List, Optional
 from dependencies import get_database, get_current_user
 from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, PlantWithAnswers
 from services.plant import PlantService
+import uuid
+from datetime import datetime
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter(
     tags=["plants"],
     responses={404: {"description": "Not found"}},
 )
 
-def get_plant_service(db):
+def get_plant_service(db=Depends(get_database)):
     return PlantService(db)
 
-@router.post("/", response_model=Plant, status_code=status.HTTP_201_CREATED)
+
+
+@router.post("/create", response_model=Plant, status_code=status.HTTP_201_CREATED)
 async def create_plant(
     plant: PlantCreate,
-    plant_service = Depends(get_plant_service)
+    db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """Create a new plant"""
     try:
-        return await plant_service.create_plant(plant)
-    except ValueError as e:
+        # Create plant dictionary
+        plant_dict = {
+            "id": str(uuid.uuid4()),
+            "plant_code": plant.code,
+            "plant_name": plant.name,
+            "company_id": plant.company_id,
+            "plant_type": plant.type.value,
+            "access_level": "calc_modules_only",  # Default access level
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Basic validation
+        if plant.code in ["C001", "P001"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reserved plant codes (C001, P001) cannot be used"
+            )
+            
+        # Insert plant into database
+        await db.plants.insert_one(plant_dict)
+
+        # Update company's plant_ids
+        await db.companies.update_one(
+            {"_id": plant.company_id},
+            {
+                "$push": {"plant_ids": plant_dict["id"]},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+
+        return Plant(**plant_dict)
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating plant: {str(e)}"
         )
 
 @router.get("/{plant_id}", response_model=PlantWithAnswers)
