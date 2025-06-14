@@ -6,6 +6,7 @@ import Navbar from '../components/layout/Navbar';
 import { useGetReportModulesQuery } from '../store/api/apiSlice';
 import { Loader2 } from 'lucide-react';
 import PlantsPage from './PlantsPage';
+import DynamicPageRenderer from '../dynamic-pages';
 
 // Import icons for modules
 import {
@@ -73,7 +74,8 @@ const ModuleView = () => {
 
   const handleModuleClick = (moduleId) => {
     setSelectedModuleId(moduleId);
-    console.log('ModuleView selectedModuleId:', moduleId); // Add this line
+    console.log('ModuleView selectedModuleId:', moduleId);
+    // No navigation - all modules will be rendered in the main content area
   };
 
   const handleLogout = () => {
@@ -177,14 +179,14 @@ const ModuleView = () => {
           ) : selectedModuleId ? (
             <div className="p-8">
               <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h1 className="text-2xl font-bold text-gray-800 mb-4">
-                    Module: {filteredModules.find(m => m.id === selectedModuleId)?.name || 'Unknown'}
-                  </h1>
-                  <p className="text-gray-600">
-                    Content for module {filteredModules.find(m => m.id === selectedModuleId)?.name || 'Unknown'}
-                  </p>
-                </div>
+                {/* Render the DynamicPageRenderer component directly */}
+                {filteredModules.find(m => m.id === selectedModuleId) && (
+                  <DynamicPageRenderer 
+                    reportId={reportId} 
+                    moduleId={selectedModuleId} 
+                    module={filteredModules.find(m => m.id === selectedModuleId)} 
+                  />
+                )}
               </div>
             </div>
           ) : (

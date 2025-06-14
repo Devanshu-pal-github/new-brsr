@@ -11,6 +11,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ModuleView from './pages/ModuleView';
 import PlantsPage from './pages/PlantsPage';
 import PlantDetails from '../Environment/components/PlantDetails';
+import DynamicPageRenderer from './dynamic-pages';
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -63,6 +65,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <PlantDetails />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/reports/:reportId/modules/:moduleId" 
+            element={
+              <ProtectedRoute>
+                <DynamicPageRenderer />
               </ProtectedRoute>
             } 
           />
