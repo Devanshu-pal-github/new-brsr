@@ -128,12 +128,11 @@ export const apiSlice = createApi({
         let cleanedData = updatedData;
 
         // If it's a simple array of objects with row_index, current_year, previous_year
-        if (Array.isArray(updatedData) && updatedData.length > 0 && 'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
-          // For single table data
-          cleanedData = updatedData.map(({ current_year, previous_year }) => ({
-            current_year: current_year || '',
-            previous_year: previous_year || ''
-          }));
+        // and doesn't have table_key (indicating it's a single table, not multi-table)
+        if (Array.isArray(updatedData) && updatedData.length > 0 && 
+            'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
+          // For single table data, remove row_index as it's just for frontend use
+          cleanedData = updatedData.map(({ row_index, ...rest }) => rest);
         }
         // For multi-table and dynamic-table, keep the original structure
         // as it's already processed in QuestionRenderer

@@ -63,19 +63,21 @@ const QuestionRenderer = ({ question, financialYear }) => {
   // Update questionData when question.answer changes
   useEffect(() => {
     if (question.answer) {
-      // For multi-table, we need to transform the flattened array back to the nested structure
+      // For multi-table, transform the flattened array to the expected nested structure
       if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
         const transformedData = {};
         
-        // Group the data by table_key and row_index
+        // Process each item in the flattened array
         question.answer.forEach(item => {
           const tableKey = item.table_key;
           const rowIndex = item.row_index;
           
+          // Initialize the table if it doesn't exist
           if (!transformedData[tableKey]) {
             transformedData[tableKey] = {};
           }
           
+          // Initialize the row if it doesn't exist
           if (!transformedData[tableKey][rowIndex]) {
             transformedData[tableKey][rowIndex] = {};
           }
@@ -94,8 +96,10 @@ const QuestionRenderer = ({ question, financialYear }) => {
         // Convert array of objects to object with row indices as keys
         question.answer.forEach(item => {
           const rowIndex = item.row_index;
-          delete item.row_index; // Remove row_index as it's now the key
-          transformedData[rowIndex] = item;
+          // Create a copy of the item without row_index
+          const rowData = { ...item };
+          delete rowData.row_index;
+          transformedData[rowIndex] = rowData;
         });
         
         setQuestionData(transformedData);
