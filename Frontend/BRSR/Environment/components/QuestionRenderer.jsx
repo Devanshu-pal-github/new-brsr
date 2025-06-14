@@ -63,9 +63,48 @@ const QuestionRenderer = ({ question, financialYear }) => {
   // Update questionData when question.answer changes
   useEffect(() => {
     if (question.answer) {
-      setQuestionData(question.answer);
+      // For multi-table, we need to transform the flattened array back to the nested structure
+      if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
+        const transformedData = {};
+        
+        // Group the data by table_key and row_index
+        question.answer.forEach(item => {
+          const tableKey = item.table_key;
+          const rowIndex = item.row_index;
+          
+          if (!transformedData[tableKey]) {
+            transformedData[tableKey] = {};
+          }
+          
+          if (!transformedData[tableKey][rowIndex]) {
+            transformedData[tableKey][rowIndex] = {};
+          }
+          
+          // Add the data to the nested structure
+          transformedData[tableKey][rowIndex].current_year = item.current_year || '';
+          transformedData[tableKey][rowIndex].previous_year = item.previous_year || '';
+        });
+        
+        setQuestionData(transformedData);
+      } 
+      // For dynamic-table, transform the flattened array to the expected structure
+      else if (metadata?.type === 'dynamic-table' && Array.isArray(question.answer)) {
+        const transformedData = {};
+        
+        // Convert array of objects to object with row indices as keys
+        question.answer.forEach(item => {
+          const rowIndex = item.row_index;
+          delete item.row_index; // Remove row_index as it's now the key
+          transformedData[rowIndex] = item;
+        });
+        
+        setQuestionData(transformedData);
+      }
+      else {
+        setQuestionData(question.answer);
+      }
     }
-  }, [question.answer]);
+  }, [question.answer, metadata?.type]);
 
   const handleSave = async (data) => {
     console.log('Saving data with:', {

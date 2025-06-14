@@ -124,11 +124,19 @@ export const apiSlice = createApi({
         console.log('Received payload:', payload);
         const { financialYear, questionId, questionTitle, updatedData } = payload;
 
-        // Remove row_index and convert to simple array of current_year/previous_year objects
-        const cleanedData = updatedData.map(({ current_year, previous_year }) => ({
-          current_year: current_year || '',
-          previous_year: previous_year || ''
-        }));
+        // Process data based on structure
+        let cleanedData = updatedData;
+
+        // If it's a simple array of objects with row_index, current_year, previous_year
+        if (Array.isArray(updatedData) && updatedData.length > 0 && 'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
+          // For single table data
+          cleanedData = updatedData.map(({ current_year, previous_year }) => ({
+            current_year: current_year || '',
+            previous_year: previous_year || ''
+          }));
+        }
+        // For multi-table and dynamic-table, keep the original structure
+        // as it's already processed in QuestionRenderer
 
         console.log('Sending to backend:', {
           questionId,
@@ -144,7 +152,8 @@ export const apiSlice = createApi({
             questionTitle,
             updatedData: cleanedData
           }
-        };},
+        };
+      },
       transformErrorResponse: (response) => {
         console.error('🔴 Table Answer Update Error:', response);
         return response;

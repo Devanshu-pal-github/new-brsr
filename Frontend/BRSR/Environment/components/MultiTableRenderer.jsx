@@ -70,6 +70,7 @@ const MultiTableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
               metadata={{
                 ...metadata,
                 columns: table.columns || metadata.columns,
+                rows: table.rows || metadata.rows,
                 title: table.title || metadata.title
               }}
               data={tableData}
