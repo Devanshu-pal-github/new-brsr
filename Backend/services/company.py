@@ -194,6 +194,70 @@ class CompanyService:
             {"$set": {"access_level": "all_modules"}}
         )
         
+        # Update access_modules for company_admin and plant_admin users of this company
+        # Company admins get access to all modules (both basic and calc)
+        company_admins = await self.db.users.find({
+            "company_id": company_id,
+            "role": "company_admin"
+        }).to_list(length=None)
+        
+        for admin in company_admins:
+            # Update the user's access_modules with all modules
+            all_modules = basic_modules + calc_modules
+            if all_modules:
+                await self.db.users.update_one(
+                    {"_id": admin["_id"]},
+                    {"$addToSet": {"access_modules": {"$each": all_modules}}}
+                )
+        
+        # Plant admins only get access to calc modules
+        plant_admins = await self.db.users.find({
+            "company_id": company_id,
+            "role": "plant_admin"
+        }).to_list(length=None)
+        
+        for admin in plant_admins:
+            # Update the user's access_modules with only calc modules
+            if calc_modules:
+                await self.db.users.update_one(
+                    {"_id": admin["_id"]},
+                    {"$addToSet": {"access_modules": {"$each": calc_modules}}}
+                )
+                
+                # Ensure plant admin has access to all plants in the company
+                plants = await self.db.plants.find({"company_id": company_id}).to_list(length=None)
+                
+                # Get existing user access records
+                user_access_records = await self.db.user_access.find({
+                    "user_id": admin["_id"],
+                    "company_id": company_id
+                }).to_list(length=None)
+                
+                # Create a set of plant IDs that the user already has access to
+                existing_plant_access = set()
+                for record in user_access_records:
+                    if "plant_id" in record and record["plant_id"]:
+                        existing_plant_access.add(record["plant_id"])
+                
+                # Create user access records for plants that the user doesn't already have access to
+                for plant in plants:
+                    if plant["id"] not in existing_plant_access:
+                        try:
+                            await self.db.user_access.insert_one({
+                                "id": str(uuid.uuid4()),
+                                "user_id": admin["_id"],
+                                "company_id": company_id,
+                                "plant_id": plant["id"],
+                                "role": "plant_admin",
+                                "access_level": "validate",
+                                "scope": "plant",
+                                "created_at": datetime.utcnow(),
+                                "updated_at": datetime.utcnow()
+                            })
+                        except Exception:
+                            # If access already exists, continue to the next plant
+                            continue
+        
         # Return the updated company
         company = await self.get_company(company_id)
         if not company:

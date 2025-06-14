@@ -301,15 +301,42 @@ async def assign_user_to_company(
         # For plant_admin, set both company_id and plant_id (using first plant if available)
         update_fields = {"company_id": company_id}
         
-        # If role is plant_admin, assign to the first plant in the company
+        # If role is plant_admin, assign to all plants in the company
         if role == UserRole.PLANT_ADMIN.value and company.plant_ids and len(company.plant_ids) > 0:
+            # First, set the primary plant_id to the first plant (for backward compatibility)
             update_fields["plant_id"] = company.plant_ids[0]
-        
-        # Update the user document with company_id and plant_id
-        await db.users.update_one(
-            {"_id": user_id},
-            {"$set": update_fields}
-        )
+            
+            # Update the user document with company_id and primary plant_id
+            await db.users.update_one(
+                {"_id": user_id},
+                {"$set": update_fields}
+            )
+            
+            # Create user access records for all plants in the company
+            for plant_id in company.plant_ids:
+                # Skip the first plant as we already created access for it
+                if plant_id == company.plant_ids[0]:
+                    continue
+                    
+                try:
+                    plant_access = UserAccessCreate(
+                        user_id=user_id,
+                        company_id=company_id,
+                        plant_id=plant_id,
+                        role=role,
+                        access_level=access_level,
+                        scope=AccessScope.PLANT
+                    )
+                    await user_access_service.create_user_access(plant_access)
+                except ValueError:
+                    # If access already exists, continue to the next plant
+                    continue
+        else:
+            # Update the user document with company_id
+            await db.users.update_one(
+                {"_id": user_id},
+                {"$set": update_fields}
+            )
         
         # If company has active reports with modules, assign appropriate modules to the user
         if company.active_reports:

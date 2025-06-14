@@ -25,24 +25,32 @@ class PlantService:
         # Check if plant code already exists for company
         existing_plant = await self.db.plants.find_one({
             "company_id": plant_data.company_id,
-            "code": plant_data.code
+            "plant_code": plant_data.code
         })
         if existing_plant:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Plant with code {plant_data.code} already exists for this company"
-            )
+            raise ValueError(f"Plant with code {plant_data.code} already exists for this company")
 
-        # Create plant document
-        plant_dict = plant_data.model_dump()
-        plant_dict["_id"] = str(uuid.uuid4())
-        plant_dict["id"] = plant_dict["_id"]
-        plant_dict["created_at"] = datetime.utcnow()
-        plant_dict["updated_at"] = datetime.utcnow()
+        # Ensure C001 and P001 are unique and only created during company creation
+        if plant_data.code in ["C001", "P001"]:
+            raise ValueError(f"Plant code {plant_data.code} is reserved for system use and cannot be manually created")
+
+        # For manually added plants, ensure type is 'regular'
+        if plant_data.type != PlantType.REGULAR:
+            plant_data.type = PlantType.REGULAR
+
+        plant_dict = {
+            "id": str(uuid.uuid4()),
+            "plant_code": plant_data.code,
+            "plant_name": plant_data.name,
+            "company_id": plant_data.company_id,
+            "plant_type": plant_data.type.value,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
 
         # Set access level based on plant type
         if plant_data.type in [PlantType.AGGREGATOR, PlantType.HOME]:
-            # Get all modules from company's active reports
+            # C001 and P001 plants get all modules from company's active reports
             company = await self.db.companies.find_one({"_id": plant_data.company_id})
             access_modules = []
             for report in company.get("active_reports", []):
@@ -66,6 +74,25 @@ class PlantService:
                 "$set": {"updated_at": datetime.utcnow()}
             }
         )
+
+        # Find plant admins for this company and assign them the calc modules
+        plant_admins = await self.db.users.find({
+            "company_id": plant_data.company_id,
+            "role": "plant_admin"
+        }).to_list(length=None)
+        
+        # Get calc modules from the company's active reports
+        calc_modules = []
+        for report in company.get("active_reports", []):
+            calc_modules.extend(report.get("calc_modules", []))
+        
+        # Assign calc modules to all plant admins
+        if calc_modules and plant_admins:
+            for admin in plant_admins:
+                await self.db.users.update_one(
+                    {"_id": admin["_id"]},
+                    {"$addToSet": {"access_modules": {"$each": calc_modules}}}
+                )
 
         return Plant(**plant_dict)
 
@@ -263,4 +290,4 @@ class PlantService:
             plants = [Plant(**plant) async for plant in cursor]
             return plants
         except Exception as e:
-            raise Exception(f"Error fetching plants: {str(e)}") 
+            raise Exception(f"Error fetching plants: {str(e)}")
