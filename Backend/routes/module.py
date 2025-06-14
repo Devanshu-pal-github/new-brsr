@@ -10,7 +10,6 @@ from services.module import ModuleService
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter(
-    prefix="/modules",
     tags=["modules"],
     responses={
         404: {"description": "Not found"},

@@ -9,6 +9,7 @@ from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
 import json
+from pymongo.errors import DuplicateKeyError
 
 class ModuleService:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -74,8 +75,21 @@ class ModuleService:
         module_obj = Module(**module_dict)
         json_structure = module_obj.to_json_structure()
         
-        # Store both the full model and its JSON structure representation
-        await self.collection.insert_one(module_dict)
+        # Check if a module with the same name already exists
+        if await self.collection.find_one({"name": module_dict["name"]}):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Module with name '{module_dict['name']}' already exists"
+            )
+
+        try:
+            # Store both the full model and its JSON structure representation
+            await self.collection.insert_one(module_dict)
+        except DuplicateKeyError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Module with name '{module_dict['name']}' already exists"
+            )
         
         # Create a dedicated collection for this module's answers
         module_answers_collection = self.db[f"module_answers_{module_dict['_id']}"]
