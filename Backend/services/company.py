@@ -149,11 +149,16 @@ class CompanyService:
             # If modules are provided, categorize them
             module_service = ModuleService(self.db)
             for module_id in modules:
-                module_doc = await module_service.get_module_document(module_id)
-                if module_doc:
+                module_doc = await module_service.get_module(module_id)
+                if module_doc and isinstance(module_doc, dict):
                     if module_doc.get("module_type") == ModuleType.BASIC.value:
                         basic_modules.append(module_id)
                     elif module_doc.get("module_type") == ModuleType.CALC.value:
+                        calc_modules.append(module_id)
+                elif module_doc:  # If module_doc is a Module object
+                    if getattr(module_doc, "module_type", None) == ModuleType.BASIC.value:
+                        basic_modules.append(module_id)
+                    elif getattr(module_doc, "module_type", None) == ModuleType.CALC.value:
                         calc_modules.append(module_id)
         else:
             # If no modules are provided, use the default modules from the report definition
@@ -166,7 +171,7 @@ class CompanyService:
         
         active_report = {
             "report_id": report_id,
-            "report_name": report.get("name", ""),  # Add report name to the response
+            "report_name": report_doc.get("name", ""),  # Add report name to the response
             "assigned_modules": assigned_modules,
             "financial_year": financial_year,
             "status": "active"

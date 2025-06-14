@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from typing import List, Dict
 from dependencies import DB, check_super_admin_access
 from models.company import CompanyCreate, Company, CompanyUpdate, CompanyWithPlants
@@ -168,13 +168,22 @@ async def get_report_modules(
 async def add_report_to_company(
     company_id: str,
     report_id: str,
-    financial_year: str = Query(..., description="Financial year for the report (e.g., '2023-2024')"),
-    modules: List[str] = Query([], description="List of module IDs to assign"),
+    data: Dict = Body(..., description="Request body containing financial_year and optional modules"),
     company_service: CompanyService = Depends(get_company_service),
     current_user: Dict = Depends(check_super_admin_access)
 ):
     """Add a report to a company's active reports"""
     try:
+        # Extract financial_year and modules from the request body
+        financial_year = data.get("financial_year")
+        modules = data.get("modules", [])
+        
+        if not financial_year or not isinstance(financial_year, str):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="financial_year must be a valid string"
+            )
+            
         company = await company_service.assign_report(company_id, report_id, financial_year, modules)
         if not company:
             raise HTTPException(

@@ -104,14 +104,11 @@ class ModuleService:
         
         return module_obj
 
-    async def get_module(self, module_id: str, include_details: bool = False) -> Module:
+    async def get_module(self, module_id: str, include_details: bool = False) -> Optional[Module]:
         """Get module by ID with enhanced details"""
         module = await self.collection.find_one({"_id": module_id})
         if not module:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Module not found"
-            )
+            return None
 
         if include_details:
             # Calculate total questions across all categories
