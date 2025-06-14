@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import CategoryRenderer from './CategoryRenderer';
 
-const QuestionCategory = ({ category }) => {
+const QuestionCategory = ({ category, financialYear }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+
+    if (!financialYear) {
+        console.warn('QuestionCategory: financialYear prop is required');
+    }
 
     return (
         <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
@@ -22,7 +26,10 @@ const QuestionCategory = ({ category }) => {
             </div>
             {isExpanded && (
                 <div className="py-4">
-                    <CategoryRenderer category={category} />
+                    <CategoryRenderer 
+                        category={category} 
+                        financialYear={financialYear}
+                    />
                 </div>
             )}
         </div>

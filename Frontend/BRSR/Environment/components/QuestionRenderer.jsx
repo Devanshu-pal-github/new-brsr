@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
+import { useUpdateTableAnswerMutation } from '../../src/store/api/apiSlice';
+import { toast } from 'react-toastify';
 
 const AuditBadge = ({ isAuditRequired }) => (
   <div className={`inline-block px-3 py-1 rounded-full text-xs ${
@@ -50,20 +52,81 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
   );
 };
 
-const QuestionRenderer = ({ question }) => {
+const QuestionRenderer = ({ question, financialYear }) => {
+
+  console.log('Rendering Question:', question);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(question.answer || {});
   const [tempData, setTempData] = useState(questionData);
-
-  const handleSave = (data) => {
-    console.log('Saving question data:', {
+  const [updateTableAnswer, { isLoading }] = useUpdateTableAnswerMutation();
+  const handleSave = async (data) => {
+    console.log('Saving data with:', {
       questionId: question.id,
       questionTitle: title,
-      updatedData: data
+      financialYear,
+      type: metadata?.type,
+      data
     });
-    setQuestionData(data);
-    setIsEditModalOpen(false);
+
+    try {
+      if (!question.id || !title || !financialYear) {
+        console.error('Missing required data:', {
+          questionId: question.id,
+          questionTitle: title,
+          financialYear
+        });
+        toast.error('Missing required question information');
+        return;
+      }
+
+      if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+        let formattedData;
+        
+        if (metadata.type === 'table') {
+          // Format single table data
+          formattedData = Object.entries(data).map(([rowIndex, rowData]) => ({
+            row_index: parseInt(rowIndex),
+            current_year: rowData.current_year || '',
+            previous_year: rowData.previous_year || ''
+          }));
+        } else if (metadata.type === 'multi-table') {
+          // Format multi-table data
+          formattedData = {};
+          Object.entries(data).forEach(([tableKey, tableData]) => {
+            formattedData[tableKey] = Object.entries(tableData).map(([rowIndex, rowData]) => ({
+              row_index: parseInt(rowIndex),
+              current_year: rowData.current_year || '',
+              previous_year: rowData.previous_year || ''
+            }));
+          });
+        } else if (metadata.type === 'dynamic-table') {
+          // Format dynamic table data similar to single table
+          formattedData = Object.entries(data).map(([rowIndex, rowData]) => ({
+            row_index: parseInt(rowIndex),
+            ...rowData
+          }));
+        }
+
+        await updateTableAnswer({
+          financialYear,
+          questionId: question.id,
+          questionTitle: title,
+          updatedData: formattedData
+        }).unwrap();
+
+        toast.success('Answer saved successfully');
+      } else {
+        // Handle non-table data types if needed
+        console.log('Saving non-table data:', data);
+      }
+
+      setQuestionData(data);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save answer:', error);
+      toast.error(error.data?.detail || 'Failed to save answer');
+    }
   };
 
   const handleDataChange = (newData) => {
@@ -135,12 +198,31 @@ const QuestionRenderer = ({ question }) => {
             Edit Response
           </button>
         </div>
-      </div>
-
-      {/* Content Display */}
-      {metadata?.type === 'table' && <TableRenderer metadata={metadata} data={questionData} />}
-      {metadata?.type === 'multi-table' && <MultiTableRenderer metadata={metadata} data={questionData} />}
-      {metadata?.type === 'dynamic-table' && <DynamicTableRenderer metadata={metadata} data={questionData} />}
+      </div>      {/* Content Display */}
+      {metadata?.type === 'table' && (
+        <TableRenderer 
+          metadata={metadata} 
+          data={questionData}
+        />
+      )}
+      {metadata?.type === 'multi-table' && (
+        <MultiTableRenderer 
+          metadata={metadata} 
+          data={questionData}
+          questionId={question.id}
+          questionTitle={title}
+          financialYear={financialYear}
+        />
+      )}
+      {metadata?.type === 'dynamic-table' && (
+        <DynamicTableRenderer 
+          metadata={metadata} 
+          data={questionData}
+        />
+      )}
+      {isLoading && (
+        <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
+      )}
       {metadata?.note && (
         <div
           className="text-xs text-gray-500 mt-2"

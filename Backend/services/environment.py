@@ -231,3 +231,82 @@ class EnvironmentService:
             }
         )
         return result.modified_count > 0
+
+    async def patch_table_answer(
+        self,
+        company_id: str,
+        financial_year: str,
+        question_id: str,
+        question_title: str,
+        row_updates: List[Dict[str, Union[int, str]]]
+    ) -> bool:
+        """Update specific rows in a table answer"""
+        now = datetime.utcnow()
+
+        # First get the existing answer
+        report = await self.collection.find_one({
+            "companyId": company_id,
+            "financialYear": financial_year
+        })
+
+        if not report:
+            return False
+
+        # Get existing answer data or initialize empty array
+        existing_answer = report.get("answers", {}).get(question_id, {})
+        existing_data = existing_answer.get("updatedData", [])
+        
+        if not isinstance(existing_data, list):
+            # Handle case where existing data is not an array (e.g., multi-table)
+            return False
+
+        # Process and validate all row indices first
+        validated_updates = []
+        max_index = -1
+        for update in row_updates:
+            try:
+                index = int(update["row_index"])
+                if index < 0:
+                    return False  # Reject negative indices
+                max_index = max(max_index, index)
+                validated_updates.append({
+                    "row_index": index,
+                    "current_year": str(update["current_year"]),
+                    "previous_year": str(update["previous_year"])
+                })
+            except (ValueError, TypeError):
+                return False  # Invalid row_index that can't be converted to int
+
+        # Ensure the list has enough capacity
+        while len(existing_data) <= max_index:
+            existing_data.append({"current_year": "", "previous_year": ""})
+
+        # Apply the validated updates
+        for update in validated_updates:
+            index = update["row_index"]
+            existing_data[index] = {
+                "current_year": update["current_year"],
+                "previous_year": update["previous_year"]
+            }
+
+        # Create or update the answer
+        question_answer = QuestionAnswer(
+            questionId=question_id,
+            questionTitle=question_title,
+            updatedData=existing_data,
+            lastUpdated=now
+        )
+
+        result = await self.collection.update_one(
+            {
+                "companyId": company_id,
+                "financialYear": financial_year
+            },
+            {
+                "$set": {
+                    f"answers.{question_id}": question_answer.dict(),
+                    "updatedAt": now
+                }
+            }
+        )
+        return result.modified_count > 0  # Return true only if update was successful

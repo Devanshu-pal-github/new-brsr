@@ -119,6 +119,37 @@ export const apiSlice = createApi({
             { type: 'EnvironmentReports', id: 'LIST' },
           ]
           : [{ type: 'EnvironmentReports', id: 'LIST' }],
+    }),      updateTableAnswer: builder.mutation({
+      query: (payload) => {
+        console.log('Received payload:', payload);
+        const { financialYear, questionId, questionTitle, updatedData } = payload;
+
+        // Remove row_index and convert to simple array of current_year/previous_year objects
+        const cleanedData = updatedData.map(({ current_year, previous_year }) => ({
+          current_year: current_year || '',
+          previous_year: previous_year || ''
+        }));
+
+        console.log('Sending to backend:', {
+          questionId,
+          questionTitle,
+          updatedData: cleanedData
+        });
+
+        return {
+          url: `/environment/reports/${financialYear}/table-answer`,
+          method: 'POST',
+          body: {
+            questionId,
+            questionTitle,
+            updatedData: cleanedData
+          }
+        };},
+      transformErrorResponse: (response) => {
+        console.error('🔴 Table Answer Update Error:', response);
+        return response;
+      },
+      invalidatesTags: ['EnvironmentReports']
     }),
 
   }),
@@ -134,7 +165,8 @@ export const {
   useGetReportModulesQuery,
   useLazyGetReportModulesQuery,
   useGetCompanyPlantsQuery,
-  useGetCompanyReportsQuery
+  useGetCompanyReportsQuery,
+  useUpdateTableAnswerMutation
 } = apiSlice;
 
 export default apiSlice;

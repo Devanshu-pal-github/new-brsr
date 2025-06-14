@@ -24,7 +24,7 @@ const TableRenderer = ({ metadata, data = {}, isEditing = false, onSave }) => {
   };
 
   const isFirstColumnEditable = metadata.columns[0]?.key === 'category_of_waste' || 
-                               metadata.columns[0]?.key === 'waste_category';
+                                metadata.columns[0]?.key === 'waste_category';
 
   return (
     <div className="overflow-x-auto">

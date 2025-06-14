@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import moduleData from '../data/moduleData.json';
 import QuestionCategory from './QuestionCategory';
+import { useSearchParams } from 'react-router-dom';
 
 const EnvironmentContent = () => {
+  const [searchParams] = useSearchParams();
+  const financialYear = searchParams.get('financialYear') || '2024-2025'; // Default value
   const [activeSubmodule, setActiveSubmodule] = useState(null);
 
   useEffect(() => {
@@ -37,9 +40,12 @@ const EnvironmentContent = () => {
           moduleData.submodules.map((submodule) => (
             activeSubmodule === submodule.name && (
               <div key={submodule.name}>
-                <h3 className="text-2xl font-extrabold text-gray-900 mb-5 border-b pb-3">{submodule.name}</h3>
-                {submodule.categories.map((category) => (
-                  <QuestionCategory key={category.id} category={category} />
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-5 border-b pb-3">{submodule.name}</h3>                {submodule.categories.map((category) => (
+                  <QuestionCategory 
+                    key={category.id} 
+                    category={category} 
+                    financialYear={financialYear}
+                  />
                 ))}
               </div>
             )

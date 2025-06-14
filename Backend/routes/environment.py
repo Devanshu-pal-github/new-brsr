@@ -1,9 +1,9 @@
 from typing import List, Dict, Optional, Any, Union
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from services.environment import EnvironmentService
-from dependencies import get_database
+from dependencies import get_database, get_current_active_user, check_company_access
 from models.environment import EnvironmentReport, QuestionAnswer
 from pydantic import BaseModel
 
@@ -33,20 +33,34 @@ async def create_environment_report(
 
 @router.get("/reports", response_model=List[EnvironmentReport])
 async def get_company_reports(
-    company_id: str = Query(..., description="Company ID"),
-    service: EnvironmentService = Depends(get_environment_service)
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
 ):
     """Get all environment reports for a company"""
-    return await service.get_company_reports(company_id)
+    # Check if user has company access
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+    
+    return await service.get_company_reports(user["company_id"])
 
 @router.get("/reports/{financial_year}", response_model=Optional[EnvironmentReport])
 async def get_report(
     financial_year: str,
-    company_id: str = Query(..., description="Company ID"),
-    service: EnvironmentService = Depends(get_environment_service)
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
 ):
     """Get a specific environment report"""
-    report = await service.get_report(company_id, financial_year)
+    # Check if user has company access
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+        
+    report = await service.get_report(user["company_id"], financial_year)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     return report
@@ -60,12 +74,19 @@ async def update_answer(
     financial_year: str,
     question_id: str,
     update: AnswerUpdate,
-    company_id: str = Query(..., description="Company ID"),
-    service: EnvironmentService = Depends(get_environment_service)
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
 ):
     """Update answer for a specific question"""
+    # Check if user has company access
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+        
     success = await service.update_answer(
-        company_id=company_id,
+        company_id=user["company_id"],
         financial_year=financial_year,
         question_id=question_id,
         question_title=update.questionTitle,
@@ -143,11 +164,13 @@ class TableAnswerUpdate(BaseModel):
 async def update_table_answer(
     financial_year: str,
     update: TableAnswerUpdate,
-    company_id: str = Query(..., description="Company ID"),
+    current_user: dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service)
 ):
-    print("financial_year:", financial_year)
     """Update table answer for a specific question"""
+    company_id = current_user["company_id"]
+    print("current_user:", current_user)
+    
     # First check if the report exists
     report = await service.get_report(company_id, financial_year)
     if not report:
@@ -163,3 +186,49 @@ async def update_table_answer(
     if not success:
         raise HTTPException(status_code=404, detail="Failed to update table answer.")
     return {"message": "Table answer updated successfully"}
+
+class RowUpdate(BaseModel):
+    row_index: int
+    current_year: str
+    previous_year: str
+
+class PatchTableAnswer(BaseModel):
+    questionTitle: str
+    rows: List[RowUpdate]
+
+@router.patch("/reports/{financial_year}/answers/{question_id}")
+async def patch_table_answer(
+    financial_year: str,
+    question_id: str,
+    update: PatchTableAnswer,
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    """Update specific rows in a table answer"""
+    # Check if user has company access
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+
+    # Convert RowUpdate models to dictionaries
+    row_updates = []
+    for row in update.rows:
+        row_updates.append({
+            "row_index": row.row_index,
+            "current_year": row.current_year,
+            "previous_year": row.previous_year
+        })
+
+    success = await service.patch_table_answer(
+        company_id=user["company_id"],
+        financial_year=financial_year,
+        question_id=question_id,
+        question_title=update.questionTitle,
+        row_updates=row_updates
+    )
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="Question not found or update failed")
+    return {"message": "Table rows updated successfully"}
