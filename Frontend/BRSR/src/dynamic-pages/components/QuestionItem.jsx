@@ -24,14 +24,14 @@ const QuestionItem = ({ question }) => {
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
       <div className="flex justify-between items-start mb-2">
-        <h4 className="text-lg font-semibold text-gray-800">{question.title}</h4>
+        <h4 className="text-lg font-semibold text-gray-800">{question.question_text || question.title || question.human_readable_id}</h4>
         {question.isAuditRequired !== undefined && (
           <AuditBadge isAuditRequired={question.isAuditRequired} />
         )}
       </div>
       
-      {question.description && (
-        <p className="text-gray-600 text-sm mb-4">{question.description}</p>
+      {(question.description || question.metadata?.description) && (
+        <p className="text-gray-600 text-sm mb-4">{question.description || question.metadata?.description}</p>
       )}
       
       <div className="mt-4">

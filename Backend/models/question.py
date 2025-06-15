@@ -118,6 +118,8 @@ class Question(BaseModel):
     human_readable_id: str
     category_id: str
     module_id: Optional[str] = None
+    question_text: Optional[str] = None
+    question_type: Optional[str] = None
     metadata: Dict = {}
 
 
@@ -127,6 +129,8 @@ class QuestionInDB(BaseDBModel):
     human_readable_id: str
     category_id: str
     module_id: Optional[str] = None
+    question_text: Optional[str] = None
+    question_type: Optional[str] = None
     metadata: Dict = {}
 
 class QuestionWithCategory(QuestionInDB):

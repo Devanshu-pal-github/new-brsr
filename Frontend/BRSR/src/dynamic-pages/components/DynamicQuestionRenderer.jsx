@@ -78,7 +78,7 @@ const DynamicQuestionRenderer = ({
       <EditModal 
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 
-        title={`Edit: ${question.title}`}
+        title={`Edit: ${question.question_text || question.title || question.human_readable_id}`}
         onSave={onSave}
         tempData={tempData}
       >
