@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EditModal from './EditModal';
 
 // Import renderers from Environment components or create new ones
@@ -15,7 +15,17 @@ const DynamicQuestionRenderer = ({
  }) => {
   const [tempData, setTempData] = useState(questionData);
 
+  // Update tempData when questionData changes
+  useEffect(() => {
+    setTempData(questionData);
+  }, [questionData]);
+
+  // Log the question metadata for debugging
+  console.log('🧩 Question metadata:', question.metadata);
+  console.log('📊 Question data:', questionData);
+
   const handleDataChange = (newData) => {
+    console.log('📝 Data changed in renderer:', newData);
     setTempData(newData);
   };
 
@@ -61,12 +71,23 @@ const DynamicQuestionRenderer = ({
 
   const renderReadOnlyContent = () => {
     // Display read-only version of the question data
-    if (!Object.keys(questionData).length) {
+    if (!questionData || !Object.keys(questionData).length) {
       return <p className="text-gray-500 italic">No response provided yet.</p>;
     }
 
-    // For simplicity, just show that there's data
-    return <p className="text-green-600">Response submitted</p>;
+    const metadata = question.metadata;
+    if (!metadata) {
+      return <p className="text-green-600">Response submitted</p>;
+    }
+
+    // For now, just show that there's data
+    // In a real implementation, you would render a read-only version of the table
+    return (
+      <div className="p-2 bg-gray-50 rounded border border-gray-200">
+        <p className="text-green-600 font-medium">Response submitted</p>
+        <p className="text-xs text-gray-500 mt-1">Click 'Edit Response' to view or modify the data</p>
+      </div>
+    );
   };
 
   return (
@@ -79,7 +100,7 @@ const DynamicQuestionRenderer = ({
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 
         title={`Edit: ${question.question_text || question.title || question.human_readable_id}`}
-        onSave={onSave}
+        onSave={() => onSave(tempData)}
         tempData={tempData}
       >
         {renderEditableContent()}

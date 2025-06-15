@@ -1,106 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import QuestionList from './QuestionList';
 import { useLazyGetQuestionsByIdsQuery } from '../../store/api/apiSlice';
-import LoadingState from './LoadingState';
-import ErrorState from './ErrorState';
+import QuestionList from './QuestionList';
 
-const CategoryContainer = ({ category }) => {
-  console.log('🏁 CategoryContainer rendering with category:', category);
-  const [isExpanded, setIsExpanded] = useState(false);
+const CategoryContainer = ({ category, financialYear }) => {
+  const [isExpanded, setIsExpanded] = useState(true); // Start expanded since parent is already handling expansion
   const [categoryWithQuestions, setCategoryWithQuestions] = useState(category);
-  const [needsFetching, setNeedsFetching] = useState(false);
   
-  // Use the lazy query hook to fetch questions when needed
-  const [fetchQuestions, { data: questionsData, isLoading, error, isFetching }] = useLazyGetQuestionsByIdsQuery();
+  const [fetchQuestions, { data: fetchedQuestions, isLoading, isError, error }] = 
+    useLazyGetQuestionsByIdsQuery();
 
-  // Check if we need to fetch questions when the category is expanded
+  // Determine if we need to fetch questions
   useEffect(() => {
-    // If the category already has questions, use them
-    if (category.questions && category.questions.length > 0) {
-      console.log('✅ Category already has questions:', category.questions);
-      setCategoryWithQuestions(category);
-      setNeedsFetching(false);
-    } 
-    // Otherwise, check if we need to fetch questions
-    else if (isExpanded && category.question_ids && category.question_ids.length > 0) {
-      console.log('🔍 Need to fetch questions for category:', category.name);
-      setNeedsFetching(true);
-    }
-  }, [isExpanded, category]);
+    const shouldFetchQuestions = 
+      isExpanded && 
+      category.question_ids && 
+      category.question_ids.length > 0 && 
+      (!categoryWithQuestions.questions || categoryWithQuestions.questions.length === 0);
 
-  // Fetch questions when needed
-  useEffect(() => {
-    if (needsFetching && !isFetching && !isLoading) {
-      console.log('🔍 Fetching questions for category:', category.name, 'with IDs:', category.question_ids);
-      fetchQuestions({ questionIds: category.question_ids, categoryId: category.id })
-        .unwrap()
-        .then(data => {
-          console.log('🎯 Raw API response for questions:', data);
-          setNeedsFetching(false);
-        })
-        .catch(err => {
-          console.error('❌ Error fetching questions:', err);
-          setNeedsFetching(false);
-        });
-    }
-  }, [needsFetching, category, fetchQuestions, isFetching, isLoading]);
-
-  // Update the category with fetched questions
-  useEffect(() => {
-    console.log('📊 Questions data state:', { questionsData, isLoading, error, isFetching });
-    if (questionsData && questionsData.length > 0) {
-      console.log('✅ Questions fetched successfully:', questionsData);
-      setCategoryWithQuestions(prev => {
-        const updated = {
-          ...prev,
-          questions: questionsData
-        };
-        console.log('🔄 Updated category with questions:', updated);
-        return updated;
+    if (shouldFetchQuestions) {
+      console.log('🔄 Fetching questions for category:', category.id, 'with financial year:', financialYear);
+      fetchQuestions({
+        questionIds: category.question_ids,
+        categoryId: category.id,
+        include_category: true,
+        financialYear: financialYear
       });
     }
-  }, [questionsData, isLoading, error, isFetching]);
+  }, [isExpanded, category, categoryWithQuestions, fetchQuestions, financialYear]);
 
-  const toggleExpand = () => {
-    console.log('🔄 Toggling category expansion for:', category.name);
-    setIsExpanded(!isExpanded);
-  };
+  // Update local state when questions are fetched
+  useEffect(() => {
+    if (fetchedQuestions && fetchedQuestions.length > 0) {
+      console.log('✅ Questions fetched successfully:', fetchedQuestions);
+      setCategoryWithQuestions({
+        ...category,
+        questions: fetchedQuestions
+      });
+    }
+  }, [fetchedQuestions, category]);
+
+  // No need for toggle function since parent is handling expansion
 
   return (
-    <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
-      <div
-        onClick={toggleExpand}
-        className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-300 ease-in-out border-b border-gray-200"
-      >
-        <span className="flex-1 font-semibold text-base text-gray-800">
-          {category.name}
-          {category.question_ids && (
-            <span className="ml-2 text-xs text-gray-500">
-              ({category.question_ids.length} questions)
-            </span>
-          )}
-        </span>
-        {isExpanded ? (
-          <ChevronUp className="w-5 h-5" />
-        ) : (
-          <ChevronDown className="w-5 h-5" />
-        )}
-      </div>
-      {isExpanded && (
-        <div className="py-4">
-          {isLoading || isFetching ? (
-            <LoadingState message="Loading questions..." />
-          ) : error ? (
-            <ErrorState message={
-              error?.data?.detail || 
-              error?.error || 
-              'Failed to fetch questions. Please try again later.'
-            } />
-          ) : (
-            <QuestionList category={categoryWithQuestions} />
-          )}
+    <div className="border border-gray-200 rounded-lg bg-white">
+      {isLoading ? (
+        <div className="text-center py-4">
+          <p className="text-gray-500">Loading questions...</p>
         </div>
+      ) : isError ? (
+        <div className="text-center py-4">
+          <p className="text-red-500">Error loading questions: {error?.data?.message || 'Unknown error'}</p>
+        </div>
+      ) : (
+        <QuestionList 
+          category={categoryWithQuestions} 
+          financialYear={financialYear}
+        />
       )}
     </div>
   );

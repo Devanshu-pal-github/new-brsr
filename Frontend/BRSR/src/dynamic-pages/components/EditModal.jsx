@@ -3,6 +3,11 @@ import React from 'react';
 const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
   if (!isOpen) return null;
 
+  const handleSave = () => {
+    console.log('💾 Saving data from modal:', tempData);
+    onSave(tempData);
+  };
+
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-11/12 max-w-4xl max-h-[90vh] overflow-hidden">
@@ -27,7 +32,7 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
               Cancel
             </button>
             <button
-              onClick={() => onSave(tempData)}
+              onClick={handleSave}
               className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
             >
               Save Changes
