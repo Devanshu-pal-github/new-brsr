@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { apiSlice } from '../api/apiSlice';
 
 // Get user data from localStorage if available
 const getUserFromStorage = () => {
@@ -106,55 +105,52 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addMatcher(
-        apiSlice.endpoints.login.matchPending,
-        (state) => {
-          state.isLoading = true;
-          state.error = null;
-        }
-      )
-      .addMatcher(
-        apiSlice.endpoints.login.matchFulfilled,
-        (state, { payload }) => {
-          state.isLoading = false;
-          state.isAuthenticated = true;
-          state.user = {
-            id: payload.user_id,
-            user_name: payload.user_name,
-            role: payload.role,
-            company_id: payload.company_id,
-            plant_id: payload.plant_id
-          };
-          state.token = payload.access_token;
-          state.refreshToken = payload.refresh_token;
-          state.tokenType = payload.token_type;
-          state.expiresIn = payload.expires_in;
-          
-          // Store in localStorage
-          try {
-            localStorage.setItem('user', JSON.stringify(state.user));
-            localStorage.setItem('token', payload.access_token);
-            localStorage.setItem('refresh_token', payload.refresh_token);
-            localStorage.setItem('user_name', payload.user_name);
-          } catch (error) {
-            console.error('Error storing authentication data in localStorage:', error);
-          }
-        }
-      )
-      .addMatcher(
-        apiSlice.endpoints.login.matchRejected,
-        (state, { payload, error }) => {
-          state.isLoading = false;
-          state.error = payload?.detail || error?.message || 'Authentication failed';
-        }
-      );
-  },
+    loginPending: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    loginFulfilled: (state, { payload }) => {
+      state.isLoading = false;
+      state.isAuthenticated = true;
+      state.user = {
+        id: payload.user_id,
+        user_name: payload.user_name,
+        role: payload.role,
+        company_id: payload.company_id,
+        plant_id: payload.plant_id
+      };
+      state.token = payload.access_token;
+      state.refreshToken = payload.refresh_token;
+      state.tokenType = payload.token_type;
+      state.expiresIn = payload.expires_in;
+      
+      // Store in localStorage
+      try {
+        localStorage.setItem('user', JSON.stringify(state.user));
+        localStorage.setItem('token', payload.access_token);
+        localStorage.setItem('refresh_token', payload.refresh_token);
+        localStorage.setItem('user_name', payload.user_name);
+      } catch (error) {
+        console.error('Error storing authentication data in localStorage:', error);
+      }
+    },
+    loginRejected: (state, { payload, error }) => {
+      state.isLoading = false;
+      state.error = payload?.detail || error?.message || 'Authentication failed';
+    }
+  }
 });
 
-export const { setCredentials, logout, setError, clearError, setCompanyDetails } = authSlice.actions;
+export const { 
+  setCredentials, 
+  logout, 
+  setError, 
+  clearError, 
+  setCompanyDetails,
+  loginPending,
+  loginFulfilled,
+  loginRejected
+} = authSlice.actions;
 
 export default authSlice.reducer;
 

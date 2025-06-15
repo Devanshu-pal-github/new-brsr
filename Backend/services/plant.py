@@ -235,16 +235,20 @@ class PlantService:
 
     async def delete_plant(self, plant_id: str) -> bool:
         """Delete a plant by ID, ensuring C001/P001 are protected and answers are cleaned up."""
-        plant = await self.collection.find_one({"_id": plant_id})
+        # Try to find the plant by 'id' field first
+        plant = await self.collection.find_one({"id": plant_id})
         if not plant:
             return False
+            
         # Don't allow deletion of C001 or P001 plants
         if plant["plant_code"] in ["C001", "P001"]:
             raise ValueError(f"Cannot delete {plant['plant_code']} plant")
+            
         # Delete associated answers first
         await self.db.answers.delete_many({"plant_id": plant_id})
-        # Delete the plant
-        result = await self.collection.delete_one({"_id": plant_id})
+        
+        # Delete the plant using the same field we used to find it
+        result = await self.collection.delete_one({"id": plant_id})
         return result.deleted_count > 0
 
     async def _get_plant_reports_data(self, plant_id: str, company_id: str) -> List[Dict]:

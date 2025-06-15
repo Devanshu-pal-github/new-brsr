@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { store } from '../store';
+import { loginPending, loginFulfilled, loginRejected } from '../slices/authSlice';
 
 const baseUrl = 'http://localhost:8000'; // Adjust based on your backend URL
 
@@ -44,6 +44,15 @@ export const apiSlice = createApi({
 
         return requestConfig;
       },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          dispatch(loginPending());
+          const { data } = await queryFulfilled;
+          dispatch(loginFulfilled(data));
+        } catch (error) {
+          dispatch(loginRejected(error));
+        }
+      }
     }),
     getCompanyDetails: builder.query({
       query: (userId) => `/auth/users/${userId}/company-details`,
@@ -110,6 +119,17 @@ export const apiSlice = createApi({
       }),
       transformResponse: (response) => {
         console.log('🌱 Create Plant Response:', response);
+        return response;
+      },
+      invalidatesTags: ['Plants']
+    }),
+    deletePlant: builder.mutation({
+      query: (plantId) => ({
+        url: `/plants/${plantId}`,
+        method: 'DELETE'
+      }),
+      transformResponse: (response) => {
+        console.log('🗑️ Delete Plant Response:', response);
         return response;
       },
       invalidatesTags: ['Plants']
@@ -275,6 +295,7 @@ export const {
   useLazyGetQuestionsByIdsQuery,
   useUpdateTableAnswerMutation,
   useCreatePlantMutation,
+  useDeletePlantMutation,
   useUpdateSubjectiveAnswerMutation,
   useLazyGetModuleAnswerQuery
 } = apiSlice;

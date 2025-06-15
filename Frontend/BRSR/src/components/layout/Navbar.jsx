@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, selectCurrentUser, selectCompanyDetails } from '../../store/slices/authSlice';
-import { useGetReportModulesQuery, useGetCompanyPlantsQuery, useCreatePlantMutation } from '../../store/api/apiSlice';
+import { useGetReportModulesQuery, useGetCompanyPlantsQuery, useCreatePlantMutation, useDeletePlantMutation } from '../../store/api/apiSlice';
 import { Menu, ChevronDown, X, Search, Trash2, Plus, Settings } from 'lucide-react';
 import { DataGrid } from '@mui/x-data-grid';
 import Select from 'react-select';
@@ -49,7 +49,7 @@ const CreatePlantModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-[60] transition-opacity duration-300">
+    <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-[60] transition-opacity duration-300">
       <div 
         ref={modalRef}
         className="bg-white rounded-lg p-6 w-full max-w-md transform transition-transform duration-300 scale-100"
@@ -146,6 +146,7 @@ const PlantManagementModal = ({ onClose }) => {
   
   // Get user from Redux store
   const user = useSelector((state) => state.auth.user);
+  const [deletePlant] = useDeletePlantMutation();
 
   // Fetch plants using the API
   const { 
@@ -155,6 +156,16 @@ const PlantManagementModal = ({ onClose }) => {
   } = useGetCompanyPlantsQuery(user?.company_id, {
     skip: !user?.company_id,
   });
+
+  const handleDeletePlant = async (plantId) => {
+    try {
+      await deletePlant(plantId).unwrap();
+      toast.success('Plant deleted successfully');
+    } catch (error) {
+      toast.error(error?.data?.message || 'Failed to delete plant');
+      console.error('Failed to delete plant:', error);
+    }
+  };
 
   console.log(plants);
 
@@ -222,7 +233,6 @@ const PlantManagementModal = ({ onClose }) => {
         <div className="flex items-center justify-center w-full h-full gap-3">
           <button
             onClick={() => {
-              // Show confirmation toast before deleting
               toast((t) => (
                 <div className="flex flex-col gap-2">
                   <p className="font-medium">Delete Plant?</p>
@@ -230,9 +240,8 @@ const PlantManagementModal = ({ onClose }) => {
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => {
-                        // TODO: Handle plant deletion
+                        handleDeletePlant(params.row.id);
                         toast.dismiss(t.id);
-                        toast.success('Plant deleted successfully');
                       }}
                       className="px-3 py-1 text-sm text-white bg-[#4A5D4B] rounded-md hover:bg-[#3E4E3F]"
                     >
