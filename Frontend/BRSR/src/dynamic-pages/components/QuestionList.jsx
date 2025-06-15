@@ -1,7 +1,7 @@
 import React from 'react';
 import QuestionItem from './QuestionItem';
 
-const QuestionList = ({ category, financialYear }) => {
+const QuestionList = ({ category, financialYear, moduleId }) => {
   console.log('📋 Rendering category:', category);
   console.log('📋 Category questions:', category.questions);
   console.log('📋 Financial year:', financialYear);
@@ -25,6 +25,7 @@ const QuestionList = ({ category, financialYear }) => {
           key={question.id} 
           question={question} 
           financialYear={financialYear}
+          moduleId={moduleId}
         />
       ))}
     </div>

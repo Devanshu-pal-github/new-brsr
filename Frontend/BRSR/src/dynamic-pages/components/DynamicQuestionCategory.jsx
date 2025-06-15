@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import CategoryContainer from './CategoryContainer';
 
-const DynamicQuestionCategory = ({ category, financialYear }) => {
+const DynamicQuestionCategory = ({ category, financialYear, moduleId }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!financialYear) {
@@ -34,6 +34,7 @@ const DynamicQuestionCategory = ({ category, financialYear }) => {
           <CategoryContainer 
             category={category}
             financialYear={financialYear}
+            moduleId={moduleId}
           />
         </div>
       )}

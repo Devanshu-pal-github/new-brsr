@@ -9,14 +9,30 @@ const TableWithAdditionalRowsRenderer = ({ metadata, data, isEditing = false, on
 
   // Update local data when the prop changes
   useEffect(() => {
+    console.log('🔄 TableWithAdditionalRowsRenderer data prop changed:', data);
+    console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
     if (data) {
       setLocalData(data);
       setAdditionalRowCount((data.additionalRows && data.additionalRows.length) || 0);
+    } else {
+      // Initialize with empty structure if data is null/undefined
+      setLocalData({ rows: [], additionalRows: [] });
+      setAdditionalRowCount(0);
     }
   }, [data]);
 
+  // Add a useEffect to call onSave when in edit mode and localData changes
+  // This ensures data is always synced with parent components
+  useEffect(() => {
+    if (isEditing && onSave) {
+      console.log('🔄 Auto-syncing table with additional rows data with parent in edit mode:', localData);
+      onSave(localData);
+    }
+  }, [localData, isEditing, onSave]);
+
   // Handle adding a new row
   const handleAddRow = () => {
+    console.log('🔄 Adding new row to additional rows');
     const updatedData = { ...localData };
     
     // Initialize additionalRows array if it doesn't exist
@@ -33,32 +49,34 @@ const TableWithAdditionalRowsRenderer = ({ metadata, data, isEditing = false, on
     // Add the new row
     updatedData.additionalRows.push(newRow);
     
+    console.log('🔄 Updated data after adding row:', updatedData);
     setLocalData(updatedData);
     setAdditionalRowCount(updatedData.additionalRows.length);
     
-    if (onSave) {
-      onSave(updatedData);
-    }
+    // We don't need to call onSave here as the useEffect will handle it
+    // This prevents duplicate calls and ensures data is always synced
   };
 
   // Handle removing a row
   const handleRemoveRow = (rowIndex) => {
+    console.log(`🔄 Removing row at index ${rowIndex} from additional rows`);
     const updatedData = { ...localData };
     
     if (updatedData.additionalRows && updatedData.additionalRows.length > rowIndex) {
       updatedData.additionalRows.splice(rowIndex, 1);
       
+      console.log('🔄 Updated data after removing row:', updatedData);
       setLocalData(updatedData);
       setAdditionalRowCount(updatedData.additionalRows.length);
       
-      if (onSave) {
-        onSave(updatedData);
-      }
+      // We don't need to call onSave here as the useEffect will handle it
+      // This prevents duplicate calls and ensures data is always synced
     }
   };
 
   // Handle cell value change in additional rows
   const handleAdditionalCellChange = (rowIndex, colIndex, value) => {
+    console.log(`🔄 Updating additional row cell [${rowIndex}][${colIndex}] with value:`, value, 'type:', typeof value);
     const updatedData = { ...localData };
     
     // Initialize additionalRows array if it doesn't exist
@@ -79,11 +97,11 @@ const TableWithAdditionalRowsRenderer = ({ metadata, data, isEditing = false, on
     // Update cell value
     updatedData.additionalRows[rowIndex].cells[colIndex] = { value };
     
+    console.log('🔄 Updated data after changing additional cell:', updatedData);
     setLocalData(updatedData);
     
-    if (onSave) {
-      onSave(updatedData);
-    }
+    // We don't need to call onSave here as the useEffect will handle it
+    // This prevents duplicate calls and ensures data is always synced
   };
 
   // Get cell value from additional rows data

@@ -5,13 +5,25 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
 
   // Update local data when the prop changes
   useEffect(() => {
-    if (data) {
-      setLocalData(data);
-    }
+    console.log('🔄 TableRenderer data prop changed:', data);
+    console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
+    // Always update localData when data prop changes, even if it's an empty object
+    setLocalData(data || {});
   }, [data]);
+
+  // Add a useEffect to call onSave when in edit mode and localData changes
+  // This ensures data is always synced with parent components
+  useEffect(() => {
+    if (isEditing && onSave) {
+      console.log('🔄 Auto-syncing table data with parent in edit mode:', localData);
+      onSave(localData);
+    }
+  }, [localData, isEditing, onSave]);
 
   // Handle cell value change
   const handleCellChange = (rowIndex, colIndex, value) => {
+    console.log(`🔄 Updating cell [${rowIndex}][${colIndex}] with value:`, value, 'type:', typeof value);
+    
     const updatedData = { ...localData };
     
     // Initialize rows array if it doesn't exist
@@ -32,11 +44,11 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
     // Update cell value
     updatedData.rows[rowIndex].cells[colIndex] = { value };
     
+    console.log('🔄 Updated table data:', updatedData);
     setLocalData(updatedData);
     
-    if (onSave) {
-      onSave(updatedData);
-    }
+    // We don't need to call onSave here as the useEffect will handle it
+    // This prevents duplicate calls and ensures data is always synced
   };
 
   // Get cell value from data

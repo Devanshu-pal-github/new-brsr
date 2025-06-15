@@ -2,7 +2,7 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import DynamicQuestionCategory from './DynamicQuestionCategory';
 
-const SubmoduleContent = ({ submodule }) => {
+const SubmoduleContent = ({ submodule, moduleId }) => {
   const [searchParams] = useSearchParams();
   const financialYear = searchParams.get('financialYear') || '2024-2025';
 
@@ -50,6 +50,7 @@ const SubmoduleContent = ({ submodule }) => {
               key={category.id} 
               category={category}
               financialYear={financialYear}
+              moduleId={moduleId}
             />
           ))
         ) : (

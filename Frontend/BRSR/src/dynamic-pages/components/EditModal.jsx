@@ -3,9 +3,18 @@ import React from 'react';
 const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('💾 Saving data from modal:', tempData);
-    onSave(tempData);
+    try {
+      // Call the onSave function and wait for it to complete
+      await onSave(tempData);
+      // Close the modal after successful save
+      onClose();
+    } catch (error) {
+      console.error('Error saving data:', error);
+      // You could show an error message to the user here
+      // For now, we'll keep the modal open so they can try again
+    }
   };
 
   return (

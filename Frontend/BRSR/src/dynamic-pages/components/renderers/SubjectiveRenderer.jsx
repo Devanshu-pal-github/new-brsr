@@ -1,32 +1,51 @@
 import React, { useState, useEffect } from 'react';
 
 const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave }) => {
+  // Initialize localData with an empty object if data is null or undefined
   const [localData, setLocalData] = useState(data || {});
 
   // Update local data when the prop changes
   useEffect(() => {
-    if (data) {
-      setLocalData(data);
-    }
+    console.log('🔄 SubjectiveRenderer data prop changed:', data);
+    console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
+    // Always update localData when data prop changes, even if it's an empty object
+    setLocalData(data || {});
   }, [data]);
 
+  // Add a useEffect to call onSave when in edit mode and localData changes
+  // This ensures data is always synced with parent components
+  useEffect(() => {
+    if (isEditing && onSave) {
+      console.log('🔄 Auto-syncing localData with parent in edit mode:', localData);
+      onSave(localData);
+    }
+  }, [localData, isEditing, onSave]);
+
   const handleInputChange = (fieldKey, value) => {
+    console.log(`🔄 Updating field ${fieldKey} with value:`, value, 'type:', typeof value);
+    
+    // Create a new object to ensure React detects the change
     const updatedData = {
       ...localData,
       [fieldKey]: value
     };
     
+    console.log('🔄 Updated local data:', updatedData);
+    console.log('🔍 Value type:', typeof value, 'Value:', value);
+    
+    // Update local state
     setLocalData(updatedData);
     
-    if (onSave) {
-      onSave(updatedData);
-    }
+    // We don't need to call onSave here as the useEffect will handle it
+    // This prevents duplicate calls and ensures data is always synced
   };
 
   // Render different input types based on field type
   const renderField = (field) => {
     const fieldKey = field.key;
-    const fieldValue = localData[fieldKey] || '';
+    // Explicitly check for undefined to handle boolean false values correctly
+    const fieldValue = localData[fieldKey] !== undefined ? localData[fieldKey] : '';
+    console.log(`🔍 Rendering field ${fieldKey} with value:`, fieldValue, 'type:', typeof fieldValue);
     
     switch (field.type) {
       case 'text':
@@ -112,7 +131,7 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave }) => {
               />
             ) : (
               <div className="p-2 bg-gray-50 rounded border border-gray-200">
-                {fieldValue || <span className="text-gray-400 italic">No response provided</span>}
+                {fieldValue !== '' && fieldValue !== undefined && fieldValue !== null ? fieldValue : <span className="text-gray-400 italic">No response provided</span>}
                 {field.type === 'percentage' && fieldValue ? '%' : ''}
               </div>
             )}

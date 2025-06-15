@@ -49,7 +49,7 @@ const ModuleRenderer = ({ module }) => {
           
           <div className="mt-4">
             {currentSubmodule ? (
-              <SubmoduleContent submodule={currentSubmodule} />
+              <SubmoduleContent submodule={currentSubmodule} moduleId={module.id} />
             ) : (
               <p className="text-gray-500">Select a submodule to view its content.</p>
             )}

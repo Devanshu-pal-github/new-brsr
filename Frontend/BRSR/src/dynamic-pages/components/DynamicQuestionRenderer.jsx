@@ -17,7 +17,8 @@ const DynamicQuestionRenderer = ({
   isEditModalOpen,
   setIsEditModalOpen
  }) => {
-  const [tempData, setTempData] = useState(questionData);
+  // Initialize tempData with an empty object if questionData is null or undefined
+  const [tempData, setTempData] = useState(questionData || {});
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [chatbotInitialMode, setChatbotInitialMode] = useState("general");
 
@@ -25,7 +26,9 @@ const DynamicQuestionRenderer = ({
 
   // Update tempData when questionData changes
   useEffect(() => {
-    setTempData(questionData);
+    console.log('🔄 DynamicQuestionRenderer questionData changed:', questionData);
+    console.log('🔍 questionData type:', typeof questionData, 'Is null?', questionData === null, 'Is undefined?', questionData === undefined);
+    setTempData(questionData || {});
   }, [questionData]);
 
   // Log the question metadata for debugging
@@ -34,7 +37,16 @@ const DynamicQuestionRenderer = ({
 
   const handleDataChange = (newData) => {
     console.log('📝 Data changed in renderer:', newData);
+    console.log('🔍 newData types:', Object.entries(newData).map(([key, value]) => `${key}: ${typeof value}`));
     setTempData(newData);
+  };
+
+  const handleSave = () => {
+    console.log('💾 Saving data from DynamicQuestionRenderer:', tempData);
+    console.log('🔍 tempData types:', Object.entries(tempData).map(([key, value]) => `${key}: ${typeof value}`));
+    if (onSave) {
+      onSave(tempData);
+    }
   };
 
   const handleAIClick = () => {
@@ -88,12 +100,13 @@ const DynamicQuestionRenderer = ({
 
   const renderEditableContent = () => {
     const metadata = question.metadata;
+    const questionType = question.question_type || (metadata && metadata.type);
     
     if (!metadata) {
       return <p className="text-gray-500">No metadata available for this question.</p>;
     }
 
-    switch (metadata.type) {
+    switch (questionType) {
       case 'subjective':
         return (
           <SubjectiveRenderer 
@@ -122,14 +135,14 @@ const DynamicQuestionRenderer = ({
           />
         );
       default:
-        return <p className="text-gray-500">Unsupported question type: {metadata.type}</p>;
+        return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
     }
   };
 
   const renderReadOnlyContent = () => {
     // Display read-only version of the question data
-    if (!questionData || !Object.keys(questionData).length) {
-      return <p className="text-gray-500 italic">No response provided yet</p>;
+    if (!questionData || Object.keys(questionData).length === 0) {
+      return <p className="text-gray-500 italic">No response provided yet.</p>;
     }
 
     const metadata = question.metadata;
@@ -137,8 +150,10 @@ const DynamicQuestionRenderer = ({
       return <p className="text-green-600">Response submitted</p>;
     }
 
+    const questionType = question.question_type || (metadata && metadata.type);
+
     // Render the appropriate read-only component based on question type
-    switch (metadata.type) {
+    switch (questionType) {
       case 'subjective':
         return (
           <SubjectiveRenderer 
@@ -196,7 +211,7 @@ const DynamicQuestionRenderer = ({
           isOpen={isEditModalOpen} 
           onClose={() => setIsEditModalOpen(false)} 
           title={`Edit: ${question.question_text || question.title || question.human_readable_id}`}
-          onSave={() => onSave(tempData)}
+          onSave={handleSave}
           tempData={tempData}
         >
           {renderEditableContent()}
