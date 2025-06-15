@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
     };
 
     return (
-        <div className="flex h-[100vh] w-[100%] overflow-hidden bg-[#F2F4F5] font-sans text-[#1A1A1A]">
+        <div className="flex h-[100vh] w-[100%] overflow-hidden bg-white font-sans text-[#1A1A1A]">
         {/* Sidebar - fixed on both desktop and mobile */}
         <div
           className={`fixed top-0 left-0 h-screen z-50

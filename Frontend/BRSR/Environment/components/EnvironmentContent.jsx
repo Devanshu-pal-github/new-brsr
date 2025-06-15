@@ -32,7 +32,7 @@ const EnvironmentContent = () => {
 
   return (
     <Layout>
-      <div className="module-layout min-h-screen p-2 md:p-3 w-[75%]">
+      <div className="module-layout min-h-screen p-2 md:p-3 w-[76%]">
         <div className="">
           <div className="mb-4">
             <Breadcrumb 
