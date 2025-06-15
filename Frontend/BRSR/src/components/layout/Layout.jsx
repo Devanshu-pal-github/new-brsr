@@ -39,7 +39,7 @@ const Layout = ({ children }) => {
         {/* Main Content Area with dynamic margin based on sidebar state */}
         <div
           className={`flex flex-col flex-1 min-h-screen
-            ${isMobile ? (isSidebarOpen ? 'ml-[50%]' : 'ml-0') : 'ml-[15%]'}
+            ${isMobile ? (isSidebarOpen ? 'ml-[40%]' : 'ml-0') : 'ml-52'}
             w-[${isMobile ? (isSidebarOpen ? '50%' : '100%') : '85%'}]
             transition-all duration-300 ease-in-out`}
         >
