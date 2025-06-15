@@ -19,8 +19,8 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
                   { "parameter": "Total electricity consumption (A)" },
@@ -38,7 +38,18 @@
         {
           "name": "Energy Efficiency Schemes",
           "id": "energy-efficiency",
-          "questions": []
+          "questions": [
+            {
+              "id": "EES-1",
+              "type": "Essential",
+              "title": "PAT Scheme Participation",
+              "description": "Does the entity have sites/facilities identified as designated consumers (DCs) under the Performance, Achieve and Trade (PAT) Scheme? (Y/N) If yes, disclose whether targets set under the PAT scheme have been achieved, and if not, provide remedial actions taken.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            }
+          ]
         }
       ]
     },
@@ -59,8 +70,8 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
                   { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true },
@@ -83,6 +94,17 @@
           "name": "Water Discharge",
           "id": "water-discharge",
           "questions": [
+
+            {
+              "id": "WD-1",
+              "type": "Essential",
+              "title": "Zero Liquid Discharge Mechanism",
+              "description": "Has the entity implemented a mechanism for Zero Liquid Discharge? If yes, provide details of its coverage and implementation.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            },
             {
               "id": "WD-2",
               "type": "Leadership",
@@ -93,8 +115,8 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
                   { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
@@ -139,17 +161,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "<i>Please specify unit</i>", "key": "unit" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+            
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
-                  { "parameter": "NOx" },
-                  { "parameter": "SOx" },
-                  { "parameter": "Particulate matter (PM)" },
-                  { "parameter": "Persistent organic pollutants (POP)" },
-                  { "parameter": "Volatile organic compounds (VOC)" },
-                  { "parameter": "Hazardous air pollutants (HAP)" },
+                  { "parameter": "NOx (Kg)" },
+                  { "parameter": "SOx (Kg)" },
+                  { "parameter": "Particulate matter (PM) (Kg)" },
+                  { "parameter": "Persistent organic pollutants (POP) (Kg)" },
+                  { "parameter": "Volatile organic compounds (VOC) (Kg)" },
+                  { "parameter": "Hazardous air pollutants (HAP (G)" },
                   { "parameter": "Others – please specify" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
@@ -171,17 +193,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "Unit", "key": "unit" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
                   {
-                    "parameter": "<b>Total Scope 1 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "parameter": "<b>Total Scope 1 emissions (in metric tonnes of CO2 equivalent)</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
                     "unit": "<i>Metric tonnes of CO2 equivalent</i>"
                   },
                   {
-                    "parameter": "<b>Total Scope 2 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "parameter": "<b>Total Scope 2 emissions (in metric tonnes of CO2 equivalent)</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
                     "unit": "<i>Metric tonnes of CO2 equivalent</i>"
                   },
                   {
@@ -206,13 +228,13 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "Unit", "key": "unit" },
-                  { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
+                
+                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
+                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
                 ],
                 "rows": [
                   {
-                    "parameter": "<b>Total Scope 3 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "parameter": "<b>Total Scope 3 emissions (in metric tonnes of CO2 equivalent)</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
                     "unit": "<i>Metric tonnes of CO2 equivalent</i>"
                   },
                   {
@@ -276,7 +298,18 @@
         {
           "name": "Ecologically Sensitive Areas",
           "id": "sensitive-areas",
-          "questions": []
+          "questions": [
+            {
+              "id": "ESA-2",
+              "type": "Leadership",
+              "title": "Biodiversity Impact in Ecologically Sensitive Areas",
+              "description": "Details of significant direct and indirect impacts on biodiversity in ecologically sensitive areas reported in Essential Indicator 10, along with prevention and remediation activities.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            }
+          ]
         },
         {
           "name": "Environmental Impact Assessments",
@@ -296,12 +329,44 @@
         {
           "name": "Value Chain Environmental Impact",
           "id": "value-chain",
-          "questions": []
+          "questions": [
+            {
+              "id": "VCEI-1",
+              "type": "Leadership",
+              "title": "Environmental Impact of Value Chain",
+              "description": "Disclose any significant adverse environmental impact arising from the entity's value chain and mitigation or adaptation measures taken.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            },
+            {
+              "id": "VCEI-2",
+              "type": "Leadership",
+              "title": "Assessment of Value Chain Partners",
+              "description": "Percentage of value chain partners (by value of business done) assessed for environmental impacts.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            }
+          ]
         },
         {
           "name": "Business Continuity and Disaster Management",
           "id": "disaster-management",
-          "questions": []
+          "questions": [
+            {
+              "id": "BCDM-1",
+              "type": "Leadership",
+              "title": "Business Continuity and Disaster Management Plan",
+              "description": "Does the entity have a business continuity and disaster management plan? Provide details in 100 words or a web link.",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "subjective"
+              }
+            }
+          ]
         }
       ]
     }
