@@ -97,7 +97,7 @@ const ModuleView = () => {
       <div className="flex pt-[48px] h-full">
         {/* Sidebar - Fixed */}
         <div className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out overflow-hidden
-          ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full lg:w-16 lg:translate-x-0'}`}>
+          ${isSidebarOpen ? 'w-50 translate-x-0' : 'w-0 -translate-x-full lg:w-16 lg:translate-x-0'}`}>
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center gap-3 pl-5 py-3">
@@ -180,7 +180,7 @@ const ModuleView = () => {
 
         {/* Main Content - Scrollable */}
         <div className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
-          ${isSidebarOpen ? 'ml-64' : 'ml-0 lg:ml-16'}`}>
+          ${isSidebarOpen ? 'ml-52' : 'ml-0 lg:ml-16'}`}>
           {selectedModuleId && selectedModuleId !== 'environment' ? (
             <div className="h-[calc(100vh-48px)]">
               <div className="container mx-auto px-4">
