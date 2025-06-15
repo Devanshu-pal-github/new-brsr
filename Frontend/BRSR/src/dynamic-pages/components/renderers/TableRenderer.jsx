@@ -31,14 +31,23 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
       updatedData.rows = [];
     }
     
+    // Create a new rows array to avoid modifying the original
+    updatedData.rows = [...updatedData.rows];
+    
     // Initialize row if it doesn't exist
     if (!updatedData.rows[rowIndex]) {
       updatedData.rows[rowIndex] = { cells: [] };
+    } else {
+      // Create a new row object to avoid modifying the original
+      updatedData.rows[rowIndex] = { ...updatedData.rows[rowIndex] };
     }
     
     // Initialize cells array if it doesn't exist
     if (!updatedData.rows[rowIndex].cells) {
       updatedData.rows[rowIndex].cells = [];
+    } else {
+      // Create a new cells array to avoid modifying the original
+      updatedData.rows[rowIndex].cells = [...updatedData.rows[rowIndex].cells];
     }
     
     // Update cell value

@@ -146,6 +146,22 @@ class ModuleAnswerService:
         update_dict = update_data.model_dump(exclude_unset=True)
         update_dict["updated_at"] = datetime.utcnow()
         
+        # Handle answers field specially to merge instead of replace
+        update_operations = {}
+        
+        # If answers field is present in the update data
+        if "answers" in update_dict:
+            answers_update = update_dict.pop("answers")
+            
+            # For each question ID in the answers update
+            for question_id, answer_value in answers_update.items():
+                # Set the specific question's answer
+                update_operations[f"answers.{question_id}"] = answer_value
+        
+        # Add remaining fields to the update operations
+        for key, value in update_dict.items():
+            update_operations[key] = value
+        
         # Update in database
         result = await self.collection.update_one(
             {
@@ -153,7 +169,7 @@ class ModuleAnswerService:
                 "plant_id": plant_id,
                 "financial_year": financial_year
             },
-            {"$set": update_dict}
+            {"$set": update_operations}
         )
         
         if result.modified_count == 0:
@@ -202,6 +218,22 @@ class ModuleAnswerService:
             # Add updated_at timestamp
             update_data["updated_at"] = now
             
+            # Handle answers field specially to merge instead of replace
+            update_operations = {}
+            
+            # If answers field is present in the update data
+            if "answers" in update_data:
+                answers_update = update_data.pop("answers")
+                
+                # For each question ID in the answers update
+                for question_id, answer_value in answers_update.items():
+                    # Set the specific question's answer
+                    update_operations[f"answers.{question_id}"] = answer_value
+            
+            # Add remaining fields to the update operations
+            for key, value in update_data.items():
+                update_operations[key] = value
+            
             # Update in database
             await self.collection.update_one(
                 {
@@ -209,7 +241,7 @@ class ModuleAnswerService:
                     "plant_id": plant_id,
                     "financial_year": financial_year
                 },
-                {"$set": update_data}
+                {"$set": update_operations}
             )
             
             # Get updated answer
