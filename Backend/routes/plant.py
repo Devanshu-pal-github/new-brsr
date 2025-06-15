@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query , Request
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, Body
 from typing import List, Optional
 from dependencies import get_database, get_current_user
 from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, PlantWithAnswers
+from models.auth import User
 from services.plant import PlantService
 import uuid
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
+
 
 router = APIRouter(
     tags=["plants"],
@@ -156,3 +158,36 @@ async def get_company_plants(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+@router.post("/employees", response_model=List[User])
+async def get_plant_employees(
+    plant_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Fetch all employees for a specific plant.
+    
+    Required body parameters:
+    - plant_id: str
+    
+    The company_id is automatically fetched from the current user's context.
+    """
+    # Get the plant_id from request body and company_id from current user
+    plant_id = plant_data.get("plant_id")
+    company_id = current_user["company_id"]
+    print(plant_id)
+    print(company_id)
+    
+    if not plant_id:
+        raise HTTPException(
+            status_code=400,
+            detail="plant_id is required in request body"
+        )
+    
+    # Use the PlantService class to get employees
+    plant_service = PlantService(db)
+    employees = await plant_service.get_plant_employees_service(company_id, plant_id)
+    
+    return employees
+

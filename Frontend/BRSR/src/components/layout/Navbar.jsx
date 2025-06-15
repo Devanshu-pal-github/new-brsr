@@ -49,7 +49,7 @@ const CreatePlantModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-[60] transition-opacity duration-300">
+    <div className="fixed inset-0  bg-black/30 flex items-center justify-center z-[9999] transition-opacity duration-300">
       <div 
         ref={modalRef}
         className="bg-white rounded-lg p-6 w-full max-w-md transform transition-transform duration-300 scale-100"
@@ -275,7 +275,7 @@ const PlantManagementModal = ({ onClose }) => {
 
   if (plantsLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
         <div className="bg-white rounded-xl p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]"></div>
         </div>
@@ -285,7 +285,7 @@ const PlantManagementModal = ({ onClose }) => {
 
   if (plantsError) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
         <div className="bg-white rounded-xl p-8">
           <div className="text-red-500">Error loading plants: {plantsError?.data?.message || 'Please try again later'}</div>
         </div>
@@ -294,14 +294,14 @@ const PlantManagementModal = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[90vw] max-w-[1000px] max-h-[90vh] overflow-auto p-5 relative scrollbar-none"
+        className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
       >
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-[1.2vw] font-semibold text-[#1A2341]">Plant Management</h1>
+          <h1 className="text-base sm:text-lg md:text-xl font-semibold text-[#1A2341]">Plant Management</h1>
           <button
             onClick={onClose}
             className="text-[#1A2341] hover:text-[#1A2341]/50 transition-all cursor-pointer"
@@ -310,11 +310,11 @@ const PlantManagementModal = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="mb-6 rounded-xl shadow-inner border border-slate-200/60 p-4 w-full">
-          <div className="flex flex-wrap items-center justify-between gap-4 w-full">
-            <div className="flex items-center gap-4 flex-1">
+        <div className="mb-4 md:mb-6 rounded-xl shadow-inner border border-slate-200/60 p-2 sm:p-3 md:p-4 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
               {/* Search */}
-              <div className="relative flex-1 min-w-[250px] max-w-[400px]">
+              <div className="relative flex-1 w-full sm:min-w-[250px] sm:max-w-[400px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input
                   type="text"
@@ -326,7 +326,7 @@ const PlantManagementModal = ({ onClose }) => {
               </div>
 
               {/* Plant Type Filter */}
-              <div className="w-[200px]">
+              <div className="w-full sm:w-[200px]">
                 <select
                   value={filters.plant_type}
                   onChange={(e) => handleFilterChange("plant_type", e.target.value)}
@@ -344,7 +344,7 @@ const PlantManagementModal = ({ onClose }) => {
             {/* Create Plant Button */}
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-[#1A2341] text-white rounded-md hover:bg-[#1A2341]/80 transition-all flex items-center gap-2 text-sm"
+              className="w-full sm:w-auto px-4 py-2 bg-[#1A2341] text-white rounded-md hover:bg-[#1A2341]/80 transition-all flex items-center justify-center sm:justify-start gap-2 text-sm"
             >
               <Plus size={16} />
               Create Plant
@@ -352,7 +352,7 @@ const PlantManagementModal = ({ onClose }) => {
           </div>
         </div>
 
-        <div style={{ height: 500, width: "100%" }} className="mb-5">
+        <div className="h-[calc(90vh-220px)] w-full">
           <DataGrid
             rows={filteredRows}
             columns={columns}
@@ -369,6 +369,12 @@ const PlantManagementModal = ({ onClose }) => {
                 fontWeight: "bold",
               },
               ".MuiDataGrid-cell": { alignItems: "center" },
+              height: "100%",
+              width: "100%",
+              border: "none",
+              "& .MuiDataGrid-virtualScroller": {
+                overflowX: "hidden"
+              }
             }}
           />
         </div>
