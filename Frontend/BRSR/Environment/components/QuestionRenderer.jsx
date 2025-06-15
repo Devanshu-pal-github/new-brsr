@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
-import { useUpdateTableAnswerMutation } from '../../src/store/api/apiSlice';
+import { useUpdateTableAnswerMutation, useUpdateSubjectiveAnswerMutation } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
+import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
 
 const AuditBadge = ({ isAuditRequired }) => (
   <div className={`inline-block px-3 py-1 rounded-full text-xs ${
@@ -56,15 +57,27 @@ const QuestionRenderer = ({ question, financialYear }) => {
   console.log('Rendering Question:', question);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [questionData, setQuestionData] = useState(question.answer || {});
+  const [questionData, setQuestionData] = useState(() => {
+    if (metadata?.type === 'subjective') {
+      return question.answer?.text || '';
+    }
+    return question.answer || {};
+  });
   const [tempData, setTempData] = useState(questionData);
-  const [updateTableAnswer, { isLoading }] = useUpdateTableAnswerMutation();
+  const [updateTableAnswer, { isLoading: isTableLoading }] = useUpdateTableAnswerMutation();
+  const [updateSubjectiveAnswer, { isLoading: isSubjectiveLoading }] = useUpdateSubjectiveAnswerMutation();
 
   // Update questionData when question.answer changes
   useEffect(() => {
     if (question.answer) {
+      // For subjective questions, just get the text
+      if (metadata?.type === 'subjective') {
+        const answerText = question.answer?.text || '';
+        setQuestionData(answerText);
+        setTempData(answerText);
+      }
       // For multi-table, transform the flattened array to the expected nested structure
-      if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
+      else if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
         const transformedData = {};
         
         // Process each item in the flattened array
@@ -130,7 +143,24 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return;
       }
 
-      if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+      if (metadata?.type === 'subjective') {
+        // Handle subjective question data
+        await updateSubjectiveAnswer({
+          questionId: question.id,
+          questionTitle: title,
+          financialYear,
+          type: 'subjective',
+          data: {
+            text: typeof data === 'string' ? data : data?.text || ''
+          }
+        }).unwrap();
+
+        // Update the local state with the string value
+        const newText = typeof data === 'string' ? data : data?.text || '';
+        setQuestionData(newText);
+        setIsEditModalOpen(false);
+        toast.success('Answer saved successfully');
+      } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
         let formattedData;
         
         // Create a deep copy of the data to avoid modifying read-only properties
@@ -182,15 +212,11 @@ const QuestionRenderer = ({ question, financialYear }) => {
           updatedData: formattedData
         }).unwrap();
 
+        // Create a deep copy before setting state
+        setQuestionData(JSON.parse(JSON.stringify(data)));
+        setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
-      } else {
-        // Handle non-table data types if needed
-        console.log('Saving non-table data:', data);
       }
-
-      // Create a deep copy before setting state
-      setQuestionData(JSON.parse(JSON.stringify(data)));
-      setIsEditModalOpen(false);
     } catch (error) {
       console.error('Failed to save answer:', error);
       toast.error(error.data?.detail || 'Failed to save answer');
@@ -229,6 +255,15 @@ const QuestionRenderer = ({ question, financialYear }) => {
             data={tempData} 
             isEditing={true} 
             onSave={handleDataChange} 
+          />
+        );
+      case 'subjective':
+        return (
+          <textarea
+            className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
+            placeholder="Enter your response here..."
+            value={tempData || ''}
+            onChange={(e) => setTempData(e.target.value)}
           />
         );
       default:
@@ -287,7 +322,33 @@ const QuestionRenderer = ({ question, financialYear }) => {
           data={questionData}
         />
       )}
-      {isLoading && (
+      {metadata?.type === 'subjective' && (
+        <>
+          {!isEditModalOpen && (
+            <div className="mb-4">
+              {/* <div className="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[120px]">
+                {typeof questionData === 'string' ? questionData : questionData?.text || 'No response provided yet'}
+              </div> */}
+            </div>
+          )}
+          <SubjectiveQuestionRenderer 
+            question={question}
+            answer={{
+              text: typeof questionData === 'string' ? questionData : questionData?.text || '',
+              updatedData: {
+                text: typeof questionData === 'string' ? questionData : questionData?.text || ''
+              }
+            }}
+            isReadOnly={!isEditModalOpen}
+            onAnswerChange={(newAnswer) => {
+              const newText = newAnswer.data.text;
+              setTempData(newText);
+              handleSave(newText);
+            }}
+          />
+        </>
+      )}
+      {(isTableLoading || isSubjectiveLoading) && (
         <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
       )}
       {metadata?.note && (

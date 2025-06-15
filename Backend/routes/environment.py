@@ -232,3 +232,41 @@ async def patch_table_answer(
     if not success:
         raise HTTPException(status_code=404, detail="Question not found or update failed")
     return {"message": "Table rows updated successfully"}
+
+class SubjectiveAnswerCreate(BaseModel):
+    """Request model for creating/updating a subjective answer"""
+    questionId: str
+    questionTitle: str
+    type: str = "subjective"
+    data: Dict[str, str]
+
+@router.post("/reports/{financial_year}/subjective-answer")
+async def update_subjective_answer(
+    financial_year: str,
+    answer: SubjectiveAnswerCreate,
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    """Update answer for a subjective question"""
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+
+    try:
+        success = await service.update_answer(
+            company_id=user["company_id"],
+            financial_year=financial_year,
+            question_id=answer.questionId,
+            question_title=answer.questionTitle,
+            answer_data={
+                "type": "subjective",
+                "text": answer.data.get("text", "")
+            }
+        )
+        if success:
+            return {"message": "Answer updated successfully"}
+        raise HTTPException(status_code=400, detail="Failed to update answer")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

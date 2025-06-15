@@ -311,6 +311,30 @@ export const apiSlice = createApi({
         { type: 'ModuleAnswers', id: `${arg.moduleId}-${arg.companyId}-${arg.plantId}-${arg.financialYear}` }
       ]
     }),
+    updateSubjectiveAnswer: builder.mutation({
+      query: (payload) => {
+        console.log('Received subjective payload:', payload);
+        const { questionId, questionTitle, type, data } = payload;
+           
+        const financialYear = payload.financialYear; // Hardcoded for now
+
+        return {
+          url: `/environment/reports/${financialYear}/subjective-answer`,
+          method: 'POST',
+          body: {
+            questionId,
+            questionTitle,
+            type,
+            data
+          }
+        };
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Subjective Answer Update Error:', response);
+        return response;
+      },
+      invalidatesTags: ['EnvironmentReports']
+    }),
   }),
 });
 
@@ -329,8 +353,7 @@ export const {
   useLazyGetQuestionsByIdsQuery,
   useUpdateTableAnswerMutation,
   useCreatePlantMutation,
-  useGetModuleAnswerQuery,
-  useLazyGetModuleAnswerQuery
+  useUpdateSubjectiveAnswerMutation
 } = apiSlice;
 
 export default apiSlice;

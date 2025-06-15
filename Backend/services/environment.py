@@ -310,3 +310,40 @@ class EnvironmentService:
             }
         )
         return result.modified_count > 0  # Return true only if update was successful
+
+
+    async def update_subjective_answer(
+        self,
+        company_id: str,
+        financial_year: str,
+        question_id: str,
+        question_title: str,
+        answer_text: str
+    ) -> bool:
+        """Update a subjective answer for a specific question"""
+        now = datetime.utcnow()
+        
+        question_answer = QuestionAnswer(
+            questionId=question_id,
+            questionTitle=question_title,
+            updatedData={
+                "type": "subjective",
+                "text": answer_text
+            },
+            lastUpdated=now
+        )
+
+        result = await self.collection.update_one(
+            {
+                "companyId": company_id,
+                "financialYear": financial_year
+            },
+            {
+                "$set": {
+                    f"answers.{question_id}": question_answer.dict(),
+                    "updatedAt": now
+                }
+            }
+        )
+        return result.modified_count > 0
+
