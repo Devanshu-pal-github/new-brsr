@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import EditModal from './EditModal';
 
-// Import renderers from Environment components or create new ones
-import TableRenderer from '../../../Environment/components/TableRenderer';
-import MultiTableRenderer from '../../../Environment/components/MultiTableRenderer';
-import DynamicTableRenderer from '../../../Environment/components/DynamicTableRenderer';
+// Import our custom renderers
+import { 
+  SubjectiveRenderer, 
+  TableRenderer, 
+  TableWithAdditionalRowsRenderer 
+} from './renderers';
 
 const DynamicQuestionRenderer = ({ 
   question, 
@@ -37,6 +39,15 @@ const DynamicQuestionRenderer = ({
     }
 
     switch (metadata.type) {
+      case 'subjective':
+        return (
+          <SubjectiveRenderer 
+            metadata={metadata} 
+            data={tempData} 
+            isEditing={true} 
+            onSave={handleDataChange} 
+          />
+        );
       case 'table':
         return (
           <TableRenderer 
@@ -46,18 +57,9 @@ const DynamicQuestionRenderer = ({
             onSave={handleDataChange} 
           />
         );
-      case 'multi-table':
+      case 'table_with_additional_rows':
         return (
-          <MultiTableRenderer 
-            metadata={metadata} 
-            data={tempData} 
-            isEditing={true} 
-            onSave={handleDataChange} 
-          />
-        );
-      case 'dynamic-table':
-        return (
-          <DynamicTableRenderer 
+          <TableWithAdditionalRowsRenderer 
             metadata={metadata} 
             data={tempData} 
             isEditing={true} 
@@ -80,14 +82,40 @@ const DynamicQuestionRenderer = ({
       return <p className="text-green-600">Response submitted</p>;
     }
 
-    // For now, just show that there's data
-    // In a real implementation, you would render a read-only version of the table
-    return (
-      <div className="p-2 bg-gray-50 rounded border border-gray-200">
-        <p className="text-green-600 font-medium">Response submitted</p>
-        <p className="text-xs text-gray-500 mt-1">Click 'Edit Response' to view or modify the data</p>
-      </div>
-    );
+    // Render the appropriate read-only component based on question type
+    switch (metadata.type) {
+      case 'subjective':
+        return (
+          <SubjectiveRenderer 
+            metadata={metadata} 
+            data={questionData} 
+            isEditing={false} 
+          />
+        );
+      case 'table':
+        return (
+          <TableRenderer 
+            metadata={metadata} 
+            data={questionData} 
+            isEditing={false} 
+          />
+        );
+      case 'table_with_additional_rows':
+        return (
+          <TableWithAdditionalRowsRenderer 
+            metadata={metadata} 
+            data={questionData} 
+            isEditing={false} 
+          />
+        );
+      default:
+        return (
+          <div className="p-2 bg-gray-50 rounded border border-gray-200">
+            <p className="text-green-600 font-medium">Response submitted</p>
+            <p className="text-xs text-gray-500 mt-1">Click 'Edit Response' to view or modify the data</p>
+          </div>
+        );
+    }
   };
 
   return (
