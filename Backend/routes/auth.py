@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
-from models.auth import UserCreate, UserInDB, Token, UserUpdate
+from models.auth import UserCreate, UserInDB, Token, UserUpdate , User
 from services.auth import (
     authenticate_user,
     create_access_token,
@@ -121,22 +121,28 @@ async def refresh_token(token, db = Depends(get_database)):
     }
 
 @router.post("/register", response_model=UserInDB)
-async def register_user(user_data: dict = Body(...), db = Depends(get_database)):
+async def register_user(
+    user_data: dict = Body(...), 
+    current_user: User = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
     """
     Register a new user (admin-only or open registration, as per business logic).
     - Checks for existing user by email.
     - Hashes password and stores user securely.
     - Returns the created user (excluding password).
+    - Company ID is automatically set from the authenticated user's context.
 
     **Sample Postman Request:**
     POST /auth/register
+    Headers:
+        Authorization: Bearer <token>
     Body (JSON):
     {
         "email": "user@example.com",
         "full_name": "User Name",
         "password": "yourpassword",
-        "role": "company_admin",  # optional for first user (becomes super_admin)
-        "company_id": "...",  # optional
+        "role": "plant_admin",
         "plant_id": "..."     # optional
     }
 
@@ -145,8 +151,8 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
         "id": "...",
         "email": "user@example.com",
         "full_name": "User Name",
-        "role": "company_admin",
-        "company_id": "...",
+        "role": "plant_admin",
+        "company_id": "...",  # Set from token
         "plant_id": "...",
         "is_active": true,
         "hashed_password": "...",
@@ -160,18 +166,8 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
             detail="Email already registered"
         )
     
-    # Check if this is the first user (no users in the database)
-    user_count = await db["users"].count_documents({})
-    
-    # If this is the first user and no role is specified, make them a super_admin
-    if user_count == 0 and "role" not in user_data:
-        user_data["role"] = "super_admin"
-    elif "role" not in user_data:
-        # For subsequent users, role is required
-        raise HTTPException(
-            status_code=422,
-            detail=[{"loc": ["body", "role"], "msg": "Field required", "type": "missing"}]
-        )
+    # Set company_id from the authenticated user's context
+    user_data["company_id"] = current_user["company_id"]
     
     # Validate role value
     from models.auth import UserRole
@@ -205,8 +201,7 @@ async def register_user(user_data: dict = Body(...), db = Depends(get_database))
     # Store the string value of role in the database
     user_data["role"] = role_str
 
-    # Ensure company_id and plant_id are always present in user_data, even if None
-    user_data["company_id"] = user_data.get("company_id")
+    # Ensure plant_id is always present in user_data, even if None
     user_data["plant_id"] = user_data.get("plant_id")
     
     await db["users"].insert_one(user_data)

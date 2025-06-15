@@ -277,6 +277,24 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ['EnvironmentReports']
     }),
+    getPlantEmployees: builder.query({
+      query: (data) => ({
+        url: '/plants/employees',
+        method: 'POST',
+        body: {
+          plant_id: data.plant_id
+        }
+      }),
+      providesTags: ['PlantEmployees']
+    }),
+    createEmployee: builder.mutation({
+      query: (data) => ({
+        url: '/auth/register',
+        method: 'POST',
+        body: data
+      }),
+      invalidatesTags: ['PlantEmployees']
+    }),
   }),
 });
 
@@ -297,7 +315,9 @@ export const {
   useCreatePlantMutation,
   useDeletePlantMutation,
   useUpdateSubjectiveAnswerMutation,
-  useLazyGetModuleAnswerQuery
+  useLazyGetModuleAnswerQuery,
+  useGetPlantEmployeesQuery,
+  useCreateEmployeeMutation
 } = apiSlice;
 
 export default apiSlice;

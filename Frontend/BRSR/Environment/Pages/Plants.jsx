@@ -78,7 +78,7 @@ const Plants = () => {
             className="cursor-pointer rounded-lg p-6 bg-gray-100 hover:bg-gray-200
                 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200
                 flex flex-col items-center justify-center gap-4 text-gray-600 border-2 border-dashed border-gray-300
-                min-h-[200px]"
+                "
         >
             <Plus className="w-12 h-12" />
             <span className="text-lg font-semibold">Create New Plant</span>
@@ -91,13 +91,13 @@ const Plants = () => {
             onClick={() => setIsModalOpen(false)}
         >
             <div 
-                className="bg-white rounded-lg p-6 w-full max-w-md transform transition-transform duration-300 scale-100"
+                className="bg-white rounded-lg p-6 w-full max-w-lg transform transition-transform duration-300 scale-100"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Create New Plant</h2>
+                <div className="flex justify-between items-center mb-5">
+                    <h2 className="text-lg font-semibold">Create New Plant</h2>
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
                 <form onSubmit={(e) => {
@@ -110,50 +110,55 @@ const Plants = () => {
                         contact_phone: e.target.phone.value
                     };
                     handleCreatePlant(formData);
-                }} className="space-y-4">
+                }} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Plant Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Plant Name</label>
                         <input
                             type="text"
                             name="plantName"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter plant name"
+                            className="mt-1 block w-full px-3 py-2.5 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                             required
                             autoFocus={isModalOpen}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Plant Code</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Plant Code</label>
                         <input
                             type="text"
                             name="plantCode"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter unique plant code"
+                            className="mt-1 block w-full px-3 py-2.5 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Address</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
                         <input
                             type="text"
                             name="address"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter plant address"
+                            className="mt-1 block w-full px-3 py-2.5 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Contact Email</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Contact Email</label>
                         <input
                             type="email"
                             name="email"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter contact email address"
+                            className="mt-1 block w-full px-3 py-2.5 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Contact Phone</label>
                         <input
                             type="tel"
                             name="phone"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter contact phone number"
+                            className="mt-1 block w-full px-3 py-2.5 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                             required
                         />
                     </div>
@@ -202,9 +207,9 @@ const Plants = () => {
             <div className="text-sm opacity-80">
                 Plant Type: {plant.plant_type}
             </div>
-            <div className="text-sm opacity-80">
+            {/* <div className="text-sm opacity-80">
                 Access Level: {plant.access_level}
-            </div>
+            </div> */}
         </div>
     );
 
