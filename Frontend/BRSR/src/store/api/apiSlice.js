@@ -157,142 +157,64 @@ export const apiSlice = createApi({
           ]
           : [{ type: 'Questions', id: 'LIST' }],
     }),
-    // This is a partial update to the apiSlice.js file, focusing only on the updateTableAnswer mutation
-    
     updateTableAnswer: builder.mutation({
-      queryFn: async ({ questionId, questionTitle, updatedData, financialYear, moduleId }, { dispatch, getState }, extraOptions, baseQuery) => {
-        try {
-          console.log('🔄 Updating answer for question:', questionId, 'with data:', updatedData);
-          
-          // Process the updatedData to handle null values
-          const cleanedData = {};
-          
-          // Ensure updatedData is an object
-          if (updatedData && typeof updatedData === 'object') {
-            console.log('🔍 updatedData types before cleaning:', Object.entries(updatedData).map(([key, value]) => `${key}: ${typeof value}`));
-            
-            // For multi-table data, ensure current_year and previous_year are strings
-            if (updatedData.current_year !== undefined || updatedData.previous_year !== undefined) {
-              cleanedData.current_year = updatedData.current_year !== undefined ? String(updatedData.current_year) : '';
-              cleanedData.previous_year = updatedData.previous_year !== undefined ? String(updatedData.previous_year) : '';
-            } else {
-              // For other data types, convert null to empty string but preserve boolean values
-              Object.keys(updatedData).forEach(key => {
-                if (updatedData[key] === null) {
-                  cleanedData[key] = '';
-                } else if (typeof updatedData[key] === 'boolean') {
-                  // Preserve boolean values exactly as they are
-                  cleanedData[key] = updatedData[key];
-                  console.log(`🔍 Preserving boolean value for ${key}:`, updatedData[key]);
-                } else {
-                  cleanedData[key] = updatedData[key];
-                }
+      query: (payload) => {
+        console.log('Received payload:', payload);
+        const { financialYear, questionId, questionTitle, updatedData } = payload;
+
+        // Process data based on structure
+        let cleanedData = updatedData;
+
+        // Convert all values to strings to match backend expectations
+        if (Array.isArray(updatedData)) {
+          // For single table data
+          if (updatedData.length > 0 && 'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
+            cleanedData = updatedData.map(({ row_index, ...rest }) => {
+              // Convert all values to strings
+              const stringifiedData = {};
+              Object.entries(rest).forEach(([key, value]) => {
+                stringifiedData[key] = value === null ? '' : String(value);
               });
-            }
-          } else {
-            console.warn('⚠️ updatedData is not an object:', updatedData);
+              return stringifiedData;
+            });
           }
+          // For multi-table data
+          else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
+            cleanedData = updatedData.map(item => {
+              const result = { ...item };
+              // Convert current_year and previous_year to strings
+              if (result.current_year !== undefined) {
+                result.current_year = result.current_year === null ? '' : String(result.current_year);
+              }
+              if (result.previous_year !== undefined) {
+                result.previous_year = result.previous_year === null ? '' : String(result.previous_year);
+              }
+              return result;
+            });
+          }
+        }
 
-          console.log('🧹 Cleaned data:', cleanedData);
-          console.log('🔍 cleanedData types after cleaning:', Object.entries(cleanedData).map(([key, value]) => `${key}: ${typeof value}`));
+        console.log('Sending to backend:', {
+          questionId,
+          questionTitle,
+          updatedData: cleanedData
+        });
 
-          // Construct the payload
-          const payload = {
+        return {
+          url: `/environment/reports/${financialYear}/table-answer`,
+          method: 'POST',
+          body: {
             questionId,
             questionTitle,
-            value: cleanedData,
-            lastUpdated: new Date().toISOString()
-          };
-
-          console.log('📦 Payload:', payload);
-
-          // If moduleId is provided, use the module-specific endpoint
-          if (moduleId) {
-            const { auth } = getState();
-            const companyId = auth.user?.company_id;
-            const plantId = auth.user?.plant_id || 'default';
-
-            console.log('🔑 Using module-specific endpoint with:', { moduleId, companyId, plantId, financialYear });
-
-            // First, try to get the existing answer
-            try {
-              const getResult = await baseQuery({
-                url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
-                method: 'GET'
-              });
-
-              console.log('🔍 GET result:', getResult.data);
-
-              // If the answer exists, update it
-              if (getResult.data) {
-                const putResult = await baseQuery({
-                  url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
-                  method: 'PUT',
-                  body: {
-                    answers: {
-                      [questionId]: payload
-                    }
-                  }
-                });
-                console.log('✅ Successfully updated answer:', putResult.data);
-                return { data: putResult.data };
-              }
-            } catch (error) {
-              // If the answer doesn't exist (404), create a new one
-              if (error.status === 404) {
-                console.log('🆕 Answer not found, creating new one');
-                const postResult = await baseQuery({
-                  url: `/module-answers/${moduleId}`,
-                  method: 'POST',
-                  body: {
-                    company_id: companyId,
-                    plant_id: plantId,
-                    financial_year: financialYear,
-                    answers: {
-                      [questionId]: payload
-                    }
-                  }
-                });
-                
-                console.log('✅ Created new answer:', postResult.data);
-                
-                // Now try to update it
-                const putResult = await baseQuery({
-                  url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
-                  method: 'PUT',
-                  body: {
-                    answers: {
-                      [questionId]: payload
-                    }
-                  }
-                });
-                console.log('✅ Successfully updated answer:', putResult.data);
-                return { data: putResult.data };
-              }
-              console.error('❌ Error updating answer:', error);
-              throw error;
-            }
-          } else {
-            // Fall back to the old endpoint if moduleId is not provided
-            console.log('⚠️ No moduleId provided, using legacy endpoint');
-            const result = await baseQuery({
-              url: `/environment/reports/${financialYear}/table-answer`,
-              method: 'POST',
-              body: payload
-            });
-            console.log('✅ Successfully saved answer using legacy endpoint:', result.data);
-            return { data: result.data };
+            updatedData: cleanedData
           }
-        } catch (error) {
-          console.error('❌ Error updating answer:', error);
-          return { error };
-        }
+        };
       },
-      invalidatesTags: (result, error, arg) => [
-        'EnvironmentReports', 
-        'ModuleAnswers',
-        { type: 'ModuleAnswers', id: `${arg.moduleId}-${result?.data?.company_id}-${result?.data?.plant_id}-${arg.financialYear}` }
-      ]
+      transformErrorResponse: (response) => {
+        console.error('🔴 Table Answer Update Error:', response);
+        return response;
+      },
+      invalidatesTags: ['EnvironmentReports']
     }),
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, plantId, financialYear }) => ({
@@ -353,7 +275,8 @@ export const {
   useLazyGetQuestionsByIdsQuery,
   useUpdateTableAnswerMutation,
   useCreatePlantMutation,
-  useUpdateSubjectiveAnswerMutation
+  useUpdateSubjectiveAnswerMutation,
+  useLazyGetModuleAnswerQuery
 } = apiSlice;
 
 export default apiSlice;
