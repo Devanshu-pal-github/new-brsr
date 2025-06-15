@@ -28,7 +28,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className={`h-screen min-h-full w-full bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out
+        <div className={`h-[calc(100vh-48px)]  fixed left-0 top-[48px] w-50 bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out
             ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
             <div className="pt-3 pb-3 flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
                 {/* Header */}

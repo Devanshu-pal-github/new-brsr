@@ -31,64 +31,13 @@
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
-            },
-            {
-              "id": "EC-2",
-              "type": "Leadership",
-              "title": "Energy Consumption from Renewable and Non-Renewable Sources",
-              "description": "Break-up of total energy consumed (in Joules or multiples) from renewable and non-renewable sources, including electricity, fuel, and other sources for both categories. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "multi-table",
-                "tables": [
-                  {
-                    "title": "From renewable sources",
-                    "columns": [
-                      { "label": "Parameter", "key": "parameter" },
-                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
-                    ],
-                    "rows": [
-                      { "parameter": "<b>From renewable sources</b>", "isHeader": true },
-                      { "parameter": "Total electricity consumption (A)" },
-                      { "parameter": "Total fuel consumption (B)" },
-                      { "parameter": "Energy consumption through other sources (C)" },
-                      { "parameter": "<b>Total energy consumed from renewable sources (A+B+C)</b>" },
-                      { "parameter": "<b>From non-renewable sources</b>", "isHeader": true }
-                    ]
-                  },
-                  {
-                    "title": "From non-renewable sources",
-                    "columns": [
-                      { "label": "Parameter", "key": "parameter" },
-                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
-                    ],
-                    "rows": [
-                      { "parameter": "Total electricity consumption (D)" },
-                      { "parameter": "Total fuel consumption (E)" },
-                      { "parameter": "Energy consumption through other sources (F)" },
-                      { "parameter": "<b>Total energy consumed from non-renewable sources (D+E+F)</b>" }
-                    ]
-                  }
-                ],
-                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
             }
           ]
         },
         {
           "name": "Energy Efficiency Schemes",
           "id": "energy-efficiency",
-          "questions": [
-            {
-              "id": "EES-1",
-              "type": "Essential",
-              "title": "PAT Scheme Participation",
-              "description": "Does the entity have sites/facilities identified as designated consumers (DCs) under the Performance, Achieve and Trade (PAT) Scheme? (Y/N) If yes, disclose whether targets set under the PAT scheme have been achieved, and if not, provide remedial actions taken.",
-              "isAuditRequired": true
-            }
-          ]
+          "questions": []
         }
       ]
     },
@@ -126,66 +75,6 @@
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
-            },
-            {
-              "id": "WU-2",
-              "type": "Leadership",
-              "title": "Water in Areas of Water Stress",
-              "description": "For facilities in areas of water stress, provide details of the area, nature of operations, water withdrawal by source, total volume of water withdrawal and consumption (in kilolitres), water intensity per rupee of turnover, optional water intensity metrics, and water discharge by destination and treatment level. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "multi-table",
-                "tables": [
-                  {
-                    "title": "Water withdrawal by source (in kilolitres)",
-                    "columns": [
-                      { "label": "Parameter", "key": "parameter" },
-                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
-                    ],
-                    "rows": [
-                      { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true },
-                      { "parameter": "(i) Surface water" },
-                      { "parameter": "(ii) Groundwater" },
-                      { "parameter": "(iii) Third party water" },
-                      { "parameter": "(iv) Seawater / desalinated water" },
-                      { "parameter": "(v) Others" },
-                      { "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>" },
-                      { "parameter": "<b>Total volume of water consumption (in kilolitres)</b>" },
-                      { "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>" },
-                      { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity" }
-                    ]
-                  },
-                  {
-                    "title": "Water discharge by destination and level of treatment (in kilolitres)",
-                    "columns": [
-                      { "label": "Parameter", "key": "parameter" },
-                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
-                    ],
-                    "rows": [
-                      { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
-                      { "parameter": "(i) Into Surface water" },
-                      { "parameter": "- No treatment" },
-                      { "parameter": "- With treatment – please specify level of treatment" },
-                      { "parameter": "(ii) Into Groundwater" },
-                      { "parameter": "- No treatment" },
-                      { "parameter": "- With treatment – please specify level of treatment" },
-                      { "parameter": "(iii) Into Seawater" },
-                      { "parameter": "- No treatment" },
-                      { "parameter": "- With treatment – please specify level of treatment" },
-                      { "parameter": "(iv) Sent to third-parties" },
-                      { "parameter": "- No treatment" },
-                      { "parameter": "- With treatment – please specify level of treatment" },
-                      { "parameter": "(v) Others" },
-                      { "parameter": "- No treatment" },
-                      { "parameter": "- With treatment – please specify level of treatment" },
-                      { "parameter": "<b>Total water discharged (in kilolitres)</b>" }
-                    ]
-                  }
-                ],
-                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
             }
           ]
         },
@@ -193,13 +82,6 @@
           "name": "Water Discharge",
           "id": "water-discharge",
           "questions": [
-            {
-              "id": "WD-1",
-              "type": "Essential",
-              "title": "Zero Liquid Discharge Mechanism",
-              "description": "Has the entity implemented a mechanism for Zero Liquid Discharge? If yes, provide details of its coverage and implementation.",
-              "isAuditRequired": true
-            },
             {
               "id": "WD-2",
               "type": "Leadership",
@@ -349,33 +231,7 @@
         {
           "name": "Emission Reduction Initiatives",
           "id": "emission-reduction",
-          "questions": [
-            {
-              "id": "ERI-1",
-              "type": "Essential",
-              "title": "GHG Emission Reduction Projects",
-              "description": "Does the entity have any project related to reducing greenhouse gas emissions? If yes, provide details.",
-              "isAuditRequired": true
-            },
-            {
-              "id": "ERI-2",
-              "type": "Leadership",
-              "title": "Resource Efficiency and Emission Reduction Initiatives",
-              "description": "Details of specific initiatives or innovative technologies to improve resource efficiency or reduce emissions/effluent discharge/waste, including initiative details (with web links, if any) and outcomes.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "dynamic-table",
-                "columns": [
-                  { "label": "Sr. No", "key": "sr_no" },
-                  { "label": "Initiative undertaken", "key": "initiative" },
-                  { "label": "Details of the initiative <i>(Web-link, if any, may be provided along-with summary)</i>", "key": "details" },
-                  { "label": "Outcome of the initiative", "key": "outcome" }
-                ],
-                "allowAddRows": true,
-                "note": ""
-              }
-            }
-          ]
+          "questions": []
         }
       ]
     },
@@ -385,77 +241,7 @@
         {
           "name": "Waste Generation and Management",
           "id": "waste-management",
-          "questions": [
-            {
-              "id": "WM-1",
-              "type": "Essential",
-              "title": "Waste Management Details",
-              "description": "Details of total waste generated (in metric tonnes), including plastic, e-waste, bio-medical, construction and demolition, battery, radioactive, hazardous, and non-hazardous waste. For each category, provide waste recovered (recycled, re-used, other recovery operations) and waste disposed (incineration, landfilling, other disposal methods). Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "multi-table",
-                "tables": [
-                  {
-                    "title": "Total Waste generated (in metric tonnes)",
-                    "columns": [
-                      { "label": "Parameter", "key": "parameter" },
-                      { "label": "FY ____ (Current Financial Year)", "key": "current_year" },
-                      { "label": "FY ____ (Previous Financial Year)", "key": "previous_year" }
-                    ],
-                    "rows": [
-                      { "parameter": "Plastic waste (A)" },
-                      { "parameter": "E-waste (B)" },
-                      { "parameter": "Bio-medical waste (C)" },
-                      { "parameter": "Construction and demolition waste (D)" },
-                      { "parameter": "Battery waste (E)" },
-                      { "parameter": "Radioactive waste (F)" },
-                      { "parameter": "Other Hazardous waste. Please specify, if any. (G)" },
-                      { "parameter": "Other Non-hazardous waste generated (H). Please specify, if any. (Break-up by composition i.e. by materials relevant to the sector)" },
-                      { "parameter": "<b>Total (A+B+C+D+E+F+G+H)</b>" }
-                    ]
-                  },
-                  {
-                    "title": "For each category of waste generated, total waste recovered through recycling, re-using or other recovery operations (in metric tonnes)",
-                    "columns": [
-                      { "label": "Category of waste", "key": "category" },
-                      { "label": "Recycled", "key": "recycled" },
-                      { "label": "Re-used", "key": "reused" },
-                      { "label": "Other recovery operations", "key": "other_recovery" }
-                    ],
-                    "rows": [
-                      { "category": "(i) Recycled" },
-                      { "category": "(ii) Re-used" },
-                      { "category": "(iii) Other recovery operations" },
-                      { "category": "<b>Total</b>" }
-                    ]
-                  },
-                  {
-                    "title": "For each category of waste generated, total waste disposed by nature of disposal method (in metric tonnes)",
-                    "columns": [
-                      { "label": "Category of waste", "key": "category" },
-                      { "label": "Incineration", "key": "incineration" },
-                      { "label": "Landfilling", "key": "landfilling" },
-                      { "label": "Other disposal operations", "key": "other_disposal" }
-                    ],
-                    "rows": [
-                      { "category": "(i) Incineration" },
-                      { "category": "(ii) Landfilling" },
-                      { "category": "(iii) Other disposal operations" },
-                      { "category": "<b>Total</b>" }
-                    ]
-                  }
-                ],
-                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
-            },
-            {
-              "id": "WM-2",
-              "type": "Essential",
-              "title": "Waste Management Practices",
-              "description": "Description of waste management practices, including strategies to reduce hazardous and toxic chemical usage in products/processes and practices to manage such wastes.",
-              "isAuditRequired": true
-            }
-          ]
+          "questions": []
         }
       ]
     },
@@ -465,87 +251,17 @@
         {
           "name": "Ecologically Sensitive Areas",
           "id": "sensitive-areas",
-          "questions": [
-            {
-              "id": "ESA-1",
-              "type": "Essential",
-              "title": "Operations in Ecologically Sensitive Areas",
-              "description": "Details of operations/offices in/around ecologically sensitive areas (national parks, wildlife sanctuaries, biosphere reserves, wetlands, biodiversity hotspots, forests, coastal regulation zones, etc.), including location, type of operations, compliance with environmental approvals/clearances (Y/N), and reasons/corrective actions for non-compliance.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "dynamic-table",
-                "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Location of operations/offices", "key": "location" },
-                  { "label": "Type of operations", "key": "type_of_operations" },
-                  { 
-                    "label": "Whether the conditions of environmental approval / clearance are being complied with? (Y/N)<br/>If no, the reasons thereof and corrective action taken, if any.", 
-                    "key": "compliance" 
-                  }
-                ],
-                "allowAddRows": true,
-                "note": ""
-              }
-            },
-            {
-              "id": "ESA-2",
-              "type": "Leadership",
-              "title": "Biodiversity Impact in Ecologically Sensitive Areas",
-              "description": "Details of significant direct and indirect impacts on biodiversity in ecologically sensitive areas reported in Essential Indicator 10, along with prevention and remediation activities.",
-              "isAuditRequired": true
-            }
-          ]
+          "questions": []
         },
         {
           "name": "Environmental Impact Assessments",
           "id": "eia",
-          "questions": [
-            {
-              "id": "EIA-1",
-              "type": "Essential",
-              "title": "Environmental Impact Assessments",
-              "description": "Details of environmental impact assessments for projects in the current financial year, including project details, EIA notification number, date, whether conducted by an independent external agency, results communicated in the public domain, and relevant web links.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "dynamic-table",
-                "columns": [
-                  { "label": "Name and brief details of project", "key": "project_details" },
-                  { "label": "EIA Notification No.", "key": "eia_notification_no" },
-                  { "label": "Date", "key": "date" },
-                  { "label": "Whether conducted by independent external agency<br/>(Yes / No)", "key": "independent_agency" },
-                  { "label": "Results communicated in public domain<br/>(Yes / No)", "key": "results_public" },
-                  { "label": "Relevant Web link", "key": "web_link" }
-                ],
-                "allowAddRows": true,
-                "note": ""
-              }
-            }
-          ]
+          "questions": []
         },
         {
           "name": "Regulatory Compliance",
           "id": "compliance",
-          "questions": [
-            {
-              "id": "RC-1",
-              "type": "Essential",
-              "title": "Compliance with Environmental Laws",
-              "description": "Is the entity compliant with applicable environmental laws/regulations/guidelines in India (e.g., Water Act, Air Act, Environment Protection Act)? (Y/N) If not, specify the law/regulation, details of non-compliance, fines/penalties/actions by regulatory agencies or courts, and corrective actions taken.",
-              "isAuditRequired": true,
-              "metadata": {
-                "type": "dynamic-table",
-                "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Specify the law / regulation / guidelines which was not complied with", "key": "law_not_complied" },
-                  { "label": "Provide details of the non-compliance", "key": "non_compliance_details" },
-                  { "label": "Any fines / penalties / action taken by regulatory agencies such as pollution control boards or by courts", "key": "fines_penalties_action" },
-                  { "label": "Corrective action taken, if any", "key": "corrective_action" }
-                ],
-                "allowAddRows": true,
-                "note": ""
-              }
-            }
-          ]
+          "questions": []
         }
       ]
     },
@@ -555,35 +271,12 @@
         {
           "name": "Value Chain Environmental Impact",
           "id": "value-chain",
-          "questions": [
-            {
-              "id": "VCEI-1",
-              "type": "Leadership",
-              "title": "Environmental Impact of Value Chain",
-              "description": "Disclose any significant adverse environmental impact arising from the entity's value chain and mitigation or adaptation measures taken.",
-              "isAuditRequired": true
-            },
-            {
-              "id": "VCEI-2",
-              "type": "Leadership",
-              "title": "Assessment of Value Chain Partners",
-              "description": "Percentage of value chain partners (by value of business done) assessed for environmental impacts.",
-              "isAuditRequired": true
-            }
-          ]
+          "questions": []
         },
         {
           "name": "Business Continuity and Disaster Management",
           "id": "disaster-management",
-          "questions": [
-            {
-              "id": "BCDM-1",
-              "type": "Leadership",
-              "title": "Business Continuity and Disaster Management Plan",
-              "description": "Does the entity have a business continuity and disaster management plan? Provide details in 100 words or a web link.",
-              "isAuditRequired": true
-            }
-          ]
+          "questions": []
         }
       ]
     }

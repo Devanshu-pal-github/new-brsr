@@ -88,25 +88,28 @@ const ModuleView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar with report selection dropdown */}
-      <Navbar />
+    <div className="h-screen flex flex-col">
+      {/* Navbar with report selection dropdown - Fixed at top */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Navbar />
+      </div>
       
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] w-64 bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-          <div className="pt-3 pb-3 flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
+      <div className="flex pt-[48px] h-full">
+        {/* Sidebar - Fixed */}
+        <div className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out overflow-hidden
+          ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full lg:w-16 lg:translate-x-0'}`}>
+          <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-3 pl-5 mb-5">
+            <div className="flex items-center gap-3 pl-5 py-3">
               <Building className="w-5 h-5 text-green-300 flex-shrink-0" />
-              <h2 className="text-[1rem] font-bold text-[#E5E7EB]">
+              <h2 className={`text-[1rem] font-bold text-[#E5E7EB] transition-opacity duration-300
+                ${isSidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'}`}>
                 {companyDetails?.company_name || 'BRSR'}
               </h2>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1">
+            {/* Navigation - Scrollable */}
+            <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
               <ul className="space-y-1 flex flex-col items-start pl-0">
                 {/* Dashboard */}
                 <li className="w-full">
@@ -163,24 +166,24 @@ const ModuleView = () => {
             </nav>
 
             {/* Logout Button */}
-            <div className="mt-auto px-5">
+            <div className="p-5 border-t border-gray-700">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 text-[0.92rem] font-medium text-[#E5E7EB] hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
-                <span>Logout</span>
+                <span className={`${isSidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'}`}>Logout</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        {/* Main Content - Scrollable */}
+        <div className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
+          ${isSidebarOpen ? 'ml-64' : 'ml-0 lg:ml-16'}`}>
           {selectedModuleId && selectedModuleId !== 'environment' ? (
-            <div className="">
-              <div className="max-w-7xl mx-auto">
-                {/* Render the DynamicPageRenderer component directly */}
+            <div className="h-[calc(100vh-48px)]">
+              <div className="container mx-auto px-4">
                 {filteredModules.find(m => m.id === selectedModuleId) && (
                   <DynamicPageRenderer 
                     reportId={reportId} 
@@ -191,10 +194,10 @@ const ModuleView = () => {
               </div>
             </div>
           ) : (
-            <div className="p-8">
-              <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            <div className="p-4 sm:p-6 lg:p-8 h-[calc(100vh-48px)] overflow-y-auto">
+              <div className="container mx-auto">
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
                     {reportId ? 'Select a Module' : 'No Report Selected'}
                   </h1>
                   <p className="text-gray-600">

@@ -51,8 +51,7 @@ const Plants = () => {
         });
     };
 
-    const handleCreatePlant = async (e) => {
-        e.preventDefault();
+    const handleCreatePlant = async (formData) => {
         try {
             await createPlant({
                 ...formData,
@@ -101,24 +100,32 @@ const Plants = () => {
                         <X className="w-6 h-6" />
                     </button>
                 </div>
-                <form onSubmit={handleCreatePlant} className="space-y-4">
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = {
+                        name: e.target.plantName.value,
+                        code: e.target.plantCode.value,
+                        address: e.target.address.value,
+                        contact_email: e.target.email.value,
+                        contact_phone: e.target.phone.value
+                    };
+                    handleCreatePlant(formData);
+                }} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Plant Name</label>
                         <input
                             type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            name="plantName"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             required
-                            autoFocus={isModalOpen} // Add autoFocus when modal opens
+                            autoFocus={isModalOpen}
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Plant Code</label>
                         <input
                             type="text"
-                            value={formData.code}
-                            onChange={(e) => setFormData({...formData, code: e.target.value})}
+                            name="plantCode"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             required
                         />
@@ -127,8 +134,7 @@ const Plants = () => {
                         <label className="block text-sm font-medium text-gray-700">Address</label>
                         <input
                             type="text"
-                            value={formData.address}
-                            onChange={(e) => setFormData({...formData, address: e.target.value})}
+                            name="address"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             required
                         />
@@ -137,8 +143,7 @@ const Plants = () => {
                         <label className="block text-sm font-medium text-gray-700">Contact Email</label>
                         <input
                             type="email"
-                            value={formData.contact_email}
-                            onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                            name="email"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             required
                         />
@@ -147,8 +152,7 @@ const Plants = () => {
                         <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
                         <input
                             type="tel"
-                            value={formData.contact_phone}
-                            onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                            name="phone"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             required
                         />

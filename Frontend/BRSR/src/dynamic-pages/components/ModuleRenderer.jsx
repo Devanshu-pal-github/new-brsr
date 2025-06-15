@@ -29,7 +29,7 @@ const ModuleRenderer = ({ module }) => {
   }, [activeSubmodule, module]);
 
   return (
-    <div className="min-h-screen p-2 md:p-3 w-[75%]">
+    <div className="min-h-screen p-2 md:p-3 w-full">
       <div className="mb-4">
         <DynamicBreadcrumb 
           moduleName={module.name}
