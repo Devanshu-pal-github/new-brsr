@@ -43,7 +43,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         {/* Dashboard */}
                         <li className="w-full">
                             <NavLink
-                                to="/dashboard"
+                                to="/home"
                                 className={(navData) =>
                                     `flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start ${
                                         navData.isActive
@@ -53,7 +53,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 }
                             >
                                 <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-                                <span className="text-left">Dashboard</span>
+                                <span className="text-left">Home</span>
                             </NavLink>
                         </li>
 

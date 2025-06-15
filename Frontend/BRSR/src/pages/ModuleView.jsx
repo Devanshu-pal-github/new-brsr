@@ -178,7 +178,7 @@ const ModuleView = () => {
         {/* Main Content */}
         <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
           {selectedModuleId && selectedModuleId !== 'environment' ? (
-            <div className="p-8">
+            <div className="">
               <div className="max-w-7xl mx-auto">
                 {/* Render the DynamicPageRenderer component directly */}
                 {filteredModules.find(m => m.id === selectedModuleId) && (

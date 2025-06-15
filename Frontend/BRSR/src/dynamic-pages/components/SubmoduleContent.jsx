@@ -1,24 +1,56 @@
-import React, { useEffect } from 'react';
-import CategoryContainer from './CategoryContainer';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import DynamicQuestionCategory from './DynamicQuestionCategory';
 
 const SubmoduleContent = ({ submodule }) => {
-  useEffect(() => {
-    console.log('📂 SubmoduleContent rendering with submodule:', submodule);
-    if (submodule && submodule.categories) {
-      console.log('📂 Categories in submodule:', submodule.categories);
-      submodule.categories.forEach(category => {
-        console.log(`📂 Category ${category.name} has question_ids:`, category.question_ids);
-      });
-    }
-  }, [submodule]);
+  const [searchParams] = useSearchParams();
+  const financialYear = searchParams.get('financialYear') || '2024-2025';
+
+  // Function to get unique top-level categories
+  const getUniqueCategories = (categories) => {
+    if (!categories) return [];
+    
+    // Create a map to track parent categories
+    const categoryMap = new Map();
+    
+    // First pass: map all categories by their IDs
+    categories.forEach(category => {
+      if (!categoryMap.has(category.id)) {
+        categoryMap.set(category.id, {
+          ...category,
+          isChild: false
+        });
+      }
+    });
+    
+    // Second pass: mark child categories
+    categories.forEach(category => {
+      if (category.categories) {
+        category.categories.forEach(childCategory => {
+          const child = categoryMap.get(childCategory.id);
+          if (child) {
+            child.isChild = true;
+          }
+        });
+      }
+    });
+    
+    // Return only top-level (non-child) categories
+    return Array.from(categoryMap.values()).filter(category => !category.isChild);
+  };
+
+  const topLevelCategories = getUniqueCategories(submodule.categories);
 
   return (
     <div>
-      <h3 className="text-2xl font-extrabold text-gray-900 mb-5 border-b pb-3">{submodule?.name}</h3>
-      <div className="space-y-6">
-        {submodule?.categories && submodule.categories.length > 0 ? (
-          submodule.categories.map((category) => (
-            <CategoryContainer key={category.id} category={category} />
+      <div className="space-y-4">
+        {topLevelCategories.length > 0 ? (
+          topLevelCategories.map((category) => (
+            <DynamicQuestionCategory 
+              key={category.id} 
+              category={category}
+              financialYear={financialYear}
+            />
           ))
         ) : (
           <p className="text-gray-500">No categories found in this submodule.</p>
