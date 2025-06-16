@@ -9,9 +9,11 @@ import ProgressSidebar from './ProgressSidebar';
 import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
 import { AppProvider } from '../../src/AICHATBOT/AppProvider';
 
-const EnvironmentContent = () => {
+const EnvironmentContent = ({ plantId: propPlantId, environmentReports: propReports, renderBare = false }) => {
   const location = useLocation();
-  const { plantId, environmentReports } = location.state || {};
+  const { plantId: statePlantId, environmentReports: stateReports } = location.state || {};
+  const plantId = propPlantId || statePlantId;
+  const environmentReports = propReports || stateReports;
   const [searchParams] = useSearchParams();
   const financialYear = searchParams.get('financialYear') || '2024-2025'; // Default value
   const [activeSubmodule, setActiveSubmodule] = useState(null);
@@ -34,7 +36,7 @@ const EnvironmentContent = () => {
 
   return (
     <AppProvider>
-      <Layout>
+      <Layout hideSidebar>
         <div className="module-layout min-h-screen p-2 md:p-3 w-[76%]">
           <div className="">
             <div className="mb-4">

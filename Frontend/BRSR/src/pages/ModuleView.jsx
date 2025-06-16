@@ -11,6 +11,7 @@ import { useGetReportModulesQuery } from "../store/api/apiSlice";
 import { Loader2 } from "lucide-react";
 import DynamicPageRenderer from "../dynamic-pages";
 import Plants from "../../../BRSR/Environment/Pages/Plants";
+import EnvironmentContent from "../../../BRSR/Environment/components/EnvironmentContent";
 import ChatbotWindow from "../AICHATBOT/ChatbotWindow";
 import { AppProvider } from "../AICHATBOT/AppProvider";
 
@@ -29,6 +30,7 @@ const ModuleView = () => {
   const { reportId } = useParams();
   const navigate = useNavigate();
   const [selectedModuleId, setSelectedModuleId] = useState(null);
+  const [selectedPlantData, setSelectedPlantData] = useState(null);
   const user = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const companyDetails = useSelector(selectCompanyDetails);
@@ -92,6 +94,9 @@ const ModuleView = () => {
 
   const handleModuleClick = (moduleId) => {
     setSelectedModuleId(moduleId);
+    if (moduleId !== 'environment') {
+      setSelectedPlantData(null); // reset any plant selection when switching away
+    }
   };
 
   const handleLogout = () => {
@@ -220,9 +225,24 @@ const ModuleView = () => {
             ${isSidebarOpen ? "ml-[200px]" : "ml-0 lg:ml-16"}`}
           >
             {selectedModuleId === "environment" ? (
-              <div className="h-[calc(100vh-48px)] overflow-y-auto">
-                <Plants renderBare />
-              </div>
+              selectedPlantData ? (
+                <div className="h-[calc(100vh-48px)] overflow-y-auto">
+                  <EnvironmentContent
+                    renderBare
+                    plantId={selectedPlantData.plantId}
+                    environmentReports={selectedPlantData.environmentReports}
+                  />
+                </div>
+              ) : (
+                <div className="h-[calc(100vh-48px)] overflow-y-auto">
+                  <Plants
+                    renderBare
+                    onPlantSelect={(plantId, environmentReports) =>
+                      setSelectedPlantData({ plantId, environmentReports })
+                    }
+                  />
+                </div>
+              )
             ) : selectedModuleId ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
                 <div className="container mx-auto px-2">

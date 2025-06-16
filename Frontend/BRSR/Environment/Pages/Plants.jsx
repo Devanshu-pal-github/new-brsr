@@ -20,7 +20,7 @@ import { Building2, Factory, AlertCircle, Plus, X } from 'lucide-react';
   touched.
 */
 
-const Plants = ({ renderBare = false }) => {
+const Plants = ({ renderBare = false, onPlantSelect = null }) => {
   /* ──────────────────────────── STATE & HOOKS ─────────────────────────── */
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Main Facilities');
@@ -48,11 +48,16 @@ const Plants = ({ renderBare = false }) => {
   );
 
   const handlePlantClick = (plantId) => {
+    if (typeof onPlantSelect === 'function') {
+      onPlantSelect(plantId, environmentReports, plants.find((p) => p.id === plantId));
+      return;
+    }
     navigate(`/environment/${plantId}`, {
       state: {
         plantId,
         environmentReports,
         selectedPlant: plants.find((p) => p.id === plantId),
+        renderBare: true,
       },
     });
   };
