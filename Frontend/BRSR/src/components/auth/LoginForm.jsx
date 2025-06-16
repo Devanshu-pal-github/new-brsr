@@ -67,7 +67,7 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <label htmlFor="username" className="block text-[#1E3A8A] text-sm font-semibold">
+        <label htmlFor="username" className="block text-[#000D30] text-sm font-semibold">
           Email or Username <span className="text-red-500">*</span>
         </label>
         <input
@@ -77,13 +77,13 @@ const LoginForm = () => {
           required
           value={formData.username}
           onChange={handleChange}
-          className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6] text-[#1E3A8A] text-sm shadow-sm transition-all duration-300"
+          className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#20305D] text-[#000D30] text-sm shadow-sm transition-all duration-300"
           placeholder="Enter your email or username"
         />
       </div>
       
       <div className="space-y-2">
-        <label htmlFor="password" className="block text-[#1E3A8A] text-sm font-semibold">
+        <label htmlFor="password" className="block text-[#000D30] text-sm font-semibold">
           Password <span className="text-red-500">*</span>
         </label>
         <div className="relative">
@@ -94,12 +94,12 @@ const LoginForm = () => {
             required
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14B8A6] text-[#1E3A8A] text-sm shadow-sm transition-all duration-300"
+            className="w-full p-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#20305D] text-[#000D30] text-sm shadow-sm transition-all duration-300"
             placeholder="Enter your password"
           />
           <button
             type="button"
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#1E3A8A] hover:text-[#14B8A6]"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#000D30] hover:text-[#20305D]"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? (
@@ -114,7 +114,7 @@ const LoginForm = () => {
       <div className="flex justify-end">
         <Link
           to="/forgot-password"
-          className="text-sm text-[#14B8A6] hover:text-[#14B8A6]/80 transition-colors"
+          className="text-sm text-[#20305D] hover:text-[#000D30] transition-colors"
         >
           Forgot Password?
         </Link>
@@ -124,7 +124,7 @@ const LoginForm = () => {
         <button
           type="submit"
           disabled={isLoading || isLoadingCompanyDetails}
-          className="w-full py-3 bg-[#14B8A6] text-white rounded-lg hover:bg-[#14B8A6]/90 focus:ring-4 focus:ring-[#14B8A6]/50 text-sm font-semibold shadow-sm transition-all duration-300 disabled:bg-[#14B8A6]/50"
+          className="w-full py-3 bg-[#000D30] text-white rounded-lg hover:bg-[#20305D] focus:ring-4 focus:ring-[#000D30]/50 text-sm font-semibold shadow-sm transition-all duration-300 disabled:bg-[#000D30]/50"
         >
           {isLoading || isLoadingCompanyDetails ? 'Signing in...' : 'Sign In'}
         </button>

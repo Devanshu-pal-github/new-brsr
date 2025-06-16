@@ -3,12 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, selectCurrentUser, selectCompanyDetails } from '../../store/slices/authSlice';
 import { useGetReportModulesQuery, useGetCompanyPlantsQuery, useCreatePlantMutation, useDeletePlantMutation } from '../../store/api/apiSlice';
-import { Menu, ChevronDown, X, Search, Trash2, Plus, Settings } from 'lucide-react';
+import { Menu, ChevronDown, X, Search, Trash2, Plus, Settings, Bell } from 'lucide-react';
 import { DataGrid } from '@mui/x-data-grid';
 import Select from 'react-select';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeManagementModal from '../modals/EmployeeManagementModal';
-
+import NotificationPanel from '../modals/NotificationPanel';
 const CreatePlantModal = ({ isOpen, onClose }) => {
   const user = useSelector((state) => state.auth.user);
   const [createPlant, { isLoading: isCreating }] = useCreatePlantMutation();
@@ -51,17 +51,17 @@ const CreatePlantModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-[9999] transition-opacity duration-300">
-      <div 
+      <div
         ref={modalRef}
         className="bg-white rounded-lg p-6 w-full max-w-lg transform transition-transform duration-300 scale-100"
       >
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-lg font-semibold">Create New Plant</h2>
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onClose();
-            }} 
+            }}
             className="text-gray-500 hover:text-gray-700"
           >
             <X className="w-5 h-5" />
@@ -152,15 +152,16 @@ const PlantManagementModal = ({ onClose }) => {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const popupRef = useRef(null);
   
+
   // Get user from Redux store
   const user = useSelector((state) => state.auth.user);
   const [deletePlant] = useDeletePlantMutation();
 
   // Fetch plants using the API
-  const { 
-    data: plants = [], 
-    isLoading: plantsLoading, 
-    error: plantsError 
+  const {
+    data: plants = [],
+    isLoading: plantsLoading,
+    error: plantsError
   } = useGetCompanyPlantsQuery(user?.company_id, {
     skip: !user?.company_id,
   });
@@ -216,9 +217,9 @@ const PlantManagementModal = ({ onClose }) => {
   }, [plants, searchQuery, filters]);
 
   const columns = [
-    { 
-      field: "plant_name", 
-      headerName: "Plant Name", 
+    {
+      field: "plant_name",
+      headerName: "Plant Name",
       flex: 2,
       renderCell: (params) => (
         <div className="flex flex-col">
@@ -392,9 +393,9 @@ const PlantManagementModal = ({ onClose }) => {
           />
         </div>
       </div>
-      <CreatePlantModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
+      <CreatePlantModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
       />
       {/* Employee Management Modal */}
       {isEmployeeModalOpen && (
@@ -420,9 +421,10 @@ const Navbar = () => {
   const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isPlantModalOpen, setIsPlantModalOpen] = useState(false);
-  
+
   const user = useSelector(selectCurrentUser);
   const companyDetails = useSelector(selectCompanyDetails);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -432,7 +434,7 @@ const Navbar = () => {
       reportId: selectedReport?.id,
       companyId: user?.company_id
     },
-    { 
+    {
       skip: !selectedReport?.id || !user?.company_id,
       refetchOnMountOrArgChange: true
     }
@@ -444,7 +446,7 @@ const Navbar = () => {
     console.log('👤 User:', user);
     console.log('📦 Report Modules Data:', reportModules);
     console.log('⚠️ Modules Error:', modulesError);
-    
+
     if (selectedReport?.id && user?.company_id) {
       console.log('🔍 Making API call with:', {
         reportId: selectedReport.id,
@@ -459,7 +461,7 @@ const Navbar = () => {
     setSelectedReport(report);
     localStorage.setItem('selectedReport', JSON.stringify(report));
     setIsReportDropdownOpen(false);
-    
+
     if (report.id) {
       console.log('🚀 Navigating to report:', report.id);
       navigate(`/reports/${report.id}`);
@@ -501,7 +503,7 @@ const Navbar = () => {
             <div className="flex-shrink-0">
               <Link to="/dashboard" className="text-white text-xl font-bold">ESG</Link>
             </div>
-            
+
             {/* Report Type Selector */}
             <div className="relative">
               <button
@@ -511,7 +513,7 @@ const Navbar = () => {
                 <span>{selectedReport?.report_name || 'Select Report'}</span>
                 <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isReportDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {isReportDropdownOpen && (
                 <ul className="absolute top-12 left-0 w-48 bg-white rounded-[8px] shadow-lg z-50 overflow-hidden">
                   {availableReports.length > 0 ? (
@@ -555,6 +557,19 @@ const Navbar = () => {
               Manage Plants
             </button>
 
+            {/* Notification Bell Button - Let's enhance it */}
+            <button
+              onClick={() => setIsNotificationPanelOpen(true)}
+              className="relative px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#000D30]  shadow-sm hover:bg-[#345678] transition-colors flex items-center gap-2"
+              aria-label="Notifications"
+            >
+              <Bell size={16} />
+              {/* Optional: Add notification count badge */}
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                3
+              </span>
+            </button>
+
             <div className="relative">
               <button
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
@@ -570,7 +585,7 @@ const Navbar = () => {
                   <ChevronDown className={`w-5 h-5 text-[#FFFFFF] transition-transform duration-300 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
               </button>
-              
+
               {isUserDropdownOpen && (
                 <ul className="absolute right-0 mt-2 w-36 sm:w-44 bg-[#000D30] rounded-md shadow-md z-50 overflow-hidden">
                   <li
@@ -650,6 +665,11 @@ const Navbar = () => {
         </div>
       )}
 
+       {/* Notification Panel - Add this at the root level */}
+    <NotificationPanel 
+      isOpen={isNotificationPanelOpen} 
+      onClose={() => setIsNotificationPanelOpen(false)} 
+    />
       {/* Plant Management Modal */}
       {isPlantModalOpen && <PlantManagementModal onClose={() => setIsPlantModalOpen(false)} />}
     </nav>

@@ -5,9 +5,11 @@ import DynamicTableRenderer from './DynamicTableRenderer';
 import { useUpdateTableAnswerMutation, useUpdateSubjectiveAnswerMutation } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
 import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
+import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
+import { AppProvider } from '../../src/AICHATBOT/AppProvider';
 
 const AuditBadge = ({ isAuditRequired }) => (
-  <div className={`inline-block px-3 py-1 rounded-full text-xs ${
+  <div className={`inline-block px-3 py-1 rounded text-xs ${
     isAuditRequired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
   }`}>
     {isAuditRequired ? 'Audit Required' : 'No Audit Required'}
@@ -66,6 +68,28 @@ const QuestionRenderer = ({ question, financialYear }) => {
   const [tempData, setTempData] = useState(questionData);
   const [updateTableAnswer, { isLoading: isTableLoading }] = useUpdateTableAnswerMutation();
   const [updateSubjectiveAnswer, { isLoading: isSubjectiveLoading }] = useUpdateSubjectiveAnswerMutation();
+
+  // Add these new states for ChatbotWindow
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+
+  // Create an activeQuestion object for the chatbot
+  const activeQuestion = {
+    question_id: question.id,
+    question_text: title,
+    guidance_text: description || 'No guidance provided',
+    metadata: metadata,
+    type: metadata?.type,
+    has_string_value: metadata?.type === 'subjective',
+    has_decimal_value: false,
+    has_boolean_value: false,
+    has_link: false,
+    has_note: !!metadata?.note,
+    string_value_required: metadata?.type === 'subjective',
+    decimal_value_required: false,
+    boolean_value_required: false,
+    link_required: false,
+    note_required: false,
+  };
 
   // Update questionData when question.answer changes
   useEffect(() => {
@@ -279,96 +303,136 @@ const QuestionRenderer = ({ question, financialYear }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <div className="font-semibold text-base text-[#20305D]">{title}</div>
-          {description && (
-            <div 
-              className="text-sm text-gray-700 mb-2" 
-              dangerouslySetInnerHTML={{ __html: description }}
-            />
-          )}
-        </div>
-        <div className="flex items-center space-x-3 ml-4">
-          <AuditBadge isAuditRequired={isAuditRequired} />
-          <button
-            onClick={() => {
-              // Create a deep copy when opening modal
-              setTempData(JSON.parse(JSON.stringify(questionData)));
-              setIsEditModalOpen(true);
-            }}
-            className="px-3 py-1 bg-[#20305D] text-white text-sm rounded hover:bg-[#162442] transition-colors"
-          >
-            Edit Response
-          </button>
-        </div>
-      </div>      {/* Content Display */}
-      {metadata?.type === 'table' && (
-        <TableRenderer 
-          metadata={metadata} 
-          data={questionData}
-        />
-      )}
-      {metadata?.type === 'multi-table' && (
-        <MultiTableRenderer 
-          metadata={metadata} 
-          data={questionData}
-        />
-      )}
-      {metadata?.type === 'dynamic-table' && (
-        <DynamicTableRenderer 
-          metadata={metadata} 
-          data={questionData}
-        />
-      )}
-      {metadata?.type === 'subjective' && (
-        <>
-          {!isEditModalOpen && (
-            <div className="mb-4">
-              {/* <div className="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[120px]">
-                {typeof questionData === 'string' ? questionData : questionData?.text || 'No response provided yet'}
-              </div> */}
-            </div>
-          )}
-          <SubjectiveQuestionRenderer 
-            question={question}
-            answer={{
-              text: typeof questionData === 'string' ? questionData : questionData?.text || '',
-              updatedData: {
-                text: typeof questionData === 'string' ? questionData : questionData?.text || ''
-              }
-            }}
-            isReadOnly={!isEditModalOpen}
-            onAnswerChange={(newAnswer) => {
-              const newText = newAnswer.data.text;
-              setTempData(newText);
-              handleSave(newText);
-            }}
-          />
-        </>
-      )}
-      {(isTableLoading || isSubjectiveLoading) && (
-        <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
-      )}
-      {metadata?.note && (
-        <div
-          className="text-xs text-gray-500 mt-2"
-          dangerouslySetInnerHTML={{ __html: metadata.note }}
-        />
-      )}
+    <AppProvider>
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <div className="font-semibold text-base text-[#20305D]">{title}</div>
+            {description && (
+              <div 
+                className="text-sm text-gray-700 mb-2" 
+                dangerouslySetInnerHTML={{ __html: description }}
+              />
+            )}
+          </div>
+          <div className="flex items-center space-x-3 ml-4">
+            {/* Add AI Button */}
 
-      {/* Edit Modal */}
-      <EditModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)}
-        title={`Edit - ${title}`}
-        onSave={handleSave}
-        tempData={tempData}
-      >
-        {renderEditableContent()}
-      </EditModal>
-    </div>
+            <AuditBadge isAuditRequired={isAuditRequired} />
+
+            <button
+              onClick={() => setAiChatOpen(true)}
+              className="px-3 py-1 bg-[#4F46E5] text-white text-sm rounded hover:bg-[#4338CA] transition-colors flex items-center gap-1"
+              aria-label="AI Assist"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>AI</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setTempData(JSON.parse(JSON.stringify(questionData)));
+                setIsEditModalOpen(true);
+              }}
+              className="px-3 py-1 bg-[#20305D] text-white text-sm rounded hover:bg-[#162442] transition-colors"
+            >
+              Edit Response
+            </button>
+          </div>
+        </div>      {/* Content Display */}
+        {metadata?.type === 'table' && (
+          <TableRenderer 
+            metadata={metadata} 
+            data={questionData}
+          />
+        )}
+        {metadata?.type === 'multi-table' && (
+          <MultiTableRenderer 
+            metadata={metadata} 
+            data={questionData}
+          />
+        )}
+        {metadata?.type === 'dynamic-table' && (
+          <DynamicTableRenderer 
+            metadata={metadata} 
+            data={questionData}
+          />
+        )}
+        {metadata?.type === 'subjective' && (
+          <>
+            {!isEditModalOpen && (
+              <div className="mb-4">
+                {/* <div className="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[120px]">
+                  {typeof questionData === 'string' ? questionData : questionData?.text || 'No response provided yet'}
+                </div> */}
+              </div>
+            )}
+            <SubjectiveQuestionRenderer 
+              question={question}
+              answer={{
+                text: typeof questionData === 'string' ? questionData : questionData?.text || '',
+                updatedData: {
+                  text: typeof questionData === 'string' ? questionData : questionData?.text || ''
+                }
+              }}
+              isReadOnly={!isEditModalOpen}
+              onAnswerChange={(newAnswer) => {
+                const newText = newAnswer.data.text;
+                setTempData(newText);
+                handleSave(newText);
+              }}
+            />
+          </>
+        )}
+        {(isTableLoading || isSubjectiveLoading) && (
+          <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
+        )}
+        {metadata?.note && (
+          <div
+            className="text-xs text-gray-500 mt-2"
+            dangerouslySetInnerHTML={{ __html: metadata.note }}
+          />
+        )}
+
+        {/* Edit Modal */}
+        <EditModal 
+          isOpen={isEditModalOpen} 
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit - ${title}`}
+          onSave={handleSave}
+          tempData={tempData}
+        >
+          {renderEditableContent()}
+        </EditModal>
+
+        {/* AI Chat Window */}
+        {aiChatOpen && (
+          <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
+            <div 
+              className="w-full h-full absolute top-0 left-0 bg-black/30 " 
+              onClick={() => setAiChatOpen(false)} 
+            />
+            <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
+              <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
+                <ChatbotWindow
+                  onClose={() => setAiChatOpen(false)}
+                  initialMode="question"
+                  activeQuestion={activeQuestion}
+                  currentAnswer={{
+                    text: typeof questionData === 'string' ? questionData : questionData?.text || '',
+                    updatedData: {
+                      text: typeof questionData === 'string' ? questionData : questionData?.text || ''
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppProvider>
   );
 };
 

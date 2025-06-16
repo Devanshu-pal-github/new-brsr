@@ -25,12 +25,12 @@ const Login = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1E3A8A]/10 via-[#14B8A6]/10 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#000D30]/10 via-[#20305D]/10 to-white p-4">
       <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <Shield className="w-12 h-12 text-[#1E3A8A] mb-3" />
-          <h2 className="text-3xl font-bold text-[#1E3A8A]">Welcome Back</h2>
-          <p className="text-[#1E3A8A]/70 text-sm mt-2">Sign in to your account</p>
+          <Shield className="w-12 h-12 text-[#000D30] mb-3" />
+          <h2 className="text-3xl font-bold text-[#000D30]">Welcome Back</h2>
+          <p className="text-[#20305D]/70 text-sm mt-2">Sign in to your account</p>
         </div>
         {error && (
           <div className="mb-6 text-red-500 text-sm text-center">

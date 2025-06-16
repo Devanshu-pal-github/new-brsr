@@ -13,7 +13,7 @@
               "id": "EC-1",
               "type": "Essential",
               "title": "Details of Total Energy Consumption",
-              "description": "Details of total energy consumption (in Joules or multiples) and energy intensity, including total electricity consumption, fuel consumption, energy from other sources, energy intensity per rupee of turnover, and optional energy intensity metrics. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "description": "Details of total energy consumption (in Joules or multiples) and energy intensity, including total electricity consumption, fuel consumption, energy from other sources, energy intensity per rupee of turnover, and optional energy intensity metrics.",
               "isAuditRequired": true,
               "metadata": {
                 "type": "table",
@@ -64,7 +64,7 @@
               "id": "WU-1",
               "type": "Essential",
               "title": "Water Withdrawal and Consumption",
-              "description": "Details of water withdrawal by source (surface water, groundwater, third-party water, seawater/desalinated water, others), total volume of water withdrawal and consumption (in kilolitres), water intensity per rupee of turnover, and optional water intensity metrics. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "description": "Details of water withdrawal by source (surface water, groundwater, third-party water, seawater/desalinated water, others), total volume of water withdrawal and consumption (in kilolitres).",
               "isAuditRequired": true,
               "metadata": {
                 "type": "table",
@@ -109,7 +109,7 @@
               "id": "WD-2",
               "type": "Leadership",
               "title": "Water Discharge Details",
-              "description": "Details of water discharge by destination (surface water, groundwater, seawater, third parties, others) and level of treatment (no treatment or specify treatment level), including total water discharged (in kilolitres). Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "description": "Details of water discharge by destination (surface water, groundwater, seawater, third parties, others) and level of treatment (no treatment or specify treatment level), including total water discharged (in kilolitres). ",
               "isAuditRequired": true,
               "metadata": {
                 "type": "table",
@@ -155,7 +155,7 @@
               "id": "AE-1",
               "type": "Essential",
               "title": "Air Emissions (Non-GHG)",
-              "description": "Details of air emissions (other than GHG emissions), including NOx, SOx, particulate matter (PM), persistent organic pollutants (POP), volatile organic compounds (VOC), hazardous air pollutants (HAP), and others (specify unit). Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "description": "Details of air emissions (other than GHG emissions), including NOx, SOx, particulate matter (PM), persistent organic pollutants (POP), volatile organic compounds (VOC), hazardous air pollutants (HAP), and others (specify unit).",
               "isAuditRequired": true,
               "metadata": {
                 "type": "table",
@@ -187,7 +187,7 @@
               "id": "GHG-1",
               "type": "Essential",
               "title": "Scope 1 and Scope 2 Emissions",
-              "description": "Details of greenhouse gas emissions (Scope 1 and Scope 2) and intensity, including break-up of GHG (CO2, CH4, N2O, HFCs, PFCs, SF6, NF3) in metric tonnes of CO2 equivalent, total Scope 1 and Scope 2 emissions per rupee of turnover, and optional emission intensity metrics. Indicate if independent assessment/evaluation/assurance has been carried out by an external agency (Y/N) and name of the agency.",
+              "description": "Details of greenhouse gas emissions (Scope 1 and Scope 2) and intensity, including break-up of GHG (CO2, CH4, N2O, HFCs, PFCs, SF6, NF3) in metric tonnes of CO2 equivalent, total Scope 1 and Scope 2 emissions per rupee of turnover, and optional emission intensity metrics.",
               "isAuditRequired": true,
               "metadata": {
                 "type": "table",
