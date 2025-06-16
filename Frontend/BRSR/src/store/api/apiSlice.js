@@ -178,7 +178,154 @@ export const apiSlice = createApi({
           : [{ type: 'Questions', id: 'LIST' }],
     }),
     updateTableAnswer: builder.mutation({
-      query: (payload) => {
+      queryFn: async (
+        { questionId, questionTitle, updatedData, financialYear, moduleId },
+        { dispatch, getState },
+        extraOptions,
+        baseQuery
+      ) => {
+        try {
+          console.log('🔄 Updating answer for question:', questionId, 'with data:', updatedData);
+
+          // Re-use existing array cleaning logic so backend gets string values
+          let cleanedData = updatedData;
+          if (Array.isArray(updatedData)) {
+            // Single table data (no table_key)
+            if (
+              updatedData.length > 0 &&
+              'row_index' in updatedData[0] &&
+              !('table_key' in updatedData[0])
+            ) {
+              cleanedData = updatedData.map(({ row_index, ...rest }) => {
+                const stringified = {};
+                Object.entries(rest).forEach(([k, v]) => {
+                  stringified[k] = v === null ? '' : String(v);
+                });
+                return stringified;
+              });
+            }
+            // Multi-table data (has table_key)
+            else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
+              cleanedData = updatedData.map((item) => {
+                const res = { ...item };
+                if (res.current_year !== undefined) {
+                  res.current_year = res.current_year === null ? '' : String(res.current_year);
+                }
+                if (res.previous_year !== undefined) {
+                  res.previous_year = res.previous_year === null ? '' : String(res.previous_year);
+                }
+                return res;
+              });
+            }
+          }
+
+          /* ----------------------------------------------------------
+           * Dynamic (module-specific) flow
+           * --------------------------------------------------------*/
+          if (moduleId) {
+            const payload = {
+              questionId,
+              questionTitle,
+              value: cleanedData,
+              lastUpdated: new Date().toISOString(),
+            };
+
+            const { auth } = getState();
+            const companyId = auth.user?.company_id;
+            const plantId = auth.user?.plant_id || 'default';
+
+            console.log('🔑 Module flow with:', {
+              moduleId,
+              companyId,
+              plantId,
+              financialYear,
+              payload,
+            });
+
+            try {
+              // Check if a document already exists
+              const getRes = await baseQuery({
+                url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+                method: 'GET',
+              });
+
+              if (getRes.data) {
+                // Update existing
+                const putRes = await baseQuery({
+                  url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+                  method: 'PUT',
+                  body: {
+                    answers: {
+                      [questionId]: payload,
+                    },
+                  },
+                });
+                return { data: putRes.data };
+              }
+            } catch (err) {
+              // Continue to create if 404; rethrow others
+              if (!err?.status || err.status !== 404) {
+                console.error('❌ Error fetching existing answer:', err);
+                throw err;
+              }
+            }
+
+            // Create new then update
+            const postRes = await baseQuery({
+              url: `/module-answers/${moduleId}`,
+              method: 'POST',
+              body: {
+                company_id: companyId,
+                plant_id: plantId,
+                financial_year: financialYear,
+                answers: {
+                  [questionId]: payload,
+                },
+              },
+            });
+
+            const putRes = await baseQuery({
+              url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+              method: 'PUT',
+              body: {
+                answers: {
+                  [questionId]: payload,
+                },
+              },
+            });
+
+            return { data: putRes.data ?? postRes.data };
+          }
+
+          /* ----------------------------------------------------------
+           * Environment (legacy) flow
+           * --------------------------------------------------------*/
+          const envRes = await baseQuery({
+            url: `/environment/reports/${financialYear}/table-answer`,
+            method: 'POST',
+            body: {
+              questionId,
+              questionTitle,
+              updatedData: cleanedData,
+            },
+          });
+
+          return { data: envRes.data };
+        } catch (error) {
+          console.error('❌ Error updating answer:', error);
+          return { error };
+        }
+      },
+      invalidatesTags: (result, error, arg) => [
+        'EnvironmentReports',
+        'ModuleAnswers',
+        {
+          type: 'ModuleAnswers',
+          id: `${arg.moduleId}-${result?.data?.company_id}-${result?.data?.plant_id}-${arg.financialYear}`,
+        },
+      ],
+    }), /* duplicate legacy block removed */
+        /* Duplicate legacy updateTableAnswer block - commented out during merge
         console.log('Received payload:', payload);
         const { financialYear, questionId, questionTitle, updatedData } = payload;
 
@@ -236,6 +383,7 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ['EnvironmentReports']
     }),
+*/
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, plantId, financialYear }) => ({
         url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
