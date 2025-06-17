@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from services.environment import EnvironmentService
 from dependencies import get_database, get_current_active_user, check_company_access
 from models.environment import EnvironmentReport, QuestionAnswer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from services.auditServices import AuditService
 from models.auditModel import ActionLog
 
@@ -326,3 +326,32 @@ async def update_subjective_answer(
         raise HTTPException(status_code=400, detail="Failed to update answer")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+class AuditStatusUpdate(BaseModel):
+    audit_status: bool = Field(description="Boolean flag indicating if the question has been audited")
+
+@router.put("/reports/{financial_year}/audit-status/{question_id}")
+async def update_audit_status(
+    financial_year: str,
+    question_id: str,
+    update: AuditStatusUpdate,
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    """Update audit status for a specific question"""
+    # Check if user has company access
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+        
+    success = await service.update_audit_status(
+        company_id=user["company_id"],
+        financial_year=financial_year,
+        question_id=question_id,
+        audit_status=update.audit_status
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Question not found or update failed")
+    return {"message": "Audit status updated successfully"}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
-import { useUpdateTableAnswerMutation, useUpdateSubjectiveAnswerMutation } from '../../src/store/api/apiSlice';
+import { useUpdateTableAnswerMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
 import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
 import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
@@ -16,7 +16,9 @@ const AuditBadge = ({ isAuditRequired }) => (
   </div>
 );
 
-const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
+const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, question }) => {
+  const [localAuditStatus, setLocalAuditStatus] = useState(question?.answer?.auditStatus || false);
+
   if (!isOpen) return null;
 
   const handleOutsideClick = (e) => {
@@ -24,6 +26,10 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
       e.stopPropagation();
       onClose();
     }
+  };
+
+  const handleSaveWithAudit = () => {
+    onSave(tempData, localAuditStatus);
   };
 
   return (
@@ -42,6 +48,22 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
+          
+          {question?.isAuditRequired && (
+            <div className="mt-4 flex items-center space-x-2 border-t pt-4">
+              <input
+                type="checkbox"
+                id={`audit-${question.id}`}
+                checked={localAuditStatus}
+                onChange={(e) => setLocalAuditStatus(e.target.checked)}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+              <label htmlFor={`audit-${question.id}`} className="text-sm text-gray-600">
+                Mark as Audited
+              </label>
+            </div>
+          )}
+
           <div className="mt-4 flex justify-end space-x-2">
             <button
               onClick={onClose}
@@ -50,7 +72,7 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
               Cancel
             </button>
             <button
-              onClick={() => onSave(tempData)}
+              onClick={handleSaveWithAudit}
               className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
             >
               Save Changes
@@ -75,6 +97,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
   const [tempData, setTempData] = useState(questionData);
   const [updateTableAnswer, { isLoading: isTableLoading }] = useUpdateTableAnswerMutation();
   const [updateSubjectiveAnswer, { isLoading: isSubjectiveLoading }] = useUpdateSubjectiveAnswerMutation();
+  const [updateAuditStatus] = useUpdateAuditStatusMutation();
 
   // Add these new states for ChatbotWindow
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -154,13 +177,14 @@ const QuestionRenderer = ({ question, financialYear }) => {
     }
   }, [question.answer, metadata?.type]);
 
-  const handleSave = async (data) => {
+  const handleSave = async (data, newAuditStatus) => {
     console.log('Saving data with:', {
       questionId: question.id,
       questionTitle: title,
       financialYear,
       type: metadata?.type,
-      data
+      data,
+      auditStatus: newAuditStatus
     });
 
     try {
@@ -182,7 +206,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
           financialYear,
           type: 'subjective',
           data: {
-            text: typeof data === 'string' ? data : data?.text || ''
+            text: data
           }
         }).unwrap();
 
@@ -247,6 +271,15 @@ const QuestionRenderer = ({ question, financialYear }) => {
         setQuestionData(JSON.parse(JSON.stringify(data)));
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
+      }
+
+      // Update audit status if changed
+      if (isAuditRequired && newAuditStatus !== question.answer?.auditStatus) {
+        await updateAuditStatus({
+          financialYear,
+          questionId: question.id,
+          audit_status: newAuditStatus
+        });
       }
     } catch (error) {
       console.error('Failed to save answer:', error);
@@ -388,7 +421,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
               onAnswerChange={(newAnswer) => {
                 const newText = newAnswer.data.text;
                 setTempData(newText);
-                handleSave(newText);
+                handleSave(newText, question.answer?.auditStatus);
               }}
             />
           </>
@@ -404,15 +437,18 @@ const QuestionRenderer = ({ question, financialYear }) => {
         )}
 
         {/* Edit Modal */}
-        <EditModal 
-          isOpen={isEditModalOpen} 
-          onClose={() => setIsEditModalOpen(false)}
-          title={`Edit - ${title}`}
-          onSave={handleSave}
-          tempData={tempData}
-        >
-          {renderEditableContent()}
-        </EditModal>
+        {isEditModalOpen && (
+          <EditModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            title={title}
+            onSave={handleSave}
+            tempData={tempData}
+            question={question}
+          >
+            {renderEditableContent()}
+          </EditModal>
+        )}
 
         {/* AI Chat Window */}
         {aiChatOpen && (

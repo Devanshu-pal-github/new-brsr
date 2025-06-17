@@ -343,27 +343,18 @@ export const apiSlice = createApi({
       ]
     }),
     updateSubjectiveAnswer: builder.mutation({
-      query: (payload) => {
-        console.log('Received subjective payload:', payload);
-        const { questionId, questionTitle, type, data } = payload;
-           
-        const financialYear = payload.financialYear; // Hardcoded for now
-
-        return {
-          url: `/environment/reports/${financialYear}/subjective-answer`,
-          method: 'POST',
-          body: {
-            questionId,
-            questionTitle,
-            type,
-            data
-          }
-        };
-      },
-      transformErrorResponse: (response) => {
-        console.error('🔴 Subjective Answer Update Error:', response);
-        return response;
-      },
+      query: ({ financialYear, ...data }) => ({
+        url: `/environment/reports/${financialYear}/subjective-answer`,
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    updateAuditStatus: builder.mutation({
+      query: ({ financialYear, questionId, audit_status }) => ({
+        url: `/environment/reports/${financialYear}/audit-status/${questionId}`,
+        method: 'PUT',
+        body: { audit_status: Boolean(audit_status) }
+      }),
       invalidatesTags: ['EnvironmentReports']
     }),
     getPlantEmployees: builder.query({
@@ -529,7 +520,8 @@ export const {
   useGenerateTextMutation,
   useStoreQuestionDataMutation,
   useSubmitQuestionAnswerMutation,
-  useGetAuditLogQuery
+  useGetAuditLogQuery,
+  useUpdateAuditStatusMutation
 } = apiSlice;
 
 export default apiSlice;

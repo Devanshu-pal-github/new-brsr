@@ -347,3 +347,27 @@ class EnvironmentService:
         )
         return result.modified_count > 0
 
+    async def update_audit_status(
+        self,
+        company_id: str,
+        financial_year: str,
+        question_id: str,
+        audit_status: bool
+    ) -> bool:
+        """Update audit status for a specific question"""
+        now = datetime.utcnow()
+        
+        result = await self.collection.update_one(
+            {
+                "companyId": company_id,
+                "financialYear": financial_year
+            },
+            {
+                "$set": {
+                    f"answers.{question_id}.auditStatus": audit_status,
+                    "updatedAt": now
+                }
+            }
+        )
+        return result.modified_count > 0
+

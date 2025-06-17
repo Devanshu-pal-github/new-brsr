@@ -21,7 +21,7 @@ class QuestionAnswer(BaseModel):
     lastUpdated: datetime = Field(default_factory=datetime.utcnow)
     comments: List[Dict[str, Any]] = Field(default_factory=list)
     attachments: List[str] = Field(default_factory=list)
-    auditStatus: Optional[str] = None
+    auditStatus: Optional[bool] = None
 
 class EnvironmentReport(BaseModel):
     """Stores only the answer data and metadata for an environment report"""
