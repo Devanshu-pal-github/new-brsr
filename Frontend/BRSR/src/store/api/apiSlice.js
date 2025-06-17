@@ -438,9 +438,26 @@ export const apiSlice = createApi({
         if (!questionId) throw new Error('Question ID is required');
         if (!answerData || typeof answerData !== 'object') throw new Error('Answer data is required and must be an object');
 
-        const company_id = localStorage.getItem("company_id");
-        const plant_id = localStorage.getItem("plant_id");
-        const financial_year = localStorage.getItem("financial_year");
+        let company_id = localStorage.getItem("company_id");
+        let plant_id = localStorage.getItem("plant_id");
+        let financial_year = localStorage.getItem("financial_year");
+
+        // Fallback: derive from stored user object or selectedReport if not individually set
+        if (!company_id || !plant_id) {
+          try {
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            company_id = company_id || userData.company_id;
+            plant_id = plant_id || userData.plant_id;
+          } catch (_) { /* ignore parse errors */ }
+        }
+        if (!financial_year) {
+          try {
+            const selectedReport = JSON.parse(localStorage.getItem('selectedReport') || '{}');
+            financial_year = selectedReport.financial_year || selectedReport.year || selectedReport.financialYear;
+          } catch (_) { /* ignore */ }
+        }
+        
+        
 
         if (!company_id || !plant_id || !financial_year) {
           throw new Error('Missing required context: company_id, plant_id, or financial_year');

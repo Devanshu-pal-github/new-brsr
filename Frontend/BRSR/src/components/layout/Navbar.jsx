@@ -477,6 +477,11 @@ const Navbar = () => {
     console.log('🎯 Selecting Report:', report);
     setSelectedReport(report);
     localStorage.setItem('selectedReport', JSON.stringify(report));
+  // Persist financial year separately for easy access by API calls
+  if (report.financial_year || report.year || report.financialYear) {
+    const fy = report.financial_year || report.year || report.financialYear;
+    localStorage.setItem('financial_year', fy);
+  }
     setIsReportDropdownOpen(false);
 
     if (report.id) {

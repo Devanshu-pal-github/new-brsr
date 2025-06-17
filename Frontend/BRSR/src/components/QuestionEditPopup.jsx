@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import {
     useSubmitQuestionAnswerMutation,
@@ -51,6 +52,8 @@ const QuestionEditPopup = ({
     const [aiMessage, setAiMessage] = useState(null);
     const [leftAiMessage, setLeftAiMessage] = useState(null);
     const [refineTone, setRefineTone] = useState("concise");
+    // Access authenticated user for company and plant context
+    const user = useSelector((state) => state.auth.user);
     const textareaRef = useRef(null);
     const leftPanelRef = useRef(null);
 
@@ -286,6 +289,18 @@ interface StructuredAISuggestion {
         e.preventDefault();
         setIsSaveLoading(true);
         setError(null);
+        // Ensure required context identifiers are present before API calls
+        if (user?.company_id && !localStorage.getItem('company_id')) {
+            localStorage.setItem('company_id', user.company_id);
+        }
+        if (user?.plant_id && !localStorage.getItem('plant_id')) {
+            localStorage.setItem('plant_id', user.plant_id);
+        }
+        const selectedReport = JSON.parse(localStorage.getItem('selectedReport') || '{}');
+        const financialYear = selectedReport.financial_year || selectedReport.year || selectedReport.financialYear;
+        if (financialYear && !localStorage.getItem('financial_year')) {
+            localStorage.setItem('financial_year', financialYear);
+        }
         try {
             const questionType = question.question_type || question.metadata?.type;
             

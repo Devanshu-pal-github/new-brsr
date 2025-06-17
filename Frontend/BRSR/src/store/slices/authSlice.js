@@ -75,6 +75,8 @@ const authSlice = createSlice({
       
       // Store in localStorage
       localStorage.setItem('user', JSON.stringify(state.user));
+      localStorage.setItem('company_id', company_id);
+      localStorage.setItem('plant_id', plant_id);
       localStorage.setItem('token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('user_name', user_name);
@@ -127,6 +129,8 @@ const authSlice = createSlice({
       // Store in localStorage
       try {
         localStorage.setItem('user', JSON.stringify(state.user));
+        localStorage.setItem('company_id', payload.company_id);
+        localStorage.setItem('plant_id', payload.plant_id);
         localStorage.setItem('token', payload.access_token);
         localStorage.setItem('refresh_token', payload.refresh_token);
         localStorage.setItem('user_name', payload.user_name);
