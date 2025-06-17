@@ -501,7 +501,7 @@ const Navbar = () => {
           {/* Left side - Report Type and Logo */}
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
-              <Link to="/dashboard" className="text-white text-xl font-bold">ESG</Link>
+              <Link to="/dashboard" className="text-white text-xl font-bold hidden">ESG</Link>
             </div>
 
             {/* Report Type Selector */}
@@ -552,7 +552,7 @@ const Navbar = () => {
             {/* Manage Plants Button */}
             <button
               onClick={() => setIsPlantModalOpen(true)}
-              className="px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors"
+              className="px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors hidden"
             >
               Manage Plants
             </button>
@@ -560,7 +560,7 @@ const Navbar = () => {
             {/* Notification Bell Button - Let's enhance it */}
             <button
               onClick={() => setIsNotificationPanelOpen(true)}
-              className="relative px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#000D30]  shadow-sm hover:bg-[#345678] transition-colors flex items-center gap-2"
+              className="relative px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#000D30]  shadow-sm hover:bg-[#345678] transition-colors flex items-center gap-2 hidden"
               aria-label="Notifications"
             >
               <Bell size={16} />

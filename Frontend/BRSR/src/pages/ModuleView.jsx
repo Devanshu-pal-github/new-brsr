@@ -6,7 +6,7 @@ import {
   selectUserRole,
   selectCompanyDetails,
 } from "../store/slices/authSlice";
-import Navbar from "../components/layout/Navbar";
+import Navbar from "../components/layout/ReportNavbar";
 import { useGetReportModulesQuery } from "../store/api/apiSlice";
 import { Loader2 } from "lucide-react";
 import DynamicPageRenderer from "../dynamic-pages";
