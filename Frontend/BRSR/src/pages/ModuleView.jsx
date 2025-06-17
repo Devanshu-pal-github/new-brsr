@@ -14,6 +14,7 @@ import Plants from "../../../BRSR/Environment/Pages/Plants";
 import EnvironmentContent from "../../../BRSR/Environment/components/EnvironmentContent";
 import ChatbotWindow from "../AICHATBOT/ChatbotWindow";
 import { AppProvider } from "../AICHATBOT/AppProvider";
+import Dashboard from "../components/dashboard/Dashboard";
 
 // Import icons for modules
 import {
@@ -29,7 +30,7 @@ import {
 const ModuleView = () => {
   const { reportId } = useParams();
   const navigate = useNavigate();
-  const [selectedModuleId, setSelectedModuleId] = useState(null);
+  const [selectedModuleId, setSelectedModuleId] = useState("dashboard"); // Set default to dashboard
   const [selectedPlantData, setSelectedPlantData] = useState(null);
   const user = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
@@ -137,37 +138,39 @@ const ModuleView = () => {
               {/* Navigation - Scrollable */}
               <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
                 <ul className="space-y-1 flex flex-col items-start pl-0">
+                  
+                  {/* Home Button */}
 
-
-
-
-
-
-                  {/* Dashboard */}
                   <li className="w-full">
                     <button
                       onClick={() => navigate("/home")}
-                      className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                        text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                      className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                        ${selectedModuleId === "home"
+                          ? "bg-[#20305D] text-white"
+                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                        }`}
                     >
                       <Building className="w-4 h-4 flex-shrink-0" />
                       <span className="text-left">Home</span>
                     </button>
                   </li>
 
+
                   {/* Dashboard */}
                   <li className="w-full">
                     <button
-                      onClick={() => navigate("/home")}
-                      className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                        text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                      onClick={() => setSelectedModuleId("dashboard")}
+                      className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                        ${selectedModuleId === "dashboard"
+                          ? "bg-[#20305D] text-white"
+                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                        }`}
                     >
                       <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                       <span className="text-left">Dashboard</span>
                     </button>
                   </li>
 
-                  
                   {/* Hardcoded Environment Module */}
                   <li className="w-full">
                     <button
@@ -182,8 +185,6 @@ const ModuleView = () => {
                       <span className="text-left">Environment</span>
                     </button>
                   </li>
-
-
 
                   {/* Module List */}
                   {isLoading ? (
@@ -241,7 +242,11 @@ const ModuleView = () => {
             className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
             ${isSidebarOpen ? "ml-[200px]" : "ml-0 lg:ml-16"}`}
           >
-            {selectedModuleId === "environment" ? (
+            {selectedModuleId === "dashboard" ? (
+              <div className="h-[calc(100vh-48px)] overflow-y-auto">
+                <Dashboard />
+              </div>
+            ) : selectedModuleId === "environment" ? (
               selectedPlantData ? (
                 <div className="h-[calc(100vh-48px)] overflow-y-auto ">
                   <EnvironmentContent
