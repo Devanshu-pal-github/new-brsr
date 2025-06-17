@@ -152,8 +152,8 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  placeholder="Search by Name or Email"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A2341] text-sm"
+                  placeholder="Search by employee name or email..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A2341] text-sm placeholder:text-gray-400"
                 />
               </div>
 
@@ -162,10 +162,10 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
                 <select
                   value={filters.role}
                   onChange={(e) => handleFilterChange("role", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A2341] text-sm"
+                  className="w-full px-3 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A2341] text-sm"
                 >
                   {roleOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} className="text-gray-900">
                       {option.label}
                     </option>
                   ))}

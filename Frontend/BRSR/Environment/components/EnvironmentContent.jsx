@@ -137,7 +137,7 @@ const EnvironmentContent = ({
   return (
     <AppProvider>
       {renderBare ? (
-        <div className="module-layout min-h-screen p-2 md:p-3 w-full">
+        <div className="module-layout min-h-screen p-2 md:p-3 w-[77%]">
           {innerContent}
         </div>
       ) : (

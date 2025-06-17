@@ -67,13 +67,13 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
         className="bg-white rounded-lg p-8 w-full max-w-xl transform transition-transform duration-300 scale-100"
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Create New Employee</h2>
+          <h2 className="text-xl font-semibold text-[#1A2341]">Create New Employee</h2>
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }} 
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -81,45 +81,53 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
         
         <form onSubmit={handleCreateEmployee} className="space-y-6" onClick={(e) => e.stopPropagation()}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="fullName"
-              placeholder="Enter employee's full name"
-              className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+              placeholder="Enter employee's full name (e.g., John Doe)"
+              className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm placeholder:text-gray-400"
               required
               autoFocus
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email <span className="text-red-500">*</span>
+            </label>
             <input
               type="email"
               name="email"
-              placeholder="Enter employee's email address"
-              className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+              placeholder="employee@company.com"
+              className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm placeholder:text-gray-400"
               required
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password <span className="text-red-500">*</span>
+            </label>
             <input
               type="password"
               name="password"
-              placeholder="Minimum 6 characters required"
-              className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+              placeholder="Enter a strong password (min. 6 characters)"
+              className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm placeholder:text-gray-400"
               required
               minLength={6}
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Role <span className="text-red-500">*</span>
+            </label>
             <select
               name="role"
-              className="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
+              className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm"
               required
               defaultValue="plant_admin"
             >
@@ -138,16 +146,23 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
                 e.stopPropagation();
                 onClose();
               }}
-              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500/20"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isCreating}
-              className="px-6 py-2.5 text-sm font-medium text-white bg-[#20305D] rounded-md hover:bg-[#162442] disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-medium text-white bg-[#1A2341] rounded-md hover:bg-[#1A2341]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#1A2341]/20"
             >
-              {isCreating ? 'Creating...' : 'Create Employee'}
+              {isCreating ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  Creating...
+                </div>
+              ) : (
+                'Create Employee'
+              )}
             </button>
           </div>
         </form>

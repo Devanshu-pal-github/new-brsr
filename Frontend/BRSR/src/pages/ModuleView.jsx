@@ -226,7 +226,7 @@ const ModuleView = () => {
           >
             {selectedModuleId === "environment" ? (
               selectedPlantData ? (
-                <div className="h-[calc(100vh-48px)] overflow-y-auto">
+                <div className="h-[calc(100vh-48px)] overflow-y-auto ">
                   <EnvironmentContent
                     renderBare
                     plantId={selectedPlantData.plantId}

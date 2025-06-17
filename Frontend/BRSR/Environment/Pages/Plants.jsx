@@ -4,12 +4,12 @@ import { useSelector } from 'react-redux';
 import {
   useGetCompanyPlantsQuery,
   useGetCompanyReportsQuery,
-  useCreatePlantMutation,
 } from '../../src/store/api/apiSlice';
 import Layout from '../../src/components/layout/Layout';
 import Breadcrumb from '../components/Breadcrumb';
 import SubHeader from '../components/SubHeader';
-import { Building2, Factory, AlertCircle, Plus, X } from 'lucide-react';
+import { Building2, Factory, AlertCircle, Plus } from 'lucide-react';
+import CreatePlantModal from '../../src/components/modals/CreatePlantModal';
 
 /*
   NOTE: The previous version of this file accidentally duplicated the entire
@@ -27,7 +27,6 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
 
-  const [createPlant, { isLoading: isCreating }] = useCreatePlantMutation();
   const {
     data: plants = [],
     isLoading: plantsLoading,
@@ -62,16 +61,6 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
     });
   };
 
-  const handleCreatePlant = async (formData) => {
-    try {
-      await createPlant({ ...formData, company_id: user.company_id }).unwrap();
-      setIsModalOpen(false);
-    } catch (error) {
-      /* eslint-disable-next-line no-console */
-      console.error('Failed to create plant:', error);
-    }
-  };
-
   /* ────────────────────────── SMALL COMPONENTS ────────────────────────── */
   const CreatePlantCard = () => (
     <div
@@ -80,44 +69,6 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
     >
       <Plus className="w-12 h-12" />
       <span className="text-lg font-semibold">Create New Plant</span>
-    </div>
-  );
-
-  const CreatePlantModal = () => (
-    <div
-      className={`fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 transition-opacity duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      onClick={() => setIsModalOpen(false)}
-    >
-      <div
-        className="bg-white rounded-lg p-6 w-full max-w-lg transform transition-transform duration-300 scale-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-semibold">Create New Plant</h2>
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.target;
-            handleCreatePlant({
-              name: form.plantName.value,
-              code: form.plantCode.value,
-              address: form.address.value,
-              contact_email: form.email.value,
-              contact_phone: form.phone.value,
-            });
-          }}
-          className="space-y-5"
-        >
-          {/* --- inputs omitted for brevity; untouched from original --- */}
-        </form>
-      </div>
     </div>
   );
 
@@ -208,17 +159,18 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
           )}
         </div>
       </div>
+
+      {/* Using our reusable CreatePlantModal component */}
+      <CreatePlantModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 
-  if (renderBare) return <>{Content}<CreatePlantModal /></>;
+  if (renderBare) return <>{Content}</>;
 
-  return (
-    <Layout>
-      {Content}
-      <CreatePlantModal />
-    </Layout>
-  );
+  return <Layout>{Content}</Layout>;
 };
 
 export default Plants;
