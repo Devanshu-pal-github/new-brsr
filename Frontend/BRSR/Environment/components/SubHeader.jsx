@@ -1,95 +1,252 @@
-import { useState, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+"use client"
+
+import { useState, useRef, useEffect, useCallback } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const SubHeader = ({ tabs, onTabChange, activeTab }) => {
-  const scrollContainerRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const scrollContainerRef = useRef(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [scrollLeft, setScrollLeft] = useState(0)
+  const [showLeftFade, setShowLeftFade] = useState(false)
+  const [showRightFade, setShowRightFade] = useState(false)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
-  const scrollLeftHandler = () => {
+  const smoothScroll = useCallback((direction, distance = 120) => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -100, behavior: "smooth" });
-    }
-  };
+      const container = scrollContainerRef.current
+      const targetScroll = container.scrollLeft + (direction === "left" ? -distance : distance)
 
-  const scrollRightHandler = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 100, behavior: "smooth" });
+      container.scrollTo({
+        left: targetScroll,
+        behavior: "smooth",
+      })
     }
-  };
+  }, [])
+
+  const updateScrollIndicators = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current
+      const { scrollLeft, scrollWidth, clientWidth } = container
+
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+      setShowLeftFade(scrollLeft > 10)
+      setShowRightFade(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }, [])
+
+  const scrollToActiveTab = useCallback(() => {
+    if (scrollContainerRef.current && activeTab) {
+      const container = scrollContainerRef.current
+      const activeButton = container.querySelector(`[data-tab="${activeTab}"]`)
+
+      if (activeButton) {
+        const containerRect = container.getBoundingClientRect()
+        const buttonRect = activeButton.getBoundingClientRect()
+        const containerScrollLeft = container.scrollLeft
+
+        const buttonLeft = buttonRect.left - containerRect.left + containerScrollLeft
+        const buttonRight = buttonRect.right - containerRect.left + containerScrollLeft
+
+        if (buttonLeft < containerScrollLeft + 50) {
+          container.scrollTo({
+            left: buttonLeft - 50,
+            behavior: "smooth",
+          })
+        } else if (buttonRight > containerScrollLeft + container.clientWidth - 50) {
+          container.scrollTo({
+            left: buttonRight - container.clientWidth + 50,
+            behavior: "smooth",
+          })
+        }
+      }
+    }
+  }, [activeTab])
 
   const handleMouseDown = (e) => {
     if (scrollContainerRef.current) {
-      setIsDragging(true);
-      setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-      setScrollLeft(scrollContainerRef.current.scrollLeft);
-      scrollContainerRef.current.style.cursor = "grabbing";
+      setIsDragging(true)
+      setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
+      setScrollLeft(scrollContainerRef.current.scrollLeft)
+      scrollContainerRef.current.style.cursor = "grabbing"
+      scrollContainerRef.current.style.userSelect = "none"
     }
-  };
+  }
 
   const handleMouseMove = (e) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollContainerRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; // Adjust scroll speed
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-  };
+    if (!isDragging || !scrollContainerRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollContainerRef.current.offsetLeft
+    const walk = (x - startX) * 2
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk
+  }
 
   const handleMouseUpOrLeave = () => {
     if (scrollContainerRef.current) {
-      setIsDragging(false);
-      scrollContainerRef.current.style.cursor = "default";
+      setIsDragging(false)
+      scrollContainerRef.current.style.cursor = "grab"
+      scrollContainerRef.current.style.userSelect = "auto"
     }
-  };
+  }
+
+  const handleTouchStart = (e) => {
+    if (scrollContainerRef.current) {
+      setIsDragging(true)
+      setStartX(e.touches[0].pageX - scrollContainerRef.current.offsetLeft)
+      setScrollLeft(scrollContainerRef.current.scrollLeft)
+    }
+  }
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return
+    const x = e.touches[0].pageX - scrollContainerRef.current.offsetLeft
+    const walk = (x - startX) * 1.5
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+  }
+
+  const handleWheel = (e) => {
+    if (scrollContainerRef.current) {
+      e.preventDefault()
+      const delta = e.deltaY || e.deltaX
+      scrollContainerRef.current.scrollLeft += delta
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault()
+      smoothScroll("left")
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault()
+      smoothScroll("right")
+    }
+  }
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (container) {
+      container.addEventListener("scroll", updateScrollIndicators)
+      updateScrollIndicators()
+
+      return () => {
+        container.removeEventListener("scroll", updateScrollIndicators)
+      }
+    }
+  }, [updateScrollIndicators])
+
+  useEffect(() => {
+    scrollToActiveTab()
+  }, [scrollToActiveTab])
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (container) {
+      container.addEventListener("wheel", handleWheel, { passive: false })
+
+      return () => {
+        container.removeEventListener("wheel", handleWheel)
+      }
+    }
+  }, [])
 
   return (
-    <div className="bg-white text-[12px] sm:text-[13px] font-medium flex items-center h-[40px] rounded-[8px] shadow-md w-full min-w-0 relative border border-gray-200">
+    <div
+      className="bg-white text-[12px] sm:text-[13px] font-medium flex items-center h-[40px] rounded-[10px] shadow-lg shadow-black/5 w-full min-w-0 relative border border-gray-200/80 backdrop-blur-sm"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+    >
       <button
-        onClick={scrollLeftHandler}
-        className="flex items-center justify-center w-9 h-full bg-white/90 hover:bg-[#20305D]/90 hover:text-white transition-all duration-200 ease-in-out rounded-l-[8px] z-10"
+        onClick={() => smoothScroll("left")}
+        disabled={!canScrollLeft}
+        className={`flex items-center justify-center w-10 h-full transition-all duration-300 ease-out rounded-l-[10px] z-20 ${
+          canScrollLeft
+            ? "bg-gradient-to-r from-white via-white to-white/95 hover:from-[#20305D]/5 hover:via-[#20305D]/5 hover:to-[#20305D]/10 hover:text-[#20305D] text-gray-600 shadow-sm"
+            : "bg-gray-50/80 text-gray-300 cursor-not-allowed"
+        }`}
       >
         <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
       </button>
+
+      {showLeftFade && (
+        <div className="absolute left-10 top-0 w-8 h-full bg-gradient-to-r from-white to-transparent z-10 pointer-events-none rounded-l-[10px]" />
+      )}
+
       <div
         ref={scrollContainerRef}
-        className="flex items-center justify-start px-2 sm:px-3 h-full overflow-x-hidden w-full select-none"
+        className="flex items-center justify-start px-3 sm:px-4 h-full overflow-x-hidden w-full cursor-grab active:cursor-grabbing scroll-smooth"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          WebkitScrollbar: { display: "none" },
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="flex space-x-3 sm:space-x-4 h-full">
+        <div className="flex space-x-1 sm:space-x-2 h-full py-1">
           {tabs?.map((tab) => (
             <button
               key={`tab-${tab}`}
+              data-tab={tab}
               onClick={() => onTabChange(tab)}
-              className={`relative flex items-center h-full px-3 py-1.5 whitespace-nowrap text-[12px] sm:text-[13px] transition-all duration-200 ease-in-out rounded-[6px] ${
+              className={`relative flex items-center h-full px-4 py-2 whitespace-nowrap text-[12px] sm:text-[13px] transition-all duration-300 ease-out rounded-[8px] group will-change-transform ${
                 activeTab === tab
-                  ? "text-[#20305D] font-semibold bg-[#20305D]/10"
-                  : "text-gray-600 hover:text-[#20305D] hover:bg-gray-100"
+                  ? "text-[#20305D] font-semibold bg-gradient-to-b from-[#20305D]/8 to-[#20305D]/12 shadow-sm border border-[#20305D]/10"
+                  : "text-gray-600 hover:text-[#20305D] hover:scale-[1.02] transform"
               }`}
-              style={{ background: "none", border: "none", outline: "none" }}
             >
-              <span className="flex items-center h-full">{tab}</span>
+              <span className="flex items-center h-full relative z-10">{tab}</span>
+
               {activeTab === tab && (
-                <span
-                  className="absolute left-0 right-0 bottom-0 h-[3px] bg-[#20305D] rounded-t"
-                  style={{ width: "100%" }}
-                />
+                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-[#20305D] to-[#20305D]/80 rounded-t-full" />
               )}
+
+              <div className="absolute inset-0 rounded-[8px] bg-gradient-to-b from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 will-change-opacity" />
             </button>
           ))}
         </div>
       </div>
+
+      {showRightFade && (
+        <div className="absolute right-10 top-0 w-8 h-full bg-gradient-to-l from-white to-transparent z-10 pointer-events-none rounded-r-[10px]" />
+      )}
+
       <button
-        onClick={scrollRightHandler}
-        className="flex items-center justify-center w-9 h-full bg-white/90 hover:bg-[#20305D]/90 hover:text-white transition-all duration-200 ease-in-out rounded-r-[8px] z-10"
+        onClick={() => smoothScroll("right")}
+        disabled={!canScrollRight}
+        className={`flex items-center justify-center w-10 h-full transition-all duration-300 ease-out rounded-r-[10px] z-20 ${
+          canScrollRight
+            ? "bg-gradient-to-l from-white via-white to-white/95 hover:from-[#20305D]/5 hover:via-[#20305D]/5 hover:to-[#20305D]/10 hover:text-[#20305D] text-gray-600 shadow-sm"
+            : "bg-gray-50/80 text-gray-300 cursor-not-allowed"
+        }`}
       >
         <ChevronRight className="w-4 h-4 stroke-[2.5]" />
       </button>
-    </div>
-  );
-};
 
-export default SubHeader;
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 flex space-x-1">
+        {tabs && tabs.length > 3 && (
+          <>
+            <div
+              className={`w-1 h-1 rounded-full transition-all duration-300 ${showLeftFade ? "bg-[#20305D]/40" : "bg-gray-300"}`}
+            />
+            <div
+              className={`w-1 h-1 rounded-full transition-all duration-300 ${showRightFade ? "bg-[#20305D]/40" : "bg-gray-300"}`}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default SubHeader

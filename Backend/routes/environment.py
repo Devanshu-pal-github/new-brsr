@@ -6,6 +6,8 @@ from services.environment import EnvironmentService
 from dependencies import get_database, get_current_active_user, check_company_access
 from models.environment import EnvironmentReport, QuestionAnswer
 from pydantic import BaseModel
+from services.auditServices import AuditService
+from models.auditModel import ActionLog
 
 router = APIRouter(
     prefix="/environment",
@@ -14,6 +16,9 @@ router = APIRouter(
 
 def get_environment_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> EnvironmentService:
     return EnvironmentService(db)
+
+def get_audit_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> AuditService:
+    return AuditService(db)
 
 @router.post("/reports/{financial_year}", response_model=dict)
 async def create_environment_report(
@@ -165,7 +170,8 @@ async def update_table_answer(
     financial_year: str,
     update: TableAnswerUpdate,
     current_user: dict = Depends(get_current_active_user),
-    service: EnvironmentService = Depends(get_environment_service)
+    service: EnvironmentService = Depends(get_environment_service),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """Update table answer for a specific question"""
     company_id = current_user["company_id"]
@@ -185,6 +191,31 @@ async def update_table_answer(
     )
     if not success:
         raise HTTPException(status_code=404, detail="Failed to update table answer.")
+
+    # Create audit log for table answer update
+    action_log = ActionLog(
+        action="Table Answer Updated",
+        target_id=update.questionId,
+        user_id=current_user["id"],
+        user_role=current_user.get("role", [])[0],
+        performed_at=datetime.utcnow(),
+        details={
+            "question_id": update.questionId,
+            "question_title": update.questionTitle,
+            "financial_year": financial_year
+        }
+    )
+
+    # Log the action using audit service - only include plant_id for plant admin role
+    plant_id = current_user["plant_id"] if current_user.get("role", [])[0] == "plant_admin" else None
+    
+    await audit_service.log_action(
+        company_id=current_user["company_id"],
+        plant_id=plant_id,
+        financial_year=financial_year,
+        action_log=action_log
+    )
+
     return {"message": "Table answer updated successfully"}
 
 class RowUpdate(BaseModel):
@@ -245,7 +276,8 @@ async def update_subjective_answer(
     financial_year: str,
     answer: SubjectiveAnswerCreate,
     service: EnvironmentService = Depends(get_environment_service),
-    user: Dict = Depends(get_current_active_user)
+    user: Dict = Depends(get_current_active_user),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """Update answer for a subjective question"""
     if not user.get("company_id"):
@@ -266,6 +298,30 @@ async def update_subjective_answer(
             }
         )
         if success:
+            # Create audit log for subjective answer update
+            action_log = ActionLog(
+                action="Subjective Answer Updated",
+                target_id=answer.questionId,
+                user_id=user["id"],
+                user_role=user.get("role", [])[0],
+                performed_at=datetime.utcnow(),
+                details={
+                    "question_id": answer.questionId,
+                    "question_title": answer.questionTitle,
+                    "financial_year": financial_year
+                }
+            )
+
+            # Log the action using audit service - only include plant_id for plant admin role
+            plant_id = user["plant_id"] if user.get("role", [])[0] == "plant_admin" else None
+            
+            await audit_service.log_action(
+                company_id=user["company_id"],
+                plant_id=plant_id,
+                financial_year=financial_year,
+                action_log=action_log
+            )
+
             return {"message": "Answer updated successfully"}
         raise HTTPException(status_code=400, detail="Failed to update answer")
     except ValueError as e:

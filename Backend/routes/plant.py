@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, Body
-from typing import List, Optional
-from dependencies import get_database, get_current_user
+from typing import List, Optional,Dict
+from dependencies import get_database, get_current_active_user ,get_current_user
 from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, PlantWithAnswers
 from models.auth import User
 from services.plant import PlantService
 import uuid
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from services.auditServices import AuditService
+from models.auditModel import ActionLog
+
 
 
 router = APIRouter(
@@ -17,12 +20,17 @@ router = APIRouter(
 def get_plant_service(db=Depends(get_database)):
     return PlantService(db)
 
+def get_audit_service(db=Depends(get_database)):
+    return AuditService(db)
+
 
 
 @router.post("/create", response_model=Plant, status_code=status.HTTP_201_CREATED)
 async def create_plant(
     plant: PlantCreate,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    user: Dict = Depends(get_current_active_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """Create a new plant"""
     try:
@@ -47,6 +55,32 @@ async def create_plant(
             
         # Insert plant into database
         await db.plants.insert_one(plant_dict)
+
+        # Create audit log for plant creation
+        action_log = ActionLog(
+            action="Plant Created",
+            target_id=plant_dict["id"],
+            user_id=user["id"],
+            user_role=user.get("role", [])[0],
+            performed_at=datetime.utcnow(),
+            details={
+                "plant_name": plant_dict["plant_name"],
+                "plant_code": plant_dict["plant_code"],
+                "plant_type": plant_dict["plant_type"]
+            }
+        )
+
+        # Log the action using audit service - only include plant_id for plant admin role
+        plant_id = user["plant_id"] if user.get("role", [])[0] == "plant_admin" else None
+        financial_year = user.get("financial_year") # Will be None if not present
+        
+
+        await audit_service.log_action(
+            company_id=user["company_id"],
+            plant_id=plant_id,  # Only pass plant_id for plant admin
+            financial_year=financial_year,  # Will be None if not present in user data
+            action_log=action_log
+        )
 
         # Update company's plant_ids
         await db.companies.update_one(

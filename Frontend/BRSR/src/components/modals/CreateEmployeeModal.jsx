@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useCreateEmployeeMutation } from '../../store/api/apiSlice';
 import toast from 'react-hot-toast';
@@ -9,6 +9,23 @@ const ROLE_OPTIONS = [
 
 const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
   const [createEmployee, { isLoading: isCreating }] = useCreateEmployeeMutation();
+  const modalRef = useRef(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
   
   if (!isOpen) return null;
 
@@ -41,8 +58,14 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[99999] transition-opacity duration-300  backdrop-blur-sm">
-      <div className="bg-white rounded-lg p-8 w-full max-w-xl transform transition-transform duration-300 scale-100">
+    <div 
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-[99999] transition-opacity duration-300 backdrop-blur-sm"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white rounded-lg p-8 w-full max-w-xl transform transition-transform duration-300 scale-100"
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Create New Employee</h2>
           <button 
@@ -56,7 +79,7 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
           </button>
         </div>
         
-        <form onSubmit={handleCreateEmployee} className="space-y-6">
+        <form onSubmit={handleCreateEmployee} className="space-y-6" onClick={(e) => e.stopPropagation()}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
             <input

@@ -324,66 +324,7 @@ export const apiSlice = createApi({
           id: `${arg.moduleId}-${result?.data?.company_id}-${result?.data?.plant_id}-${arg.financialYear}`,
         },
       ],
-    }), /* duplicate legacy block removed */
-        /* Duplicate legacy updateTableAnswer block - commented out during merge
-        console.log('Received payload:', payload);
-        const { financialYear, questionId, questionTitle, updatedData } = payload;
-
-        // Process data based on structure
-        let cleanedData = updatedData;
-
-        // Convert all values to strings to match backend expectations
-        if (Array.isArray(updatedData)) {
-          // For single table data
-          if (updatedData.length > 0 && 'row_index' in updatedData[0] && !('table_key' in updatedData[0])) {
-            cleanedData = updatedData.map(({ row_index, ...rest }) => {
-              // Convert all values to strings
-              const stringifiedData = {};
-              Object.entries(rest).forEach(([key, value]) => {
-                stringifiedData[key] = value === null ? '' : String(value);
-              });
-              return stringifiedData;
-            });
-          }
-          // For multi-table data
-          else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
-            cleanedData = updatedData.map(item => {
-              const result = { ...item };
-              // Convert current_year and previous_year to strings
-              if (result.current_year !== undefined) {
-                result.current_year = result.current_year === null ? '' : String(result.current_year);
-              }
-              if (result.previous_year !== undefined) {
-                result.previous_year = result.previous_year === null ? '' : String(result.previous_year);
-              }
-              return result;
-            });
-          }
-        }
-
-        console.log('Sending to backend:', {
-          questionId,
-          questionTitle,
-          updatedData: cleanedData
-        });
-
-        return {
-          url: `/environment/reports/${financialYear}/table-answer`,
-          method: 'POST',
-          body: {
-            questionId,
-            questionTitle,
-            updatedData: cleanedData
-          }
-        };
-      },
-      transformErrorResponse: (response) => {
-        console.error('🔴 Table Answer Update Error:', response);
-        return response;
-      },
-      invalidatesTags: ['EnvironmentReports']
     }),
-*/
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, plantId, financialYear }) => ({
         url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
@@ -443,6 +384,96 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['PlantEmployees']
     }),
+    generateText: builder.mutation({
+      query: ({ message, context }) => ({
+        url: '/api/generate',
+        method: 'POST',
+        body: { message, context },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      }),
+      transformResponse: (response) => {
+        console.log('📥 Generate Text Response:', response);
+        if (response?.text) {
+          return response.text;
+        }
+        throw new Error('No text found in response');
+      },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log('✅ Text generated successfully:', data);
+        } catch (error) {
+          console.error('❌ Error generating text:', error);
+        }
+      }
+    }),
+    storeQuestionData: builder.mutation({
+      query: ({ moduleId, questionId, metadata, answer }) => ({
+        url: '/questionData',
+        method: 'POST',
+        body: {
+          moduleId,
+          questionId,
+          metadata,
+          answer,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }),
+      async onQueryStarted({ moduleId, questionId, metadata, answer }, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log('✅ Stored question data in backend:', data);
+        } catch (error) {
+          console.error('❌ Error storing question data in backend:', error);
+        }
+      }
+    }),
+    submitQuestionAnswer: builder.mutation({
+      query: ({ questionId, answerData }) => {
+        if (!questionId) throw new Error('Question ID is required');
+        if (!answerData || typeof answerData !== 'object') throw new Error('Answer data is required and must be an object');
+
+        const company_id = localStorage.getItem("company_id");
+        const plant_id = localStorage.getItem("plant_id");
+        const financial_year = localStorage.getItem("financial_year");
+
+        if (!company_id || !plant_id || !financial_year) {
+          throw new Error('Missing required context: company_id, plant_id, or financial_year');
+        }
+
+        const questionUpdate = {
+          question_id: questionId,
+          response: answerData
+        };
+
+        return {
+          url: `/company/${company_id}/plants/${plant_id}/reportsNew/${financial_year}`,
+          method: 'PATCH',
+          body: [questionUpdate],
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        };
+      },
+      transformResponse: (response) => {
+        console.log('📥 Answer submission response:', response);
+        return response;
+      },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log('✅ Answer submitted successfully:', data);
+        } catch (error) {
+          console.error('❌ Error submitting answer:', error);
+          throw error;
+        }
+      }
+    }),
   }),
 });
 
@@ -465,7 +496,10 @@ export const {
   useUpdateSubjectiveAnswerMutation,
   useLazyGetModuleAnswerQuery,
   useGetPlantEmployeesQuery,
-  useCreateEmployeeMutation
+  useCreateEmployeeMutation,
+  useGenerateTextMutation,
+  useStoreQuestionDataMutation,
+  useSubmitQuestionAnswerMutation
 } = apiSlice;
 
 export default apiSlice;

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { X, Search, Plus } from 'lucide-react';
 import { DataGrid } from '@mui/x-data-grid';
@@ -12,6 +12,20 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const popupRef = useRef(null);
   
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target) && !isCreateModalOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose, isCreateModalOpen]);
+
   // Get user from Redux store for company_id
   const user = useSelector((state) => state.auth.user);
 
@@ -115,7 +129,7 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none "
+        className="bg-white rounded-xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
       >
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-2">
@@ -170,7 +184,7 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
           </div>
         </div>
 
-        <div className="h-[calc(90vh-220px)] w-full">
+        <div className="h-[calc(80vh-220px)] w-full">
           <DataGrid
             rows={filteredRows}
             columns={columns}

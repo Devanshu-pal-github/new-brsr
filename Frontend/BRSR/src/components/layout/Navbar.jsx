@@ -153,6 +153,23 @@ const PlantManagementModal = ({ onClose }) => {
   const popupRef = useRef(null);
   
 
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && 
+          !popupRef.current.contains(event.target) && 
+          !isCreateModalOpen && 
+          !isEmployeeModalOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose, isCreateModalOpen, isEmployeeModalOpen]);
+
   // Get user from Redux store
   const user = useSelector((state) => state.auth.user);
   const [deletePlant] = useDeletePlantMutation();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import EditModal from './EditModal';
+import { useSelector } from 'react-redux';
+import QuestionEditPopup from '../../components/QuestionEditPopup';
 import ChatbotWindow from '../../AICHATBOT/ChatbotWindow';
 import { AppProvider } from '../../AICHATBOT/AppProvider';
 
@@ -16,19 +17,17 @@ const DynamicQuestionRenderer = ({
   onSave,
   isEditModalOpen,
   setIsEditModalOpen
- }) => {
-  // Initialize tempData with an empty object if questionData is null or undefined
-  const [tempData, setTempData] = useState(questionData || {});
+}) => {
+  const [tempData, setTempData] = useState(questionData);
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  const [chatbotInitialMode, setChatbotInitialMode] = useState("general");
+  const [chatbotInitialMode, setChatbotInitialMode] = useState('');
+  const user = useSelector(state => state.auth.user);
+  const moduleId = question.module_id;
 
   console.log('🧩 Question:', question);
 
-  // Update tempData when questionData changes
   useEffect(() => {
-    console.log('🔄 DynamicQuestionRenderer questionData changed:', questionData);
-    console.log('🔍 questionData type:', typeof questionData, 'Is null?', questionData === null, 'Is undefined?', questionData === undefined);
-    setTempData(questionData || {});
+    setTempData(questionData);
   }, [questionData]);
 
   // Log the question metadata for debugging
@@ -41,11 +40,14 @@ const DynamicQuestionRenderer = ({
     setTempData(newData);
   };
 
-  const handleSave = () => {
-    console.log('💾 Saving data from DynamicQuestionRenderer:', tempData);
-    console.log('🔍 tempData types:', Object.entries(tempData).map(([key, value]) => `${key}: ${typeof value}`));
-    if (onSave) {
-      onSave(tempData);
+  const handleSave = async (data) => {
+    console.log('💾 Saving data from DynamicQuestionRenderer:', data);
+    console.log('🔍 data types:', Object.entries(data).map(([key, value]) => `${key}: ${typeof value}`));
+    try {
+      await onSave(data);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Error saving data:', error);
     }
   };
 
@@ -140,7 +142,6 @@ const DynamicQuestionRenderer = ({
   };
 
   const renderReadOnlyContent = () => {
-    // Display read-only version of the question data
     if (!questionData || Object.keys(questionData).length === 0) {
       return <p className="text-gray-500 italic">No response provided yet.</p>;
     }
@@ -151,40 +152,42 @@ const DynamicQuestionRenderer = ({
     }
 
     const questionType = question.question_type || (metadata && metadata.type);
-
-    // Render the appropriate read-only component based on question type
     switch (questionType) {
       case 'subjective':
         return (
-          <SubjectiveRenderer 
-            metadata={metadata} 
-            data={questionData} 
-            isEditing={false} 
-          />
+          <div className="prose prose-sm max-w-none">
+            <p>{questionData.text || questionData.value}</p>
+          </div>
         );
       case 'table':
         return (
-          <TableRenderer 
-            metadata={metadata} 
-            data={questionData} 
-            isEditing={false} 
-          />
-        );
-      case 'table_with_additional_rows':
-        return (
-          <TableWithAdditionalRowsRenderer 
-            metadata={metadata} 
-            data={questionData} 
-            isEditing={false} 
-          />
-        );
-      default:
-        return (
-          <div className="p-2 bg-gray-50 rounded border border-gray-200">
-            <p className="text-green-600 font-medium">Response submitted</p>
-            <p className="text-xs text-gray-500 mt-1">Click 'Edit Response' to view or modify the data</p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {metadata.columns.map((col, idx) => (
+                    <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {col.title}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {questionData.rows?.map((row, rowIdx) => (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {row.cells.map((cell, cellIdx) => (
+                      <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cell.value}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
+      default:
+        return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
     }
   };
 
@@ -207,17 +210,35 @@ const DynamicQuestionRenderer = ({
           {renderReadOnlyContent()}
         </div>
 
-        <EditModal 
-          isOpen={isEditModalOpen} 
-          onClose={() => setIsEditModalOpen(false)} 
-          title={`Edit: ${question.question_text || question.title || question.human_readable_id}`}
-          onSave={handleSave}
-          tempData={tempData}
-        >
-          {renderEditableContent()}
-        </EditModal>
+        {isEditModalOpen && (
+          <QuestionEditPopup
+            question={{
+              question_id: question.id,
+              question: question.question_text || question.title,
+              guidance: question.guidance,
+              type: question.question_type,
+              table_metadata: question.metadata?.type === 'table' ? question.metadata : null,
+              has_string_value: question.question_type === 'subjective',
+              has_decimal_value: false,
+              has_boolean_value: false,
+              has_link: false,
+              has_note: false,
+              string_value_required: question.required,
+              decimal_value_required: false,
+              boolean_value_required: false,
+              link_required: false,
+              note_required: false,
+            }}
+            initialAnswer={{
+              string_value: questionData?.text || questionData?.value,
+              table: question.question_type === 'table' ? questionData : null,
+            }}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={handleSave}
+            moduleId={moduleId}
+          />
+        )}
 
-        {/* AI Chat Window */}
         {aiChatOpen && (
           <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
             <div className="w-full h-full absolute top-0 left-0" onClick={() => setAiChatOpen(false)} />
