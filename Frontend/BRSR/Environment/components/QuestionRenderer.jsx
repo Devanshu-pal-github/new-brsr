@@ -19,8 +19,15 @@ const AuditBadge = ({ isAuditRequired }) => (
 const EditModal = ({ isOpen, onClose, children, title, onSave, tempData }) => {
   if (!isOpen) return null;
 
+  const handleOutsideClick = (e) => {
+    if (e.target === e.currentTarget) {
+      e.stopPropagation();
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50" onClick={handleOutsideClick}>
       <div className="bg-white rounded-lg w-11/12 max-w-4xl max-h-[90vh] overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-[#20305D]">{title}</h3>
@@ -411,10 +418,13 @@ const QuestionRenderer = ({ question, financialYear }) => {
         {aiChatOpen && (
           <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
             <div 
-              className="w-full h-full absolute top-0 left-0 bg-black/30 " 
-              onClick={() => setAiChatOpen(false)} 
+              className="w-full h-full absolute top-0 left-0 bg-black/30" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setAiChatOpen(false);
+              }} 
             />
-            <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
+            <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up" onClick={(e) => e.stopPropagation()}>
               <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
                 <ChatbotWindow
                   onClose={() => setAiChatOpen(false)}

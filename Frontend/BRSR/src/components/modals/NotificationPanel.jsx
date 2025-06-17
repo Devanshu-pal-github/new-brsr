@@ -1,30 +1,33 @@
 import { X } from 'lucide-react';
 
-const NotificationPanel = ({ isOpen, onClose }) => {
-  const notifications = [
-    {
-      _id: 'notif_001',
-      title: 'Audit Deadline Approaching',
-      description: 'The annual ESG compliance audit for Q4 2025 is due in 7 days. Please ensure all required documentation is prepared.',
-      timestamp: '2025-06-16T09:00:00Z',
-      read: false,
-    },
-    {
-      _id: 'notif_002',
-      title: 'BRSR Report Submission Reminder',
-      description: 'The BRSR report for FY 2024-25 is pending submission. Complete the sustainability metrics by June 20, 2025.',
-      timestamp: '2025-06-15T14:30:00Z',
-      read: false,
-    },
-    {
-      _id: 'notif_003',
-      title: 'Carbon Emissions Data Incomplete',
-      description: 'Scope 3 emissions data for Q2 2025 is incomplete. Please update the data to finalize the ESG report.',
-      timestamp: '2025-06-14T11:15:00Z',
-      read: true,
-    },
-  ];
+// Move notifications data outside the component
+export const notifications = [
+  {
+    _id: 'notif_001',
+    title: 'Audit Deadline Approaching',
+    description: 'The annual ESG compliance audit for Q4 2025 is due in 7 days. Please ensure all required documentation is prepared.',
+    timestamp: '2025-06-16T09:00:00Z',
+    read: false,
+  },
+  {
+    _id: 'notif_002',
+    title: 'BRSR Report Submission Reminder',
+    description: 'The BRSR report for FY 2024-25 is pending submission. Complete the sustainability metrics by June 20, 2025.',
+    timestamp: '2025-06-15T14:30:00Z',
+    read: false,
+  },
+  {
+    _id: 'notif_003',
+    title: 'Carbon Emissions Data Incomplete',
+    description: 'Scope 3 emissions data for Q2 2025 is incomplete. Please update the data to finalize the ESG report.',
+    timestamp: '2025-06-14T11:15:00Z',
+    read: true,
+  },
+];
 
+export const getUnreadCount = () => notifications.filter(n => !n.read).length;
+
+const NotificationPanel = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const count = notifications.length || 0;

@@ -32,7 +32,7 @@ const FinancialYearDropdown = () => {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-sm font-medium hover:opacity-80"
+        className="flex items-center justify-center gap-2 text-sm border border-white rounded-md px-2 py-1 bg-[#000D30] text-white hover:scale-102 hover:bg-[#001A60] transition-transform transition-colors duration-300"
       >
         {currentFY || "Financial Year"}
         <ChevronDown className="w-4 h-4" />

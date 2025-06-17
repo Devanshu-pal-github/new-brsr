@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { logout, selectCurrentUser } from "../../store/slices/authSlice";
 import AuditModal from "../AuditModal";
 
-const getUserInitials = (name = "User") => {
-  const names = name.split(" ");
+const getUserInitials = (userName = "User") => {
+  if (!userName) return "U";
+  const names = userName.split(" ");
   const initials = names.slice(0, 2).map((n) => n.charAt(0).toUpperCase());
   return initials.join("");
 };
@@ -25,10 +26,11 @@ const UserMenu = () => {
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-1">
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2">
         <div className="w-8 h-8 bg-[#20305D] rounded-full flex items-center justify-center text-white text-xs font-semibold">
-          {getUserInitials(user?.name)}
+          {getUserInitials(user?.user_name)}
         </div>
+        <span className="text-sm font-medium">{user?.user_name}</span>
         <ChevronDown className="w-4 h-4" />
       </button>
       {open && (

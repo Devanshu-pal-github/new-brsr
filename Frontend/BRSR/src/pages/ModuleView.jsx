@@ -117,16 +117,15 @@ const ModuleView = () => {
           {/* Sidebar - Fixed */}
           <div
             className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out overflow-hidden
-            ${
-              isSidebarOpen
+            ${isSidebarOpen
                 ? "w-50 translate-x-0"
                 : "w-0 -translate-x-full lg:w-16 lg:translate-x-0"
-            }`}
+              }`}
           >
             <div className="h-full flex flex-col">
               {/* Header */}
               <div className="flex items-center gap-3 pl-5 py-3">
-                <Building className="w-5 h-5 text-green-300 flex-shrink-0" />
+
                 <h2
                   className={`text-[1rem] font-bold text-[#E5E7EB] transition-opacity duration-300
                   ${isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"}`}
@@ -138,6 +137,24 @@ const ModuleView = () => {
               {/* Navigation - Scrollable */}
               <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
                 <ul className="space-y-1 flex flex-col items-start pl-0">
+
+
+
+
+
+
+                  {/* Dashboard */}
+                  <li className="w-full">
+                    <button
+                      onClick={() => navigate("/home")}
+                      className="flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                        text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                    >
+                      <Building className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-left">Home</span>
+                    </button>
+                  </li>
+
                   {/* Dashboard */}
                   <li className="w-full">
                     <button
@@ -146,25 +163,27 @@ const ModuleView = () => {
                         text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
                     >
                       <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-left">Home</span>
+                      <span className="text-left">Dashboard</span>
                     </button>
                   </li>
 
+                  
                   {/* Hardcoded Environment Module */}
                   <li className="w-full">
                     <button
                       onClick={() => handleModuleClick("environment")}
                       className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                        ${
-                          selectedModuleId === "environment"
-                            ? "bg-[#20305D] text-white"
-                            : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                        ${selectedModuleId === "environment"
+                          ? "bg-[#20305D] text-white"
+                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
                         }`}
                     >
                       {getModuleIcon("environment")}
                       <span className="text-left">Environment</span>
                     </button>
                   </li>
+
+
 
                   {/* Module List */}
                   {isLoading ? (
@@ -185,10 +204,9 @@ const ModuleView = () => {
                         <button
                           onClick={() => handleModuleClick(module.id)}
                           className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                            ${
-                              selectedModuleId === module.id
-                                ? "bg-[#20305D] text-white"
-                                : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                            ${selectedModuleId === module.id
+                              ? "bg-[#20305D] text-white"
+                              : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
                             }`}
                         >
                           {getModuleIcon(module.name)}
@@ -208,9 +226,8 @@ const ModuleView = () => {
                 >
                   <X className="w-4 h-4" />
                   <span
-                    className={`${
-                      isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                    }`}
+                    className={`${isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"
+                      }`}
                   >
                     Logout
                   </span>

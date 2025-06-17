@@ -44,7 +44,7 @@
               "type": "Essential",
               "title": "PAT Scheme Participation",
               "description": "Does the entity have sites/facilities identified as designated consumers (DCs) under the Performance, Achieve and Trade (PAT) Scheme? (Y/N) If yes, disclose whether targets set under the PAT scheme have been achieved, and if not, provide remedial actions taken.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }
@@ -260,7 +260,7 @@
               "type": "Essential",
               "title": "GHG Emission Reduction Projects",
               "description": "Does the entity have any project related to reducing greenhouse gas emissions? If yes, provide details.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective",
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
@@ -282,7 +282,7 @@
               "type": "Essential",
               "title": "Waste Management Practices",
               "description": "Description of waste management practices, including strategies to reduce hazardous and toxic chemical usage in products/processes and practices to manage such wastes.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective",
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
@@ -304,7 +304,7 @@
               "type": "Leadership",
               "title": "Biodiversity Impact in Ecologically Sensitive Areas",
               "description": "Details of significant direct and indirect impacts on biodiversity in ecologically sensitive areas reported in Essential Indicator 10, along with prevention and remediation activities.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }
@@ -335,7 +335,7 @@
               "type": "Leadership",
               "title": "Environmental Impact of Value Chain",
               "description": "Disclose any significant adverse environmental impact arising from the entity's value chain and mitigation or adaptation measures taken.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }
