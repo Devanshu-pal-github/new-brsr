@@ -18,7 +18,7 @@ class ModuleAnswerService:
         """Set up the collection with appropriate indexes"""
         # Create indexes for efficient querying
         await self.collection.create_index(
-            [("company_id", 1), ("plant_id", 1), ("financial_year", 1)],
+            [("company_id", 1), ("financial_year", 1)],
             unique=True
         )
         await self.collection.create_index("status")
@@ -26,17 +26,16 @@ class ModuleAnswerService:
         
     async def create_answer(self, answer_data: ModuleAnswerCreate) -> ModuleAnswer:
         """Create a new answer for this module"""
-        # Check if answer already exists for this company, plant, and financial year
+        # Check if answer already exists for this company and financial year
         existing = await self.collection.find_one({
             "company_id": answer_data.company_id,
-            "plant_id": answer_data.plant_id,
             "financial_year": answer_data.financial_year
         })
         
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Answer already exists for this company, plant, and financial year"
+                detail="Answer already exists for this company and financial year"
             )
         
         # Create answer document
@@ -63,11 +62,11 @@ class ModuleAnswerService:
         # Check for duplicates within the bulk request
         unique_keys = set()
         for answer_data in answers_data:
-            key = (answer_data.company_id, answer_data.plant_id, answer_data.financial_year)
+            key = (answer_data.company_id, answer_data.financial_year)
             if key in unique_keys:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Duplicate entry for company_id={answer_data.company_id}, plant_id={answer_data.plant_id}, financial_year={answer_data.financial_year}"
+                    detail=f"Duplicate entry for company_id={answer_data.company_id}, financial_year={answer_data.financial_year}"
                 )
             unique_keys.add(key)
         
@@ -76,7 +75,6 @@ class ModuleAnswerService:
         for answer_data in answers_data:
             query_conditions.append({
                 "company_id": answer_data.company_id,
-                "plant_id": answer_data.plant_id,
                 "financial_year": answer_data.financial_year
             })
             
@@ -87,7 +85,7 @@ class ModuleAnswerService:
                 
             if existing_answers:
                 # Format the error message with details of existing answers
-                existing_details = [f"company_id={doc['company_id']}, plant_id={doc['plant_id']}, financial_year={doc['financial_year']}" 
+                existing_details = [f"company_id={doc['company_id']}, financial_year={doc['financial_year']}" 
                                    for doc in existing_answers]
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -115,11 +113,10 @@ class ModuleAnswerService:
         
         return created_answers
     
-    async def get_answer(self, company_id: str, plant_id: str, financial_year: str) -> Optional[ModuleAnswer]:
-        """Get answer for a specific company, plant, and financial year"""
+    async def get_answer(self, company_id: str, financial_year: str) -> Optional[ModuleAnswer]:
+        """Get answer for a specific company and financial year"""
         answer = await self.collection.find_one({
             "company_id": company_id,
-            "plant_id": plant_id,
             "financial_year": financial_year
         })
         
@@ -130,12 +127,11 @@ class ModuleAnswerService:
     
     async def update_answer(self, 
                           company_id: str, 
-                          plant_id: str, 
                           financial_year: str, 
                           update_data: ModuleAnswerUpdate) -> Optional[ModuleAnswer]:
         """Update an existing answer"""
         # Check if answer exists
-        existing = await self.get_answer(company_id, plant_id, financial_year)
+        existing = await self.get_answer(company_id, financial_year)
         if not existing:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -166,7 +162,6 @@ class ModuleAnswerService:
         result = await self.collection.update_one(
             {
                 "company_id": company_id,
-                "plant_id": plant_id,
                 "financial_year": financial_year
             },
             {"$set": update_operations}
@@ -176,14 +171,13 @@ class ModuleAnswerService:
             return None
         
         # Get updated answer
-        return await self.get_answer(company_id, plant_id, financial_year)
+        return await self.get_answer(company_id, financial_year)
     
     async def bulk_update_answers(self, updates: List[Dict[str, Any]]) -> List[ModuleAnswer]:
         """Update multiple answers in bulk
         
         Each update dict must contain:
         - company_id: str
-        - plant_id: str
         - financial_year: str
         - update_data: Dict containing the fields to update
         """
@@ -195,20 +189,18 @@ class ModuleAnswerService:
         
         for update in updates:
             company_id = update.get("company_id")
-            plant_id = update.get("plant_id")
             financial_year = update.get("financial_year")
             update_data = update.get("update_data", {})
             
-            if not all([company_id, plant_id, financial_year, update_data]):
+            if not all([company_id, financial_year, update_data]):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Each update must contain company_id, plant_id, financial_year, and update_data"
+                    detail="Each update must contain company_id, financial_year, and update_data"
                 )
             
             # Check if answer exists
             existing = await self.collection.find_one({
                 "company_id": company_id,
-                "plant_id": plant_id,
                 "financial_year": financial_year
             })
             
@@ -238,14 +230,13 @@ class ModuleAnswerService:
             await self.collection.update_one(
                 {
                     "company_id": company_id,
-                    "plant_id": plant_id,
                     "financial_year": financial_year
                 },
                 {"$set": update_operations}
             )
             
             # Get updated answer
-            updated_answer = await self.get_answer(company_id, plant_id, financial_year)
+            updated_answer = await self.get_answer(company_id, financial_year)
             if updated_answer:
                 updated_answers.append(updated_answer)
         
@@ -253,7 +244,6 @@ class ModuleAnswerService:
     
     async def list_answers(self, 
                          company_id: Optional[str] = None, 
-                         plant_id: Optional[str] = None,
                          financial_year: Optional[str] = None,
                          status: Optional[str] = None,
                          skip: int = 0,
@@ -263,8 +253,6 @@ class ModuleAnswerService:
         filter_dict = {}
         if company_id:
             filter_dict["company_id"] = company_id
-        if plant_id:
-            filter_dict["plant_id"] = plant_id
         if financial_year:
             filter_dict["financial_year"] = financial_year
         if status:

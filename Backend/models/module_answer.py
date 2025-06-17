@@ -12,7 +12,6 @@ class ModuleAnswer(BaseModel):
     """
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     company_id: str
-    plant_id: str
     financial_year: str
     # Dynamic fields will be added for each question_id in the module
     # The field name will be the question_id and the value will be the answer
@@ -28,7 +27,6 @@ class ModuleAnswer(BaseModel):
 class ModuleAnswerCreate(BaseModel):
     """Model for creating a new module answer"""
     company_id: str
-    plant_id: str
     financial_year: str
     answers: Dict[str, Any]  # Maps question_id to answer value
     created_by: Optional[str] = None
@@ -52,7 +50,6 @@ class BulkModuleAnswerResponse(BaseModel):
 class ModuleAnswerUpdateRequest(BaseModel):
     """Model for bulk update request item"""
     company_id: str
-    plant_id: str
     financial_year: str
     update_data: ModuleAnswerUpdate
 

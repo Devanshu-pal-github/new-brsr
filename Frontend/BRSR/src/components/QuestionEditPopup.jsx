@@ -36,6 +36,8 @@ const QuestionEditPopup = ({
         boolean_value: initialAnswer?.boolean_value || false,
         link: initialAnswer?.link || "",
         note: initialAnswer?.note || "",
+        has_details: initialAnswer?.has_details || false,
+        justification: initialAnswer?.justification || "",
     });
     const [currentValue, setCurrentValue] = useState(initialAnswer || {});
     const [errors, setErrors] = useState({});
@@ -69,6 +71,8 @@ const QuestionEditPopup = ({
                 boolean_value: initialAnswer?.boolean_value || false,
                 link: initialAnswer?.link || "",
                 note: initialAnswer?.note || "",
+                has_details: initialAnswer?.has_details || false,
+                justification: initialAnswer?.justification || "",
             });
             setCurrentValue(initialAnswer);
         }
@@ -289,128 +293,54 @@ interface StructuredAISuggestion {
         e.preventDefault();
         setIsSaveLoading(true);
         setError(null);
-        // Ensure required context identifiers are present before API calls
-        if (user?.company_id && !localStorage.getItem('company_id')) {
-            localStorage.setItem('company_id', user.company_id);
-        }
-        if (user?.plant_id && !localStorage.getItem('plant_id')) {
-            localStorage.setItem('plant_id', user.plant_id);
-        }
-        const selectedReport = JSON.parse(localStorage.getItem('selectedReport') || '{}');
-        const financialYear = selectedReport.financial_year || selectedReport.year || selectedReport.financialYear;
-        if (financialYear && !localStorage.getItem('financial_year')) {
-            localStorage.setItem('financial_year', financialYear);
-        }
+
         try {
-            const questionType = question.question_type || question.metadata?.type;
-            
-            if (questionType === 'table' || questionType === 'table_with_additional_rows') {
-                const response = {
-                    question_id: question.question_id,
-                    type: questionType,
-                    response: currentValue
-                };
-
-                // Store the question data first
-                await storeQuestionData({
-                    moduleId,
-                    questionId: question.question_id,
-                    metadata: question.metadata,
-                    answer: response.response
-                });
-
-                // Then submit the answer
-                await submitAnswer({
-                    questionId: question.question_id,
-                    answerData: response.response
-                }).unwrap();
-
-                toast.success("Question updated successfully!");
-                await onSuccess?.(question.question_id, response.response);
-                setTimeout(() => {
-                    onClose();
-                }, 1500);
-                return;
-            }
-
-            const hasErrors = Object.values(errors).some((error) => error);
-            const requiredFields = [];
-
-            if (question.string_value_required && !formData.string_value)
-                requiredFields.push("String value is required.");
-            if (question.decimal_value_required && !formData.decimal_value)
-                requiredFields.push("Decimal value is required.");
-            if (question.boolean_value_required && formData.boolean_value === undefined)
-                requiredFields.push("Boolean value is required.");
-            if (question.link_required && !formData.link)
-                requiredFields.push("Link is required.");
-            if (question.note_required && !formData.note)
-                requiredFields.push("Note is required.");
-
-            if (hasErrors || requiredFields.length > 0) {
-                setErrors((prev) => ({ ...prev, form: requiredFields.join(" ") }));
+            const validationErrors = validateForm();
+            if (Object.keys(validationErrors).length > 0) {
+                setErrors(validationErrors);
                 setIsSaveLoading(false);
+                toast.error("Please correct the errors before submitting");
                 return;
             }
 
-            const response = {
-                question_id: question.question_id,
-                response: {
-                    string_value: question.has_string_value
-                        ? formData.string_value || null
-                        : undefined,
-                    decimal_value: question.has_decimal_value
-                        ? formData.decimal_value
-                            ? Number(formData.decimal_value)
-                            : null
-                        : undefined,
-                    bool_value: question.has_boolean_value
-                        ? formData.boolean_value || null
-                        : undefined,
-                    link: question.has_link ? formData.link || null : undefined,
-                    note: question.has_note ? formData.note || null : undefined,
-                },
+            let answerData = {
+                string_value: formData.string_value,
+                decimal_value: formData.decimal_value,
+                boolean_value: formData.boolean_value,
+                link: formData.link,
+                note: formData.note,
+                has_details: formData.has_details,
+                justification: formData.justification
             };
 
-            Object.keys(response.response).forEach(
-                (key) =>
-                    response.response[key] === undefined && delete response.response[key]
+            console.log("Submitting answer for question:", question.id, answerData);
+
+            if (question.type === "TABLE") {
+                console.log("Table submission");
+                await submitAnswer({
+                    questionId: question.id,
+                    answerData: currentValue,
+                });
+            } else {
+                await submitAnswer({
+                    questionId: question.id,
+                    answerData,
+                });
+            }
+
+            if (onSuccess) {
+                onSuccess(answerData);
+            }
+            toast.success("Answer submitted successfully");
+            onClose();
+        } catch (err) {
+            console.error("Error submitting answer:", err);
+            setError(
+                err?.data?.detail ||
+                  err?.message ||
+                  "Failed to submit answer. Please try again."
             );
-
-            const result = await submitAnswer({
-                questionId: question.question_id,
-                answerData: response.response,
-            }).unwrap();
-
-            await storeQuestionData({
-                moduleId,
-                questionId: question.question_id,
-                metadata: {
-                    question_text: question.question,
-                    has_string_value: question.has_string_value,
-                    has_decimal_value: question.has_decimal_value,
-                    has_boolean_value: question.has_boolean_value,
-                    has_link: question.has_link,
-                    has_note: question.has_note,
-                    string_value_required: question.string_value_required,
-                    decimal_value_required: question.decimal_value_required,
-                    boolean_value_required: question.boolean_value_required,
-                    link_required: question.link_required,
-                    note_required: question.note_required,
-                },
-                answer: response.response,
-            });
-
-            toast.success("Question updated successfully!");
-            await onSuccess?.(question.question_id, response.response);
-            setTimeout(() => {
-                onClose();
-            }, 1500);
-        } catch (error) {
-            setErrors((prev) => ({
-                ...prev,
-                form: "Failed to submit answer. Please try again.",
-            }));
+            toast.error("Failed to submit answer");
         } finally {
             setIsSaveLoading(false);
         }
@@ -435,6 +365,29 @@ interface StructuredAISuggestion {
             ...currentValue,
             table: updatedTable,
         });
+    };
+
+    // Basic form validation function
+    const validateForm = () => {
+        const errors = {};
+
+        if (!formData.string_value && question.type === "STRING") {
+            errors.string_value = "String value is required.";
+        }
+        if (!formData.decimal_value && question.type === "DECIMAL") {
+            errors.decimal_value = "Decimal value is required.";
+        }
+        if (formData.boolean_value === undefined && question.type === "BOOLEAN") {
+            errors.boolean_value = "Boolean value is required.";
+        }
+        if (!formData.link && question.link_required) {
+            errors.link = "Link is required.";
+        }
+        if (!formData.note && question.note_required) {
+            errors.note = "Note is required.";
+        }
+
+        return errors;
     };
 
     const sharedAIActionsProps = {

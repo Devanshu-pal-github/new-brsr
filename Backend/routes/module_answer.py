@@ -28,7 +28,7 @@ async def create_module_answer(
     """Create a new answer for a specific module
     
     - Requires authentication
-    - Each company/plant/financial_year combination can only have one answer per module
+    - Each company/financial_year combination can only have one answer per module
     """
     # Add the current user as the creator
     if current_user and "id" in current_user:
@@ -53,7 +53,7 @@ async def bulk_create_module_answers(
     
     - Requires authentication
     - More efficient than creating answers one by one
-    - Validates that no duplicate company/plant/financial_year combinations exist
+    - Validates that no duplicate company/financial_year combinations exist
     """
     # Add the current user as the creator for each answer
     if current_user and "id" in current_user:
@@ -79,7 +79,6 @@ async def bulk_create_module_answers(
 async def list_module_answers(
     module_id: str,
     company_id: Optional[str] = Query(None, description="Filter by company ID"),
-    plant_id: Optional[str] = Query(None, description="Filter by plant ID"),
     financial_year: Optional[str] = Query(None, description="Filter by financial year"),
     status: Optional[str] = Query(None, description="Filter by status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -90,12 +89,11 @@ async def list_module_answers(
     """List answers for a specific module with optional filtering
     
     - Requires authentication
-    - Can filter by company, plant, financial year, and status
+    - Can filter by company, financial year, and status
     """
     try:
         return await module_answer_service.list_answers(
             company_id=company_id,
-            plant_id=plant_id,
             financial_year=financial_year,
             status=status,
             skip=skip,
@@ -107,11 +105,10 @@ async def list_module_answers(
             detail=str(e)
         )
 
-@router.get("/{module_id}/{company_id}/{plant_id}/{financial_year}", response_model=ModuleAnswer)
+@router.get("/{module_id}/{company_id}/{financial_year}", response_model=ModuleAnswer)
 async def get_module_answer(
     module_id: str,
     company_id: str,
-    plant_id: str,
     financial_year: str,
     module_answer_service: ModuleAnswerService = Depends(get_module_answer_service),
     current_user: Dict = Depends(get_current_user)
@@ -119,9 +116,9 @@ async def get_module_answer(
     """Get a specific answer for a module
     
     - Requires authentication
-    - Retrieves the answer for a specific company/plant/financial_year combination
+    - Retrieves the answer for a specific company/financial_year combination
     """
-    answer = await module_answer_service.get_answer(company_id, plant_id, financial_year)
+    answer = await module_answer_service.get_answer(company_id, financial_year)
     if not answer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -129,11 +126,10 @@ async def get_module_answer(
         )
     return answer
 
-@router.put("/{module_id}/{company_id}/{plant_id}/{financial_year}", response_model=ModuleAnswer)
+@router.put("/{module_id}/{company_id}/{financial_year}", response_model=ModuleAnswer)
 async def update_module_answer(
     module_id: str,
     company_id: str,
-    plant_id: str,
     financial_year: str,
     update_data: ModuleAnswerUpdate,
     module_answer_service: ModuleAnswerService = Depends(get_module_answer_service),
@@ -142,7 +138,7 @@ async def update_module_answer(
     """Update an existing answer for a module
     
     - Requires authentication
-    - Updates the answer for a specific company/plant/financial_year combination
+    - Updates the answer for a specific company/financial_year combination
     """
     # Add the current user as the updater
     if current_user and "id" in current_user:
@@ -150,7 +146,7 @@ async def update_module_answer(
     
     try:
         answer = await module_answer_service.update_answer(
-            company_id, plant_id, financial_year, update_data
+            company_id, financial_year, update_data
         )
         if not answer:
             raise HTTPException(
@@ -189,7 +185,6 @@ async def bulk_update_module_answers(
     updates = [
         {
             "company_id": update.company_id,
-            "plant_id": update.plant_id,
             "financial_year": update.financial_year,
             "update_data": update.update_data.model_dump(exclude_unset=True)
         }

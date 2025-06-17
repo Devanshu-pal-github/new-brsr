@@ -221,7 +221,7 @@ export const apiSlice = createApi({
 
           /* ----------------------------------------------------------
            * Dynamic (module-specific) flow
-           * --------------------------------------------------------*/
+           * ----------------------------------------------------------*/
           if (moduleId) {
             const payload = {
               questionId,
@@ -232,12 +232,10 @@ export const apiSlice = createApi({
 
             const { auth } = getState();
             const companyId = auth.user?.company_id;
-            const plantId = auth.user?.plant_id || 'default';
 
             console.log('🔑 Module flow with:', {
               moduleId,
               companyId,
-              plantId,
               financialYear,
               payload,
             });
@@ -245,14 +243,14 @@ export const apiSlice = createApi({
             try {
               // Check if a document already exists
               const getRes = await baseQuery({
-                url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+                url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
                 method: 'GET',
               });
 
               if (getRes.data) {
                 // Update existing
                 const putRes = await baseQuery({
-                  url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+                  url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
                   method: 'PUT',
                   body: {
                     answers: {
@@ -276,7 +274,6 @@ export const apiSlice = createApi({
               method: 'POST',
               body: {
                 company_id: companyId,
-                plant_id: plantId,
                 financial_year: financialYear,
                 answers: {
                   [questionId]: payload,
@@ -285,7 +282,7 @@ export const apiSlice = createApi({
             });
 
             const putRes = await baseQuery({
-              url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+              url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
               method: 'PUT',
               body: {
                 answers: {
@@ -299,7 +296,7 @@ export const apiSlice = createApi({
 
           /* ----------------------------------------------------------
            * Environment (legacy) flow
-           * --------------------------------------------------------*/
+           * ----------------------------------------------------------*/
           const envRes = await baseQuery({
             url: `/environment/reports/${financialYear}/table-answer`,
             method: 'POST',
@@ -321,13 +318,13 @@ export const apiSlice = createApi({
         'ModuleAnswers',
         {
           type: 'ModuleAnswers',
-          id: `${arg.moduleId}-${result?.data?.company_id}-${result?.data?.plant_id}-${arg.financialYear}`,
+          id: `${arg.moduleId}-${result?.data?.company_id}-${arg.financialYear}`,
         },
       ],
     }),
     getModuleAnswer: builder.query({
-      query: ({ moduleId, companyId, plantId, financialYear }) => ({
-        url: `/module-answers/${moduleId}/${companyId}/${plantId}/${financialYear}`,
+      query: ({ moduleId, companyId, financialYear }) => ({
+        url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
         method: 'GET'
       }),
       transformResponse: (response) => {
@@ -339,7 +336,7 @@ export const apiSlice = createApi({
         return response;
       },
       providesTags: (result, error, arg) => [
-        { type: 'ModuleAnswers', id: `${arg.moduleId}-${arg.companyId}-${arg.plantId}-${arg.financialYear}` }
+        { type: 'ModuleAnswers', id: `${arg.moduleId}-${arg.companyId}-${arg.financialYear}` }
       ]
     }),
     updateSubjectiveAnswer: builder.mutation({
@@ -430,15 +427,13 @@ export const apiSlice = createApi({
         if (!answerData || typeof answerData !== 'object') throw new Error('Answer data is required and must be an object');
 
         let company_id = localStorage.getItem("company_id");
-        let plant_id = localStorage.getItem("plant_id");
         let financial_year = localStorage.getItem("financial_year");
 
         // Fallback: derive from stored user object or selectedReport if not individually set
-        if (!company_id || !plant_id) {
+        if (!company_id) {
           try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             company_id = company_id || userData.company_id;
-            plant_id = plant_id || userData.plant_id;
           } catch (_) { /* ignore parse errors */ }
         }
         if (!financial_year) {
@@ -450,8 +445,8 @@ export const apiSlice = createApi({
         
         
 
-        if (!company_id || !plant_id || !financial_year) {
-          throw new Error('Missing required context: company_id, plant_id, or financial_year');
+        if (!company_id || !financial_year) {
+          throw new Error('Missing required context: company_id or financial_year');
         }
 
         const questionUpdate = {
@@ -460,7 +455,7 @@ export const apiSlice = createApi({
         };
 
         return {
-          url: `/company/${company_id}/plants/${plant_id}/reportsNew/${financial_year}`,
+          url: `/company/${company_id}/reportsNew/${financial_year}`,
           method: 'PATCH',
           body: [questionUpdate],
           headers: {
@@ -472,13 +467,12 @@ export const apiSlice = createApi({
         console.log('📥 Answer submission response:', response);
         return response;
       },
-      async onQueryStarted(arg, { queryFulfilled }) {
+      async onQueryStarted({ questionId }, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          console.log('✅ Answer submitted successfully:', data);
+          console.log('✅ Question answer submitted successfully for:', questionId, data);
         } catch (error) {
-          console.error('❌ Error submitting answer:', error);
-          throw error;
+          console.error('❌ Error submitting question answer for:', questionId, error);
         }
       }
     }),
