@@ -233,7 +233,7 @@ const SubHeader = ({ tabs, onTabChange, activeTab }) => {
         <ChevronRight className="w-4 h-4 stroke-[2.5]" />
       </button>
 
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 flex space-x-1">
+      <div className="absolute top-10 left-1/2 transform -translate-x-1/2 translate-y-1 flex space-x-1">
         {tabs && tabs.length > 3 && (
           <>
             <div

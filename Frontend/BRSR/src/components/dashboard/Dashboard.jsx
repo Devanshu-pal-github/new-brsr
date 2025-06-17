@@ -12,7 +12,10 @@ import {
   Building2,
   Shield,
   Boxes,
-  Activity
+  Activity,
+  Download,
+  MessageSquareText,
+  BookOpen
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/slices/authSlice';
@@ -275,6 +278,33 @@ const Dashboard = ({ dynamicModules = [] }) => {
           </div>
         </DashboardCard>
 
+        {/* Quick Actions Section */}
+        <div className="sm:col-span-2 lg:col-span-4 flex justify-start items-center py-2">
+          <div className="flex gap-3 sm:gap-4">
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+              onClick={() => {/* TODO: Implement report generation */}}
+            >
+              <Download className="w-4 h-4" />
+              <span>Generate Report</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+              onClick={() => {/* TODO: Implement AI chat */}}
+            >
+              <MessageSquareText className="w-4 h-4" />
+              <span>Ask AI Assistant</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+              onClick={() => {/* TODO: Implement documentation */}}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>View Documentation</span>
+            </button>
+          </div>
+        </div>
+
         {/* Module Progress Card */}
         <DashboardCard 
           title="Module Progress" 
@@ -307,12 +337,12 @@ const Dashboard = ({ dynamicModules = [] }) => {
           icon={Activity}
           className="sm:col-span-2"
         >
-          <div className="space-y-2 p-3 max-h-[200px] overflow-y-auto">
+          <div className="space-y-2 p-3 max-h-[280px] overflow-y-auto">
             {isLoadingAudit ? (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
               </div>
-            ) : auditData?.actions?.slice(0, 3).map((audit, index) => (
+            ) : auditData?.actions?.slice(-3).reverse().map((audit, index) => (
               <div 
                 key={`${audit.target_id}-${index}`}
                 className="flex items-center gap-2.5 p-2 rounded-md bg-white border border-slate-100 hover:border-slate-200 transition-colors"
@@ -335,57 +365,6 @@ const Dashboard = ({ dynamicModules = [] }) => {
                 </div>
                 <div className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
                   {audit.user_role === 'c' ? 'Company' : audit.user_role === 'a' ? 'Admin' : audit.user_role}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DashboardCard>
-
-        {/* Manufacturing Divisions Card */}
-        <DashboardCard 
-          title="Manufacturing Divisions" 
-          icon={Building2}
-          className="col-span-full"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 p-3 max-h-[280px] overflow-y-auto">
-            {plants.map((plant) => (
-              <div 
-                key={plant.id}
-                className="bg-white rounded-md border border-slate-100 p-2.5 transition-all duration-300 ease-in-out hover:shadow-lg hover:border-slate-200 hover:scale-[1.02] hover:bg-slate-50/50"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-[#1A2341] text-xs leading-tight line-clamp-2 flex-1 mr-2">
-                    {plant.plant_name}
-                  </h3>
-                  <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                    plant.plant_type === 'regular' 
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-orange-50 text-orange-700'
-                  }`}>
-                    {plant.plant_type === 'regular' ? 'Regular' : 'Special'}
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-xs text-slate-500">
-                    <Boxes className="w-3 h-3 mr-1.5 flex-shrink-0" />
-                    <span>Plant ID: </span>
-                    
-                    <span className="truncate"> {plant.plant_code}</span>
-                  </div>
-                  <div className="flex items-center text-xs text-slate-500">
-                    
-                  </div>
-                </div>
-                
-                <div className="mt-2 pt-2 border-t border-slate-50">
-                  <div className="text-xs text-slate-400">
-                    Updated {new Date(plant.updated_at).toLocaleDateString('en-US', { 
-                      day: 'numeric', 
-                      month: 'short',
-                      year: '2-digit'
-                    })}
-                  </div>
                 </div>
               </div>
             ))}

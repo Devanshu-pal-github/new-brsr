@@ -109,7 +109,7 @@ const ProgressSidebar = ({ submodules, currentSubmodule }) => {
     const { totalQuestions, totalAnswered } = calculateOverallProgress();
 
     return (
-        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[1%] gap-[1.2vh] px-[0.7vw] pt-[1.2vh] pb-[1.2vh] bg-white border-l border-gray-200 shadow-lg min-w-[16vw] max-w-[18vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside className="hidden lg:flex flex-col mt-[15vh] mr-[1%] gap-[1.2vh] px-[0.7vw] pt-[1.2vh] pb-[1.2vh] bg-white border-l border-gray-200 shadow-lg min-w-[16vw] max-w-[18vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
             {/* Overall Progress Circle */}
             <div className="flex flex-col items-center mb-[0.7vh]">
                 <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>

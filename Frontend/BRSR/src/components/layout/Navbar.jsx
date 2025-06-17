@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, selectCurrentUser, selectCompanyDetails } from '../../store/slices/authSlice';
 import { useGetReportModulesQuery, useGetCompanyPlantsQuery, useCreatePlantMutation, useDeletePlantMutation } from '../../store/api/apiSlice';
-import { Menu, ChevronDown, X, Search, Trash2, Plus, Settings, Bell } from 'lucide-react';
+import { Menu, ChevronDown, X, Search, Trash2, Plus, Settings, Bell, AlertCircle } from 'lucide-react';
 import { DataGrid } from '@mui/x-data-grid';
 import Select from 'react-select';
 import toast, { Toaster } from 'react-hot-toast';
@@ -430,11 +430,7 @@ const PlantManagementModal = ({ onClose }) => {
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(() => {
-    // Initialize from localStorage if available
-    const stored = localStorage.getItem('selectedReport');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [selectedReport, setSelectedReport] = useState(null);
   const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isPlantModalOpen, setIsPlantModalOpen] = useState(false);
@@ -470,33 +466,19 @@ const Navbar = () => {
         companyId: user.company_id
       });
     }
+
+    // Show error toast if there's a modules error
+    if (modulesError) {
+      toast.error('Failed to load report modules. Please try again.', {
+        duration: 3000,
+        style: {
+          background: '#1A2341',
+          color: '#FFFFFF',
+          borderRadius: '8px',
+        },
+      });
+    }
   }, [reportModules, selectedReport, user, modulesError]);
-
-  // Handle report selection
-  const handleReportSelect = (report) => {
-    console.log('🎯 Selecting Report:', report);
-    setSelectedReport(report);
-    localStorage.setItem('selectedReport', JSON.stringify(report));
-  // Persist financial year separately for easy access by API calls
-  if (report.financial_year || report.year || report.financialYear) {
-    const fy = report.financial_year || report.year || report.financialYear;
-    localStorage.setItem('financial_year', fy);
-  }
-    setIsReportDropdownOpen(false);
-
-    if (report.id) {
-      console.log('🚀 Navigating to report:', report.id);
-      navigate(`/reports/${report.id}`);
-    }
-  };
-
-  // Effect to handle modules data
-  useEffect(() => {
-    if (reportModules) {
-      console.log('✅ Modules loaded successfully:', reportModules);
-      // Here you can handle the modules data, e.g., store in state or Redux
-    }
-  }, [reportModules]);
 
   // Get user name from user object in Redux store
   const userName = user?.user_name || 'User';
@@ -516,9 +498,68 @@ const Navbar = () => {
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
 
+  // Handle report selection
+  const handleReportSelect = (report) => {
+    console.log('🎯 Selecting Report:', report);
+    if (report) {
+      // Check if the report is CGI
+      const isCGI = report.report_name?.toLowerCase().includes('cgi') || report.report_name?.toLowerCase().includes('cg');
+      
+      if (isCGI) {
+        toast.error('CGI Report does not exist in the database. Please select BRSR report to proceed.', {
+          duration: 4000,
+          style: {
+            background: '#1A2341',
+            color: '#FFFFFF',
+            borderRadius: '8px',
+            fontWeight: '500'
+          },
+          icon: '⚠️'
+        });
+        return;
+      }
+
+      // Check if the report is BRSR
+      const isBRSR = report.report_name?.toLowerCase().includes('brsr');
+      
+      if (!isBRSR) {
+        toast.error('Only BRSR reports are available at the moment. Please select a BRSR report.', {
+          duration: 3000,
+          style: {
+            background: '#1A2341',
+            color: '#FFFFFF',
+            borderRadius: '8px',
+          },
+        });
+        return;
+      }
+
+      setSelectedReport(report);
+      localStorage.setItem('selectedReport', JSON.stringify(report));
+      // Persist financial year separately for easy access by API calls
+      if (report.financial_year || report.year || report.financialYear) {
+        const fy = report.financial_year || report.year || report.financialYear;
+        localStorage.setItem('financial_year', fy);
+      }
+      setIsReportDropdownOpen(false);
+
+      if (report.id) {
+        console.log('🚀 Navigating to report:', report.id);
+        navigate(`/reports/${report.id}`);
+      }
+    } else {
+      // Reset to "All Reports"
+      setSelectedReport(null);
+      localStorage.removeItem('selectedReport');
+      localStorage.removeItem('financial_year');
+      setIsReportDropdownOpen(false);
+      navigate('/dashboard');
+    }
+  };
+
   return (
     <nav className="bg-[#000D30] shadow-md">
-      <div className="w-full px-3 md:px-5">
+      <div className="w-[100%] px-6 lg:px-12 mx-auto">
         <div className="flex items-center justify-between h-[48px]">
           {/* Left side - Report Type and Logo */}
           <div className="flex items-center gap-4">
@@ -530,32 +571,35 @@ const Navbar = () => {
             <div className="relative">
               <button
                 onClick={() => setIsReportDropdownOpen(!isReportDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#20305D] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors min-w-[120px]"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#0000] border border-gray-200 shadow-sm hover:bg-[#345678] transition-colors min-w-[120px]"
               >
-                <span>{selectedReport?.report_name || 'Select Report'}</span>
+                <span>{selectedReport ? selectedReport.report_name : "Select Report"}</span>
                 <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isReportDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isReportDropdownOpen && (
-                <ul className="absolute top-12 left-0 w-48 bg-white rounded-[8px] shadow-lg z-50 overflow-hidden">
+                <ul className="absolute top-12 left-0 w-[100%] bg-[#0000] backdrop-blur-sm border border-gray-200/20 rounded-[8px] shadow-lg z-50 overflow-hidden">
                   {availableReports.length > 0 ? (
                     availableReports.map((report) => (
                       <li
                         key={report.report_id}
-                        onClick={() => handleReportSelect({
-                          id: report.report_id,
-                          report_name: report.report_name,
-                          financial_year: report.financial_year
-                        })}
-                        className={`px-4 py-2 text-[#000D30] text-[12px] cursor-pointer hover:bg-[#20305D] hover:text-white font-medium transition-colors
-                          ${selectedReport?.id === report.report_id ? 'bg-[#20305D] text-white' : ''}`}
+                        onClick={() => {
+                          // Only select report when user explicitly clicks
+                          handleReportSelect({
+                            id: report.report_id,
+                            report_name: report.report_name,
+                            financial_year: report.financial_year
+                          });
+                        }}
+                        className={`px-3 py-2 text-[#FFFFFF] text-[12px] cursor-pointer hover:bg-white/10 font-medium transition-colors
+                          ${selectedReport?.id === report.report_id ? 'bg-white/10' : ''}`}
                       >
-                        <div>{report.report_name}</div>
-                        <div className="text-[10px] opacity-75">{report.financial_year}</div>
+                        <div className="truncate">{report.report_name}</div>
+                        <div className="text-[10px] text-gray-300 truncate">{report.financial_year}</div>
                       </li>
                     ))
                   ) : (
-                    <li className="px-4 py-2 text-[#000D30] text-[12px]">
+                    <li className="px-3 py-2 text-[#FFFFFF] text-[12px]">
                       No reports available
                     </li>
                   )}
@@ -566,6 +610,13 @@ const Navbar = () => {
             {/* Loading indicator for modules */}
             {selectedReport && isLoadingModules && (
               <div className="text-white text-sm">Loading modules...</div>
+            )}
+            {/* Error indicator for modules */}
+            {selectedReport && modulesError && (
+              <div className="text-red-400 text-sm flex items-center gap-2">
+                <AlertCircle size={16} />
+                <span>Error loading modules</span>
+              </div>
             )}
           </div>
 
@@ -579,25 +630,25 @@ const Navbar = () => {
               Manage Plants
             </button>
 
-            {/* Notification Bell Button - Let's enhance it */}
+            {/* Notification Bell Button */}
             <button
               onClick={() => setIsNotificationPanelOpen(true)}
-              className="relative px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#000D30]  shadow-sm hover:bg-[#345678] transition-colors flex items-center gap-2 hidden"
+              className="relative px-3 py-2 rounded-md text-[12px] text-[#FFFFFF] font-medium bg-[#000D30] shadow-sm hover:bg-[#345678] transition-colors flex items-center gap-2 hidden"
               aria-label="Notifications"
             >
               <Bell size={16} />
-              {/* Optional: Add notification count badge */}
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                 3
               </span>
             </button>
 
+            {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 className="flex items-center gap-2 focus:outline-none group"
               >
-                <div className="w-8 h-8 bg-[#20305D] rounded-full flex items-center justify-center text-white text-[12px] font-semibold group-hover:bg-[#345678] transition-colors">
+                <div className="w-8 h-8 bg-[#0000] border border-gray-200 rounded-full flex items-center justify-center text-white text-[12px] font-semibold group-hover:bg-white/10 transition-colors">
                   {getUserInitials(userName)}
                 </div>
                 <div className="hidden sm:flex items-center gap-1">
@@ -609,9 +660,9 @@ const Navbar = () => {
               </button>
 
               {isUserDropdownOpen && (
-                <ul className="absolute right-0 mt-2 w-36 sm:w-44 bg-[#000D30] rounded-md shadow-md z-50 overflow-hidden">
+                <ul className="absolute right-0 mt-2 w-36 bg-[#0000] backdrop-blur-sm border border-gray-200/20 rounded-md shadow-lg z-50 overflow-hidden">
                   <li
-                    className="px-4 py-2 text-[12px] text-white cursor-pointer hover:bg-[#20305D] transition-colors"
+                    className="px-3 py-2 text-[12px] text-white cursor-pointer hover:bg-white/10 transition-colors"
                     onClick={() => {
                       navigate('/profile');
                       setIsUserDropdownOpen(false);
@@ -620,7 +671,7 @@ const Navbar = () => {
                     Profile
                   </li>
                   <li
-                    className="px-4 py-2 text-[12px] text-white cursor-pointer hover:bg-[#20305D] transition-colors"
+                    className="px-3 py-2 text-[12px] text-white cursor-pointer hover:bg-white/10 transition-colors"
                     onClick={() => {
                       handleLogout();
                       setIsUserDropdownOpen(false);
@@ -662,6 +713,7 @@ const Navbar = () => {
               <button
                 key={report.report_id}
                 onClick={() => {
+                  // Only select report when user explicitly clicks
                   handleReportSelect({
                     id: report.report_id,
                     report_name: report.report_name,
@@ -669,9 +721,11 @@ const Navbar = () => {
                   });
                   setIsMenuOpen(false);
                 }}
-                className="block w-full text-left px-3 py-2 rounded-md text-[12px] text-white hover:bg-[#345678] transition-colors"
+                className={`block w-full text-left px-3 py-2 rounded-md text-[12px] text-white hover:bg-[#345678] transition-colors
+                  ${selectedReport?.id === report.report_id ? 'bg-[#345678]' : ''}`}
               >
-                {report.report_name}
+                <div className="truncate">{report.report_name}</div>
+                <div className="text-[10px] text-gray-300 truncate">{report.financial_year}</div>
               </button>
             ))}
             <button
