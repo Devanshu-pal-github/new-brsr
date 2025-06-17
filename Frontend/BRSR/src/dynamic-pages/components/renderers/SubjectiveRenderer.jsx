@@ -4,21 +4,20 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   // Initialize localData with an empty object if data is null or undefined
   const [localData, setLocalData] = useState(data || {});
 
-  // Update local data when the prop changes
+  // Update local data when the prop changes (skip while actively editing)
   useEffect(() => {
-    console.log('🔄 SubjectiveRenderer data prop changed:', data);
-    console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
-    // Always update localData when data prop changes, even if it's an empty object
-    setLocalData(data || {});
-  }, [data]);
-
-  // Add a useEffect to call onSave when in edit mode and localData changes
-  // This ensures data is always synced with parent components
-  useEffect(() => {
-    if (isEditing && onSave) {
-      console.log('🔄 Auto-syncing localData with parent in edit mode:', localData);
-      onSave(localData);
+    if (!isEditing) {
+      setLocalData(data || {});
     }
+  }, [data, isEditing]);
+
+  // Debounced sync to parent to prevent rapid re-renders that disrupt typing
+  useEffect(() => {
+    if (!isEditing || !onSave) return;
+    const timer = setTimeout(() => {
+      onSave(localData);
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timer);
   }, [localData, isEditing, onSave]);
 
   const handleInputChange = (fieldKey, value) => {

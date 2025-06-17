@@ -3,21 +3,23 @@ import React, { useState, useEffect } from 'react';
 const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   const [localData, setLocalData] = useState(data || {});
 
-  // Update local data when the prop changes
+  // Update local data when the prop changes (skip while editing)
   useEffect(() => {
-    console.log('🔄 TableRenderer data prop changed:', data);
-    console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
-    // Always update localData when data prop changes, even if it's an empty object
-    setLocalData(data || {});
-  }, [data]);
+    if (!isEditing) {
+      console.log('🔄 TableRenderer data prop changed:', data);
+      console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
+      setLocalData(data || {});
+    }
+  }, [data, isEditing]);
 
-  // Add a useEffect to call onSave when in edit mode and localData changes
-  // This ensures data is always synced with parent components
+  // Debounced sync to parent to avoid UI flicker while typing
   useEffect(() => {
-    if (isEditing && onSave) {
+    if (!isEditing || !onSave) return;
+    const timer = setTimeout(() => {
       console.log('🔄 Auto-syncing table data with parent in edit mode:', localData);
       onSave(localData);
-    }
+    }, 300);
+    return () => clearTimeout(timer);
   }, [localData, isEditing, onSave]);
 
   // Handle cell value change
