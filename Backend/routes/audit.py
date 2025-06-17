@@ -1,45 +1,59 @@
 from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException
-from auth import get_current_user
+from dependencies import get_current_active_user
 from models.auditModel import AuditLog, ActionLog
-from services.auditServices import get_audit_log_service, log_action_service  # You will implement this
+from services.auditServices import AuditService
 from logging import getLogger
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from dependencies import get_database
 
 logger = getLogger(__name__)
 
-router = APIRouter(prefix="/audit", tags=["Audit"])
+router = APIRouter(tags=["Audit"])
+
+def get_audit_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> AuditService:
+    return AuditService(db)
 
 @router.get("/", response_model=AuditLog)
-async def get_audit_log(current_user: Dict = Depends(get_current_user)):
+async def get_audit_log(
+    current_user: Dict = Depends(get_current_active_user),
+    audit_service: AuditService = Depends(get_audit_service)
+):
+
+    
     """
-    Fetch audit log for the current user's company, plant, and financial year.
+    Fetch audit log for the current user's company. Plant and financial year are optional filters.
 
     Args:
-        current_user: User info including company_id, plant_id, financial_year, user_id, user_role.
+        current_user: User info including company_id, and optionally plant_id and financial_year.
 
     Returns:
         AuditLog: Audit log data.
 
     Raises:
-        HTTPException: If required fields are missing or audit log is not found.
+        HTTPException: If company_id is missing or audit log is not found.
     """
     company_id = current_user["company_id"]
-    plant_id = current_user["plant_id"]
-    financial_year = current_user["financial_year"]
+    plant_id = current_user.get("plant_id")  # Optional
+    financial_year = current_user.get("financial_year")  # Optional
 
-    if not company_id or not financial_year:
-        logger.warning("Missing required fields in current_user: company_id or financial_year")
-        raise HTTPException(status_code=400, detail="Missing required user context: company_id, financial_year")
+    if not company_id:
+        logger.warning("Missing required field in current_user: company_id")
+        raise HTTPException(status_code=400, detail="Missing required user context: company_id")
 
     try:
-        logger.debug(f"Fetching audit log for company_id={company_id}, plant_id={plant_id}, financial_year={financial_year}")
-        result = await get_audit_log_service(
-            company_id=company_id,
-            plant_id=plant_id,
-            financial_year=financial_year.replace("-", "_")  # Convert to MongoDB format
-        )
+        # Create query parameters dict with only existing values
+        query_params = {"company_id": company_id}
+        if plant_id:
+            query_params["plant_id"] = plant_id
+        if financial_year:
+            query_params["financial_year"] = financial_year.replace("-", "_")  # Convert to MongoDB format
+
+        logger.debug(f"Fetching audit log with params: {query_params}")
+        result = await audit_service.get_audit_log(**query_params)
+        
         if not result:
-            logger.warning(f"No audit log found for company_id={company_id}, plant_id={plant_id}, financial_year={financial_year}")
+            logger.warning(f"No audit log found for params: {query_params}")
             raise HTTPException(status_code=404, detail="Audit log not found")
         return result
     except HTTPException as e:
@@ -51,7 +65,7 @@ async def get_audit_log(current_user: Dict = Depends(get_current_user)):
 @router.post("/log", response_model=dict)
 async def log_action(
     action_log: ActionLog,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_active_user)
 ):
     """
     Log an action (e.g., update_question, delete_employee) to the audit log.

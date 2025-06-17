@@ -474,6 +474,18 @@ export const apiSlice = createApi({
         }
       }
     }),
+    getAuditLog: builder.query({
+      query: () => '/audit/',
+      transformResponse: (response) => {
+        console.log('📋 Audit Log Response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Audit Log Error:', response);
+        return response;
+      },
+      providesTags: ['AuditLog']
+    }),
   }),
 });
 
@@ -499,7 +511,8 @@ export const {
   useCreateEmployeeMutation,
   useGenerateTextMutation,
   useStoreQuestionDataMutation,
-  useSubmitQuestionAnswerMutation
+  useSubmitQuestionAnswerMutation,
+  useGetAuditLogQuery
 } = apiSlice;
 
 export default apiSlice;

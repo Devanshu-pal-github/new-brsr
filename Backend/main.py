@@ -21,6 +21,7 @@ from routes.auth import router as auth_router
 from routes.environment import router as environment_router
 from routes.module_answer import router as module_answer_router
 from routes.geminiRoute import router as gemini_router
+from routes.audit import router as audit_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -230,6 +231,7 @@ app.include_router(report_router)
 app.include_router(environment_router)
 app.include_router(module_answer_router)
 app.include_router(gemini_router)
+app.include_router(audit_router, prefix="/audit")
 
 if __name__ == "__main__":
     import uvicorn

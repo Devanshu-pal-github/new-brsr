@@ -11,14 +11,14 @@ class AuditService:
         self.db = db
         self.collection = db.audit
 
-    async def get_audit_log(self, company_id: str, plant_id: str, financial_year: str) -> AuditLog:
+    async def get_audit_log(self, company_id: str, plant_id: str = None, financial_year: str = None) -> AuditLog:
         """
-        Fetch audit log for a company, plant, and financial year.
+        Fetch audit log for a company, with optional plant and financial year filters.
 
         Args:
-            company_id: ID of the company.
-            plant_id: ID of the plant.
-            financial_year: Financial year.
+            company_id: ID of the company (required).
+            plant_id: ID of the plant (optional).
+            financial_year: Financial year (optional).
 
         Returns:
             AuditLog object.
@@ -26,11 +26,14 @@ class AuditService:
         Raises:
             HTTPException: If audit log is not found.
         """
-        audit = await self.collection.find_one({
-            "company_id": company_id,
-            "plant_id": plant_id,
-            "financial_year": financial_year
-        })
+        # Build query with required and optional parameters
+        query = {"company_id": company_id}
+        if plant_id:
+            query["plant_id"] = plant_id
+        if financial_year:
+            query["financial_year"] = financial_year
+
+        audit = await self.collection.find_one(query)
         if not audit:
             raise HTTPException(status_code=404, detail="Audit log not found")
         

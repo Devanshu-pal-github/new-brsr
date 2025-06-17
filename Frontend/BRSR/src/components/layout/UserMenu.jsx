@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout, selectCurrentUser } from "../../store/slices/authSlice";
+import AuditModal from "../AuditModal";
 
 const getUserInitials = (name = "User") => {
   const names = name.split(" ");
@@ -12,6 +13,7 @@ const getUserInitials = (name = "User") => {
 
 const UserMenu = () => {
   const [open, setOpen] = useState(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
@@ -32,7 +34,7 @@ const UserMenu = () => {
       {open && (
         <ul className="absolute right-0 mt-2 w-36 bg-[#000D30] rounded-md shadow-md z-50 overflow-hidden text-sm">
           <li
-            className="px-4 py-2 cursor-pointer hover:bg-[#20305D]"
+            className="px-4 py-2 cursor-pointer hover:bg-[#20305D] text-white"
             onClick={() => {
               navigate("/profile");
               setOpen(false);
@@ -41,12 +43,26 @@ const UserMenu = () => {
             Profile
           </li>
           <li
-            className="px-4 py-2 cursor-pointer hover:bg-[#20305D]"
+            className="px-4 py-2 cursor-pointer hover:bg-[#20305D] text-white"
+            onClick={() => {
+              setIsAuditModalOpen(true);
+              setOpen(false);
+            }}
+          >
+            Audit Log
+          </li>
+          <li
+            className="px-4 py-2 cursor-pointer hover:bg-[#20305D] text-white"
             onClick={handleLogout}
           >
             Logout
           </li>
         </ul>
+      )}
+
+      {/* Audit Modal */}
+      {isAuditModalOpen && (
+        <AuditModal onClose={() => setIsAuditModalOpen(false)} />
       )}
     </div>
   );
