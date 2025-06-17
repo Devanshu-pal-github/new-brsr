@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { useGetCompanyReportsQuery } from "../../store/api/apiSlice";
@@ -9,6 +9,21 @@ const FinancialYearDropdown = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentFY = searchParams.get("financialYear") || "";
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Fetch company reports to derive available financial years dynamically
   const { data: reports = [] } = useGetCompanyReportsQuery();
@@ -22,6 +37,14 @@ const FinancialYearDropdown = () => {
     return [...new Set(years)].sort().reverse();
   }, [reports]);
 
+  // Set the latest financial year by default if none is selected
+  useEffect(() => {
+    if (!currentFY && financialYears.length > 0) {
+      searchParams.set("financialYear", financialYears[0]);
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [currentFY, financialYears, searchParams, setSearchParams]);
+
   const handleSelect = (fy) => {
     searchParams.set("financialYear", fy);
     setSearchParams(searchParams, { replace: true });
@@ -29,12 +52,12 @@ const FinancialYearDropdown = () => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center justify-center gap-2 text-sm border border-white rounded-md px-2 py-1 bg-[#000D30] text-white hover:scale-102 hover:bg-[#001A60] transition-transform transition-colors duration-300"
       >
-        {currentFY || "Financial Year"}
+        {currentFY || financialYears[0] || "Financial Year"}
         <ChevronDown className="w-4 h-4" />
       </button>
       {open && (

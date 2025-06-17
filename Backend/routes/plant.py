@@ -200,28 +200,27 @@ async def get_plant_employees(
     db = Depends(get_database)
 ):
     """
-    Fetch all employees for a specific plant.
+    Fetch employees based on plant_id or company_id.
     
-    Required body parameters:
-    - plant_id: str
+    Optional body parameters:
+    - plant_id: str (if not provided, fetches all employees for the company)
     
     The company_id is automatically fetched from the current user's context.
     """
     # Get the plant_id from request body and company_id from current user
     plant_id = plant_data.get("plant_id")
     company_id = current_user["company_id"]
-    print(plant_id)
-    print(company_id)
-    
-    if not plant_id:
-        raise HTTPException(
-            status_code=400,
-            detail="plant_id is required in request body"
-        )
+    print(f"Fetching employees - Plant ID: {plant_id}, Company ID: {company_id}")
     
     # Use the PlantService class to get employees
     plant_service = PlantService(db)
-    employees = await plant_service.get_plant_employees_service(company_id, plant_id)
+    
+    # If plant_id is provided, get employees for that plant
+    # Otherwise, get all employees for the company
+    if plant_id:
+        employees = await plant_service.get_plant_employees_service(company_id, plant_id)
+    else:
+        employees = await plant_service.get_company_employees_service(company_id)
     
     return employees
 

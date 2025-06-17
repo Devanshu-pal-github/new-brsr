@@ -319,3 +319,23 @@ class PlantService:
             return employees
         except Exception as e:
             raise Exception(f"Error fetching plant employees: {str(e)}")
+
+    async def get_company_employees_service(self, company_id: str):
+        """
+        Service function to fetch all employees for a company.
+        
+        Args:
+            company_id: ID of the company
+        
+        Returns:
+            List of employees (users) that belong to the specified company
+        """
+        try:
+            # Query users collection for employees matching company_id
+            employees = await self.db["users"].find({
+                "company_id": company_id  # Only fetch active users
+            }).to_list(length=None)
+            
+            return employees
+        except Exception as e:
+            raise Exception(f"Error fetching company employees: {str(e)}")

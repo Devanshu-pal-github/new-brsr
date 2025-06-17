@@ -59,6 +59,7 @@ const ModuleView = () => {
 
   // Filter modules based on user role
   const [filteredModules, setFilteredModules] = useState([]);
+  
 
   useEffect(() => {
     if (reportModules) {
@@ -78,6 +79,8 @@ const ModuleView = () => {
       }
     }
   }, [reportModules, userRole]);
+
+  console.log("filteredModules",filteredModules);
 
   // Function to get icon component based on module name
   const getModuleIcon = (moduleName) => {
@@ -139,21 +142,7 @@ const ModuleView = () => {
               <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
                 <ul className="space-y-1 flex flex-col items-start pl-0">
                   
-                  {/* Home Button */}
-
-                  <li className="w-full">
-                    <button
-                      onClick={() => navigate("/home")}
-                      className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                        ${selectedModuleId === "home"
-                          ? "bg-[#20305D] text-white"
-                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
-                        }`}
-                    >
-                      <Building className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-left">Home</span>
-                    </button>
-                  </li>
+              
 
 
                   {/* Dashboard */}
@@ -244,7 +233,7 @@ const ModuleView = () => {
           >
             {selectedModuleId === "dashboard" ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
-                <Dashboard />
+                <Dashboard dynamicModules={filteredModules} />
               </div>
             ) : selectedModuleId === "environment" ? (
               selectedPlantData ? (
