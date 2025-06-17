@@ -214,25 +214,15 @@ const DynamicQuestionRenderer = ({
           <QuestionEditPopup
             question={{
               question_id: question.id,
-              question: question.question_text || question.title,
+              question: question.question_text || question.title || question.human_readable_id,
               guidance: question.guidance,
+              question_type: question.question_type,
               type: question.question_type,
-              table_metadata: question.metadata?.type === 'table' ? question.metadata : null,
+              metadata: question.metadata,
               has_string_value: question.question_type === 'subjective',
-              has_decimal_value: false,
-              has_boolean_value: false,
-              has_link: false,
-              has_note: false,
               string_value_required: question.required,
-              decimal_value_required: false,
-              boolean_value_required: false,
-              link_required: false,
-              note_required: false,
             }}
-            initialAnswer={{
-              string_value: questionData?.text || questionData?.value,
-              table: question.question_type === 'table' ? questionData : null,
-            }}
+            initialAnswer={questionData || {}}
             onClose={() => setIsEditModalOpen(false)}
             onSuccess={handleSave}
             moduleId={moduleId}
