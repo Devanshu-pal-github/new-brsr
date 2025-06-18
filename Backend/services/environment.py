@@ -4,11 +4,14 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.operations import UpdateOne
 from models.environment import EnvironmentReport, QuestionAnswer, TableResponse, MultiTableResponse
 from bson import ObjectId
+from fastapi import HTTPException, status
+from .aggregation_service import AggregationService
 
 class EnvironmentService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.collection = db["environment"]
+        self.aggregation_service = AggregationService(db)
 
     async def create_indices(self):
         """Create indices for efficient querying"""
@@ -114,14 +117,12 @@ class EnvironmentService:
         """Update answer for a specific question"""
         now = datetime.utcnow()
         
-        # Create a properly structured answer object
-        question_answer = {
-            "questionId": question_id,
-            "questionTitle": question_title,
-            "updatedData": answer_data,
-            "lastUpdated": now,
-            "auditStatus": False
-        }
+        question_answer = QuestionAnswer(
+            questionId=question_id,
+            questionTitle=question_title,
+            updatedData=answer_data,
+            lastUpdated=now
+        )
 
         result = await self.collection.update_one(
             {
@@ -131,11 +132,22 @@ class EnvironmentService:
             },
             {
                 "$set": {
-                    f"answers.{question_id}": question_answer,
+                    f"answers.{question_id}": question_answer.dict(),
                     "updatedAt": now
                 }
             }
         )
+
+        # After updating the answer, trigger aggregation
+        await self.aggregation_service.aggregate_answers(
+            company_id=company_id,
+            financial_year=financial_year,
+            question_id=question_id,
+            question_title=question_title,
+            answer_data=answer_data,
+            source_plant_id=plant_id  # Pass the plant_id to identify the source of the update
+        )
+
         return result.modified_count > 0
 
     async def add_comment(
@@ -215,6 +227,7 @@ class EnvironmentService:
     async def bulk_update_answers(
         self,
         company_id: str,
+        plant_id: str,
         financial_year: str,
         answers: Dict[str, Dict[str, Any]]
     ) -> bool:
@@ -236,10 +249,23 @@ class EnvironmentService:
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
+                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {"$set": update_dict}
         )
+
+        # After bulk updating answers, trigger aggregation for each answer
+        for question_id, answer_data in answers.items():
+            await self.aggregation_service.aggregate_answers(
+                company_id=company_id,
+                financial_year=financial_year,
+                question_id=question_id,
+                question_title=answer_data.get("questionTitle", ""),
+                answer_data=answer_data.get("answer_data", {}),
+                source_plant_id=plant_id  # Pass the plant_id to identify the source of the update
+            )
+
         return result.modified_count > 0
 
     async def update_table_answer(

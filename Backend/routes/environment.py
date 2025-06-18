@@ -35,8 +35,7 @@ async def get_plant_report(
     user: Dict = Depends(get_current_active_user)
 ):
    
-    print(report_query)
-    print(user)
+    
 
     """
     Get environment report for a specific plant and financial year.
