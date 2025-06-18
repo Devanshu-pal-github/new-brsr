@@ -343,6 +343,7 @@ async def update_subjective_answer(
     user: Dict = Depends(get_current_active_user),
     audit_service: AuditService = Depends(get_audit_service)
 ):
+    
     """Update answer for a subjective question"""
     if not user.get("company_id"):
         raise HTTPException(

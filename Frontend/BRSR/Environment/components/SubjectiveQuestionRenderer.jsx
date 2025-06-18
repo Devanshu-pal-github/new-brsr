@@ -6,27 +6,16 @@ const SubjectiveQuestionRenderer = ({
     onAnswerChange,
     isReadOnly = false
 }) => {
-    const handleChange = (e) => {
-        if (onAnswerChange && !isReadOnly) {
-            onAnswerChange({
-                questionId: question.id,
-                questionTitle: question.title,
-                type: 'subjective',
-                data: {
-                    text: e.target.value
-                }
-            });
-        }
-    };
-
-    console.log('SubjectiveQuestionRenderer - Full answer object:', answer);
-    
     // Get the answer text, handling different possible data structures
     const answerText = typeof answer === 'string' 
         ? answer 
-        : (answer?.updatedData?.text || answer?.text || '');
-    
-    console.log('SubjectiveQuestionRenderer - Extracted answerText:', answerText);
+        : answer?.data?.text || answer?.updatedData?.text || answer?.text || '';
+
+    const handleChange = (e) => {
+        if (onAnswerChange && !isReadOnly) {
+            onAnswerChange(e.target.value);
+        }
+    };
 
     return (
         <div className="mb-4 w-full">

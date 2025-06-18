@@ -135,13 +135,27 @@ export const apiSlice = createApi({
       invalidatesTags: ['Plants']
     }),
     getCompanyReports: builder.query({
-      query: () => ({
-        url: `/environment/reports`,
-        method: 'GET',
-      }),
+      query: (plant) => {
+        // If no plant is provided, skip the query
+        if (!plant?.id) {
+          return { skip: true };
+        }
+        return {
+          url: `/environment/reports/get`,
+          method: 'POST',
+          body: {
+            plant_id: plant.id,  // Use plant.id instead of plant_id
+            financial_year: "2024-2025"  // Hardcoded as requested
+          }
+        };
+      },
       transformResponse: (response) => {
         console.log('🌍 Environment Reports Response:', response);
-        return Array.isArray(response) ? response : [];
+        return response ? [response] : []; // Wrap single report in array to maintain compatibility
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Environment Reports Error:', response);
+        return response;
       },
       providesTags: (result) =>
         result
@@ -340,11 +354,52 @@ export const apiSlice = createApi({
       ]
     }),
     updateSubjectiveAnswer: builder.mutation({
-      query: ({ financialYear, ...data }) => ({
-        url: `/environment/reports/${financialYear}/subjective-answer`,
-        method: 'POST',
-        body: data,
-      }),
+      query: (payload) => {
+        console.log('Received payload:', payload);
+        
+        // Use static plant ID
+        const plantId = "909eb785-6606-4588-80d9-b7d6e5ef254e";
+
+        // Extract the text value from whatever form it comes in
+        let answerText = '';
+        if (typeof payload === 'string') {
+          answerText = payload;
+        } else if (payload?.data?.text) {
+          answerText = payload.data.text;
+        } else if (payload?.text) {
+          answerText = payload.text;
+        } else if (typeof payload === 'object') {
+          answerText = String(payload.updatedData?.text || payload.data || payload.text || '');
+        }
+
+        // Construct the payload to match the backend model
+        const requestBody = {
+          questionId: payload.questionId,
+          questionTitle: payload.questionTitle,
+          type: 'subjective',
+          data: {
+            text: answerText
+          },
+          plant_id: plantId,
+          financial_year: "2024-2025"
+        };
+
+        console.log('Sending request body:', requestBody);
+
+        return {
+          url: '/environment/subjective-answer',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
+        };
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Subjective Answer Update Error:', response);
+        return response;
+      },
+      invalidatesTags: ['EnvironmentReports']
     }),
     updateAuditStatus: builder.mutation({
       query: ({ financialYear, questionId, audit_status }) => ({

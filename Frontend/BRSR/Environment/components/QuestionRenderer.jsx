@@ -177,42 +177,32 @@ const QuestionRenderer = ({ question, financialYear }) => {
     }
   }, [question.answer, metadata?.type]);
 
-  const handleSave = async (data, newAuditStatus) => {
-    console.log('Saving data with:', {
-      questionId: question.id,
-      questionTitle: title,
-      financialYear,
-      type: metadata?.type,
-      data,
-      auditStatus: newAuditStatus
-    });
-
+  const handleSave = async (data) => {
     try {
-      if (!question.id || !title || !financialYear) {
-        console.error('Missing required data:', {
-          questionId: question.id,
-          questionTitle: title,
-          financialYear
-        });
+      if (!question.id || !title) {
+        console.error('Missing required data:', { questionId: question.id, questionTitle: title });
         toast.error('Missing required question information');
         return;
       }
 
       if (metadata?.type === 'subjective') {
-        // Handle subjective question data
-        await updateSubjectiveAnswer({
+        // Extract the text value from whatever form it comes in
+        const textValue = typeof data === 'string' ? data : data?.data?.text || data?.text || '';
+        
+        const payload = {
           questionId: question.id,
           questionTitle: title,
-          financialYear,
           type: 'subjective',
           data: {
-            text: data
+            text: textValue
           }
-        }).unwrap();
+        };
 
-        // Update the local state with the string value
-        const newText = typeof data === 'string' ? data : data?.text || '';
-        setQuestionData(newText);
+        console.log('Submitting subjective answer:', payload);
+        await updateSubjectiveAnswer(payload).unwrap();
+        
+        // Update local state with the text value
+        setQuestionData(textValue);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
       } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
@@ -271,15 +261,6 @@ const QuestionRenderer = ({ question, financialYear }) => {
         setQuestionData(JSON.parse(JSON.stringify(data)));
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
-      }
-
-      // Update audit status if changed
-      if (isAuditRequired && newAuditStatus !== question.answer?.auditStatus) {
-        await updateAuditStatus({
-          financialYear,
-          questionId: question.id,
-          audit_status: newAuditStatus
-        });
       }
     } catch (error) {
       console.error('Failed to save answer:', error);
@@ -342,6 +323,24 @@ const QuestionRenderer = ({ question, financialYear }) => {
     }
   };
 
+  const renderQuestion = () => {
+    console.log('Rendering Question:', question);
+    
+    if (metadata?.type === 'subjective') {
+      return (
+        <SubjectiveQuestionRenderer
+          answer={questionData}
+          onAnswerChange={(newData) => {
+            const text = typeof newData === 'string' ? newData : newData?.data?.text || newData?.text || '';
+            handleSave(text);
+          }}
+          isReadOnly={!isEditModalOpen}
+        />
+      );
+    }
+    // ... rest of the render logic ...
+  };
+
   return (
     <AppProvider>
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -401,30 +400,12 @@ const QuestionRenderer = ({ question, financialYear }) => {
           />
         )}
         {metadata?.type === 'subjective' && (
-          <>
-            {!isEditModalOpen && (
-              <div className="mb-4">
-                {/* <div className="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[120px]">
-                  {typeof questionData === 'string' ? questionData : questionData?.text || 'No response provided yet'}
-                </div> */}
-              </div>
-            )}
-            <SubjectiveQuestionRenderer 
-              question={question}
-              answer={{
-                text: typeof questionData === 'string' ? questionData : questionData?.text || '',
-                updatedData: {
-                  text: typeof questionData === 'string' ? questionData : questionData?.text || ''
-                }
-              }}
-              isReadOnly={!isEditModalOpen}
-              onAnswerChange={(newAnswer) => {
-                const newText = newAnswer.data.text;
-                setTempData(newText);
-                handleSave(newText, question.answer?.auditStatus);
-              }}
-            />
-          </>
+          <SubjectiveQuestionRenderer 
+            question={question}
+            answer={questionData}
+            isReadOnly={!isEditModalOpen}
+            onAnswerChange={(newText) => handleSave(newText)}
+          />
         )}
         {(isTableLoading || isSubjectiveLoading) && (
           <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
