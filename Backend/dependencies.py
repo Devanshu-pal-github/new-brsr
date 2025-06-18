@@ -40,8 +40,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotor
     Get current authenticated user
     """
     payload = verify_token(token)
-    print(payload)
-    user = await db.users.find_one({"_id": ObjectId(payload["user_id"])})
+    user_id = payload["user_id"]
+    
+    
+    # Try finding by UUID string first
+    user = await db.users.find_one({"_id": user_id})
+    
+    # If not found, try converting to ObjectId as fallback
+    if not user:
+        try:
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+        except:
+            # If ObjectId conversion fails, user truly doesn't exist
+            pass
+    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

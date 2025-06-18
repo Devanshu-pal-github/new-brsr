@@ -199,7 +199,9 @@ async def register_user(
     user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
     
     # Initialize other fields
-    user_data["id"] = str(uuid.uuid4())
+    generated_uuid = str(uuid.uuid4())
+    user_data["_id"] = generated_uuid  # Use the same UUID for both _id and id
+    user_data["id"] = generated_uuid
     user_data["is_active"] = True
     user_data["access_modules"] = []
     user_data["created_at"] = datetime.utcnow()
