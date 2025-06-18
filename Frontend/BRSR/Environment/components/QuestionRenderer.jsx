@@ -90,7 +90,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(() => {
     if (metadata?.type === 'subjective') {
-      return question.answer?.text || '';
+      return question.answer || null;
     }
     return question.answer || {};
   });
@@ -126,9 +126,8 @@ const QuestionRenderer = ({ question, financialYear }) => {
     if (question.answer) {
       // For subjective questions, just get the text
       if (metadata?.type === 'subjective') {
-        const answerText = question.answer?.text || '';
-        setQuestionData(answerText);
-        setTempData(answerText);
+        setQuestionData(question.answer);
+        setTempData(question.answer);
       }
       // For multi-table, transform the flattened array to the expected nested structure
       else if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
@@ -202,10 +201,10 @@ const QuestionRenderer = ({ question, financialYear }) => {
         await updateSubjectiveAnswer(payload).unwrap();
         
         // Update local state with the text value
-        setQuestionData(textValue);
+        setQuestionData(payload);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
-      } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+      } else {
         let formattedData;
         
         // Create a deep copy of the data to avoid modifying read-only properties
@@ -307,38 +306,62 @@ const QuestionRenderer = ({ question, financialYear }) => {
           <textarea
             className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
             placeholder="Enter your response here..."
-            value={tempData || ''}
-            onChange={(e) => setTempData(e.target.value)}
+            value={tempData?.data?.text || ''}
+            onChange={(e) => setTempData({
+              questionId: question.id,
+              questionTitle: title,
+              type: 'subjective',
+              data: { text: e.target.value }
+            })}
           />
         );
       default:
-        return (
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
-            placeholder="Enter your response here..."
-            value={tempData.text || ''}
-            onChange={(e) => setTempData({ text: e.target.value })}
-          />
-        );
+        return null;
     }
   };
 
   const renderQuestion = () => {
     console.log('Rendering Question:', question);
     
-    if (metadata?.type === 'subjective') {
-      return (
-        <SubjectiveQuestionRenderer
-          answer={questionData}
-          onAnswerChange={(newData) => {
-            const text = typeof newData === 'string' ? newData : newData?.data?.text || newData?.text || '';
-            handleSave(text);
-          }}
-          isReadOnly={!isEditModalOpen}
-        />
-      );
+    switch (metadata?.type) {
+      case 'subjective':
+        return (
+          <SubjectiveQuestionRenderer
+            question={question}
+            answer={questionData}
+            onAnswerChange={(newData) => {
+              handleSave(newData);
+            }}
+            isReadOnly={!isEditModalOpen}
+          />
+        );
+      case 'table':
+        return (
+          <TableRenderer 
+            metadata={metadata} 
+            data={questionData}
+            isEditing={false}
+          />
+        );
+      case 'multi-table':
+        return (
+          <MultiTableRenderer 
+            metadata={metadata} 
+            data={questionData}
+            isEditing={false}
+          />
+        );
+      case 'dynamic-table':
+        return (
+          <DynamicTableRenderer 
+            metadata={metadata} 
+            data={questionData}
+            isEditing={false}
+          />
+        );
+      default:
+        return null;
     }
-    // ... rest of the render logic ...
   };
 
   return (
@@ -355,8 +378,6 @@ const QuestionRenderer = ({ question, financialYear }) => {
             )}
           </div>
           <div className="flex items-center space-x-3 ml-4">
-            {/* Add AI Button */}
-
             <AuditBadge isAuditRequired={isAuditRequired} />
 
             <button
@@ -380,33 +401,11 @@ const QuestionRenderer = ({ question, financialYear }) => {
               Edit Response
             </button>
           </div>
-        </div>      {/* Content Display */}
-        {metadata?.type === 'table' && (
-          <TableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'multi-table' && (
-          <MultiTableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'dynamic-table' && (
-          <DynamicTableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'subjective' && (
-          <SubjectiveQuestionRenderer 
-            question={question}
-            answer={questionData}
-            isReadOnly={!isEditModalOpen}
-            onAnswerChange={(newText) => handleSave(newText)}
-          />
-        )}
+        </div>
+
+        {/* Content Display */}
+        {renderQuestion()}
+
         {(isTableLoading || isSubjectiveLoading) && (
           <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
         )}
@@ -448,9 +447,9 @@ const QuestionRenderer = ({ question, financialYear }) => {
                   initialMode="question"
                   activeQuestion={activeQuestion}
                   currentAnswer={{
-                    text: typeof questionData === 'string' ? questionData : questionData?.text || '',
+                    text: questionData?.data?.text || '',
                     updatedData: {
-                      text: typeof questionData === 'string' ? questionData : questionData?.text || ''
+                      text: questionData?.data?.text || ''
                     }
                   }}
                 />

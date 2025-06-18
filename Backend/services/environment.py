@@ -66,7 +66,19 @@ class EnvironmentService:
             "plantId": plant_id,
             "financialYear": financial_year
         })
+        
         if doc:
+            # Ensure each answer has the required fields
+            if "answers" in doc:
+                for question_id, answer in doc["answers"].items():
+                    if isinstance(answer, dict):
+                        # Add required fields if missing
+                        answer["questionId"] = answer.get("questionId", question_id)
+                        answer["questionTitle"] = answer.get("questionTitle", "")
+                        answer["updatedData"] = answer.get("updatedData", {})
+                        answer["lastUpdated"] = answer.get("lastUpdated", datetime.utcnow())
+                        answer["auditStatus"] = answer.get("auditStatus", False)
+            
             return EnvironmentReport(**doc)
         return None
 
@@ -102,12 +114,14 @@ class EnvironmentService:
         """Update answer for a specific question"""
         now = datetime.utcnow()
         
-        question_answer = QuestionAnswer(
-            questionId=question_id,
-            questionTitle=question_title,
-            updatedData=answer_data,
-            lastUpdated=now
-        )
+        # Create a properly structured answer object
+        question_answer = {
+            "questionId": question_id,
+            "questionTitle": question_title,
+            "updatedData": answer_data,
+            "lastUpdated": now,
+            "auditStatus": False
+        }
 
         result = await self.collection.update_one(
             {
@@ -117,7 +131,7 @@ class EnvironmentService:
             },
             {
                 "$set": {
-                    f"answers.{question_id}": question_answer.dict(),
+                    f"answers.{question_id}": question_answer,
                     "updatedAt": now
                 }
             }

@@ -135,35 +135,51 @@ export const apiSlice = createApi({
       invalidatesTags: ['Plants']
     }),
     getCompanyReports: builder.query({
-      query: (plant) => {
-        // If no plant is provided, skip the query
-        if (!plant?.id) {
-          return { skip: true };
+      query: () => ({
+        url: `/environment/reports/get`,
+        method: 'POST',
+        body: {
+          plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",  // Using the same static plant_id as in updateSubjectiveAnswer
+          financial_year: "2024-2025"  // Using the same financial year as in updateSubjectiveAnswer
         }
-        return {
-          url: `/environment/reports/get`,
-          method: 'POST',
-          body: {
-            plant_id: plant.id,  // Use plant.id instead of plant_id
-            financial_year: "2024-2025"  // Hardcoded as requested
-          }
-        };
-      },
+      }),
       transformResponse: (response) => {
-        console.log('🌍 Environment Reports Response:', response);
-        return response ? [response] : []; // Wrap single report in array to maintain compatibility
+        console.log('🌍 Raw Environment Reports Response:', response);
+        
+        // If no response, return empty array
+        if (!response) return [];
+
+        // Transform the response to include required fields
+        const transformedResponse = {
+          ...response,
+          answers: Object.entries(response.answers || {}).reduce((acc, [questionId, answer]) => {
+            acc[questionId] = {
+              questionId,
+              questionTitle: answer.questionTitle || '',
+              type: answer.type || 'subjective',
+              data: answer.updatedData || answer.data || { text: '' }
+            };
+            return acc;
+          }, {})
+        };
+
+        console.log('🌍 Transformed Response:', transformedResponse);
+        return [transformedResponse];
       },
       transformErrorResponse: (response) => {
         console.error('🔴 Environment Reports Error:', response);
         return response;
       },
-      providesTags: (result) =>
-        result
-          ? [
-            ...result.map((report) => ({ type: 'EnvironmentReports', id: report.id })),
-            { type: 'EnvironmentReports', id: 'LIST' },
-          ]
-          : [{ type: 'EnvironmentReports', id: 'LIST' }],
+      providesTags: (result) => {
+        if (!result) return ['EnvironmentReport'];
+        return [
+          'EnvironmentReport',
+          ...Object.keys(result[0]?.answers || {}).map(questionId => ({
+            type: 'EnvironmentReport',
+            id: questionId
+          }))
+        ];
+      }
     }),
     getQuestionsByIds: builder.query({
       query: ({ questionIds, categoryId }) => ({
@@ -191,6 +207,8 @@ export const apiSlice = createApi({
           ]
           : [{ type: 'Questions', id: 'LIST' }],
     }),
+
+    
     updateTableAnswer: builder.mutation({
       queryFn: async (
         { questionId, questionTitle, updatedData, financialYear, moduleId },
@@ -353,53 +371,53 @@ export const apiSlice = createApi({
         { type: 'ModuleAnswers', id: `${arg.moduleId}-${arg.companyId}-${arg.financialYear}` }
       ]
     }),
+    
     updateSubjectiveAnswer: builder.mutation({
       query: (payload) => {
-        console.log('Received payload:', payload);
-        
-        // Use static plant ID
-        const plantId = "909eb785-6606-4588-80d9-b7d6e5ef254e";
-
-        // Extract the text value from whatever form it comes in
-        let answerText = '';
-        if (typeof payload === 'string') {
-          answerText = payload;
-        } else if (payload?.data?.text) {
-          answerText = payload.data.text;
-        } else if (payload?.text) {
-          answerText = payload.text;
-        } else if (typeof payload === 'object') {
-          answerText = String(payload.updatedData?.text || payload.data || payload.text || '');
-        }
-
-        // Construct the payload to match the backend model
-        const requestBody = {
-          questionId: payload.questionId,
-          questionTitle: payload.questionTitle,
-          type: 'subjective',
-          data: {
-            text: answerText
-          },
-          plant_id: plantId,
-          financial_year: "2024-2025"
-        };
-
-        console.log('Sending request body:', requestBody);
-
+        console.log('📝 Updating subjective answer with payload:', payload);
         return {
           url: '/environment/subjective-answer',
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: requestBody
+          body: {
+            questionId: payload.questionId,
+            questionTitle: payload.questionTitle,
+            type: 'subjective',
+            data: {
+              text: typeof payload === 'string' ? payload : payload.data?.text || ''
+            },
+            plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",
+            financial_year: "2024-2025"
+          }
         };
       },
-      transformErrorResponse: (response) => {
-        console.error('🔴 Subjective Answer Update Error:', response);
-        return response;
+      async onQueryStarted(payload, { dispatch, queryFulfilled }) {
+        try {
+          const { data: response } = await queryFulfilled;
+          console.log('✅ Subjective answer update successful:', response);
+          
+          // Optimistically update the cache
+          dispatch(
+            apiSlice.util.updateQueryData('getCompanyReports', undefined, (draft) => {
+              if (!draft?.[0]?.answers) return;
+              
+              const questionId = payload.questionId;
+              draft[0].answers[questionId] = {
+                questionId,
+                questionTitle: payload.questionTitle,
+                type: 'subjective',
+                data: {
+                  text: typeof payload === 'string' ? payload : payload.data?.text || ''
+                }
+              };
+            })
+          );
+        } catch (error) {
+          console.error('❌ Error updating subjective answer:', error);
+        }
       },
-      invalidatesTags: ['EnvironmentReports']
+      invalidatesTags: (result, error, { questionId }) => [
+        { type: 'EnvironmentReport', id: questionId }
+      ]
     }),
     updateAuditStatus: builder.mutation({
       query: ({ financialYear, questionId, audit_status }) => ({
