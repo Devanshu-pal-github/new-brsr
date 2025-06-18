@@ -6,6 +6,7 @@ from models.auth import TokenData, UserInDB
 from services.auth import decode_token, verify_token
 from services.plant import PlantService
 import uuid
+from bson import ObjectId
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -39,7 +40,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotor
     Get current authenticated user
     """
     payload = verify_token(token)
-    user = await db.users.find_one({"_id": payload["user_id"]})
+    print(payload)
+    user = await db.users.find_one({"_id": ObjectId(payload["user_id"])})
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -12,40 +12,58 @@ class EnvironmentService:
 
     async def create_indices(self):
         """Create indices for efficient querying"""
-        await self.collection.create_index([("companyId", 1), ("financialYear", 1)], unique=True)
+        await self.collection.create_index([("companyId", 1), ("plantId", 1), ("financialYear", 1)], unique=True)
         await self.collection.create_index([("companyId", 1)])
+        await self.collection.create_index([("plantId", 1)])
         await self.collection.create_index([("financialYear", 1)])
         await self.collection.create_index([("status", 1)])
 
     async def create_report(
         self, 
-        company_id: str, 
+        company_id: str,
+        plant_id: str,
         financial_year: str
     ) -> str:
         """Create a new environment report"""
         existing_report = await self.collection.find_one({
             "companyId": company_id,
+            "plantId": plant_id,
             "financialYear": financial_year
         })
         if existing_report:
-            raise ValueError(f"Report already exists for financial year {financial_year}")
+            raise ValueError(f"Report already exists for plant {plant_id} in financial year {financial_year}")
 
-        report = EnvironmentReport(
-            companyId=company_id,
-            financialYear=financial_year
-        )
+        # Get plant details to determine plant type
+        plant_doc = await self.db.plants.find_one({"id": plant_id})
+        if not plant_doc:
+            raise ValueError(f"Plant {plant_id} not found")
+
+        # Create a new report with empty answers
+        report = {
+            "companyId": company_id,
+            "plantId": plant_id,
+            "plant_type": plant_doc.get("plant_type", "regular"),  # Get plant type from plant document
+            "financialYear": financial_year,
+            "answers": {},  # Initialize with empty object
+            "status": "draft",
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow(),
+            "version": 1
+        }
         
-        result = await self.collection.insert_one(report.dict())
+        result = await self.collection.insert_one(report)
         return str(result.inserted_id)
 
     async def get_report(
         self, 
-        company_id: str, 
+        company_id: str,
+        plant_id: str,
         financial_year: str
     ) -> Optional[EnvironmentReport]:
         """Get an environment report"""
         doc = await self.collection.find_one({
             "companyId": company_id,
+            "plantId": plant_id,
             "financialYear": financial_year
         })
         if doc:
@@ -54,10 +72,19 @@ class EnvironmentService:
 
     async def get_company_reports(
         self,
-        company_id: str
+        company_id: str,
+        plant_id: Optional[str] = None,
+        financial_year: Optional[str] = None
     ) -> List[EnvironmentReport]:
-        """Get all reports for a company"""
-        cursor = self.collection.find({"companyId": company_id})
+        """Get all reports for a company, optionally filtered by plant and financial year"""
+        query = {"companyId": company_id}
+        if plant_id:
+            query["plantId"] = plant_id
+        if financial_year:
+            query["financialYear"] = financial_year
+
+        print(query)
+        cursor = self.collection.find(query)
         reports = []
         async for doc in cursor:
             reports.append(EnvironmentReport(**doc))
@@ -65,7 +92,8 @@ class EnvironmentService:
 
     async def update_answer(
         self, 
-        company_id: str, 
+        company_id: str,
+        plant_id: str,
         financial_year: str, 
         question_id: str,
         question_title: str, 
@@ -84,6 +112,7 @@ class EnvironmentService:
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
+                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {
@@ -202,25 +231,25 @@ class EnvironmentService:
     async def update_table_answer(
         self,
         company_id: str,
+        plant_id: str,
         financial_year: str,
         question_id: str,
         question_title: str,
         table_data: Union[List[Dict[str, str]], Dict[str, List[Dict[str, str]]]]
     ) -> bool:
-        
         """Update table answer for a specific question"""
         now = datetime.utcnow()
-          # Store the raw data directly
         question_answer = QuestionAnswer(
             questionId=question_id,
             questionTitle=question_title,
-            updatedData=table_data,  # Store the raw table data as is
+            updatedData=table_data,
             lastUpdated=now
         )
 
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
+                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {
@@ -235,6 +264,7 @@ class EnvironmentService:
     async def patch_table_answer(
         self,
         company_id: str,
+        plant_id: str,
         financial_year: str,
         question_id: str,
         question_title: str,
@@ -246,6 +276,7 @@ class EnvironmentService:
         # First get the existing answer
         report = await self.collection.find_one({
             "companyId": company_id,
+            "plantId": plant_id,
             "financialYear": financial_year
         })
 
@@ -300,6 +331,7 @@ class EnvironmentService:
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
+                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {
@@ -309,8 +341,7 @@ class EnvironmentService:
                 }
             }
         )
-        return result.modified_count > 0  # Return true only if update was successful
-
+        return result.modified_count > 0
 
     async def update_subjective_answer(
         self,

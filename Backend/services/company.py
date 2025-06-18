@@ -15,7 +15,7 @@ class CompanyService:
         self.collection = db.companies
 
     async def create_company(self, company_data: CompanyCreate) -> Company:
-        """Create a new company with default plants (C001, P001)"""
+        """Create a new company with default plants (C001, P001) and their environment reports"""
         # Check for duplicate company name
         if await self.db.companies.find_one({"name": company_data.name}):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Company with this name already exists")
@@ -29,7 +29,10 @@ class CompanyService:
         company_dict["plant_ids"] = []
         company_dict["active_reports"] = []
 
-        # Create default plants
+        # Create default plants with UUIDs
+        c001_id = str(uuid.uuid4())  # UUID for aggregator plant
+        p001_id = str(uuid.uuid4())  # UUID for home plant
+
         c001 = PlantCreate(
             code="C001",
             name=f"{company_data.name} - Aggregator Plant",
@@ -48,8 +51,6 @@ class CompanyService:
             contact_email=company_data.contact_email,
             contact_phone=company_data.contact_phone
         )
-        c001_id = str(uuid.uuid4())
-        p001_id = str(uuid.uuid4())
         
         # Prepare C001 plant document
         c001_dict = c001.model_dump()
@@ -75,13 +76,43 @@ class CompanyService:
         
         company_dict["plant_ids"] = [c001_id, p001_id]
 
-        # Insert company and plants into database
-        await self.db.companies.insert_one(company_dict)
-        await self.db.plants.insert_many([c001_dict, p001_dict])
+        # Create environment reports for both plants
+        current_financial_year = "2024-2025"
+        environment_reports = [
+            {
+                "id": str(uuid.uuid4()),
+                "companyId": company_id,
+                "plantId": c001_id,  # Use UUID for plantId
+                "plant_type": PlantType.AGGREGATOR.value,  # Use plant type for categorization
+                "financialYear": current_financial_year,
+                "answers": {},  # Initialize with empty answers
+                "status": "draft",
+                "createdAt": now,
+                "updatedAt": now,
+                "version": 1
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "companyId": company_id,
+                "plantId": p001_id,  # Use UUID for plantId
+                "plant_type": PlantType.HOME.value,  # Use plant type for categorization
+                "financialYear": current_financial_year,
+                "answers": {},  # Initialize with empty answers
+                "status": "draft",
+                "createdAt": now,
+                "updatedAt": now,
+                "version": 1
+            }
+        ]
+
+        # Insert company, plants, and environment reports into database
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                await self.db.companies.insert_one(company_dict, session=session)
+                await self.db.plants.insert_many([c001_dict, p001_dict], session=session)
+                await self.db.environment.insert_many(environment_reports, session=session)
         
         return Company(**company_dict)
-
-
 
     async def get_company(self, company_id: str) -> Optional[Company]:
         doc = None

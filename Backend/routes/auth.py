@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from models.company import Company, CompanyWithPlants
 from services.company import CompanyService
 from routes.company import get_company_service # Import the dependency for CompanyService
+import uuid
 
 router = APIRouter(tags=["Authentication"])
 
@@ -131,7 +132,8 @@ async def register_user(
     - Checks for existing user by email.
     - Hashes password and stores user securely.
     - Returns the created user (excluding password).
-    - Company ID is automatically set from the authenticated user's context.
+    - For company_admin role, company_id should be provided in the request
+    - For other roles, company_id is set from the authenticated user's context
 
     **Sample Postman Request:**
     POST /auth/register
@@ -142,8 +144,8 @@ async def register_user(
         "email": "user@example.com",
         "full_name": "User Name",
         "password": "yourpassword",
-        "role": "plant_admin",
-        "plant_id": "..."     # optional
+        "role": "company_admin",
+        "company_id": "..." # Required for company_admin role
     }
 
     **Sample Response:**
@@ -151,9 +153,9 @@ async def register_user(
         "id": "...",
         "email": "user@example.com",
         "full_name": "User Name",
-        "role": "plant_admin",
-        "company_id": "...",  # Set from token
-        "plant_id": "...",
+        "role": "company_admin",
+        "company_id": "...",
+        "plant_id": null,
         "is_active": true,
         "hashed_password": "...",
         "access_modules": []
@@ -166,54 +168,47 @@ async def register_user(
             detail="Email already registered"
         )
     
-    # Set company_id from the authenticated user's context
-    user_data["company_id"] = current_user["company_id"]
-    
     # Validate role value
     from models.auth import UserRole
     valid_roles = [r.value for r in UserRole]
-    
-    if isinstance(user_data["role"], str):
-        if user_data["role"] not in valid_roles:
-            raise HTTPException(
-                status_code=422,
-                detail=[{"loc": ["body", "role"], "msg": f"Value must be one of: {', '.join(valid_roles)}", "type": "value_error"}]
-            )
-        # Keep the role as string, don't convert to enum
-        role_str = user_data["role"]
-    else:
-        # If it's already an enum, get its string value
-        try:
-            role_str = user_data["role"].value
-        except AttributeError:
-            raise HTTPException(
-                status_code=422,
-                detail=[{"loc": ["body", "role"], "msg": f"Value must be one of: {', '.join(valid_roles)}", "type": "value_error"}]
-            )
-    
-    # Create user
-    user_data["_id"] = generate_uuid()
-    user_data["id"] = user_data["_id"]
-    user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
-    user_data["access_modules"] = []
-    user_data["is_active"] = True
-    
-    # Store the string value of role in the database
-    user_data["role"] = role_str
+    if user_data.get("role") not in valid_roles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}"
+        )
 
-    # Ensure plant_id is always present in user_data, even if None
-    user_data["plant_id"] = user_data.get("plant_id")
+    # For company_admin role, company_id must be provided in the request
+    if user_data.get("role") == "company_admin":
+        if not user_data.get("company_id"):
+            raise HTTPException(
+                status_code=400,
+                detail="company_id is required for company_admin role"
+            )
+        # Verify if the company exists
+        company = await db["companies"].find_one({"id": user_data["company_id"]})
+        if not company:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Company with ID {user_data['company_id']} not found"
+            )
+    else:
+        # For other roles, set company_id from the authenticated user's context
+        user_data["company_id"] = current_user["company_id"]
     
+    # Hash the password
+    user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+    
+    # Initialize other fields
+    user_data["id"] = str(uuid.uuid4())
+    user_data["is_active"] = True
+    user_data["access_modules"] = []
+    user_data["created_at"] = datetime.utcnow()
+    user_data["updated_at"] = user_data["created_at"]
+    
+    # Insert the new user
     await db["users"].insert_one(user_data)
     
-    # For the response, we need to create a UserInDB object
-    # The UserInDB model will handle the conversion of role string to enum
-    try:
-        return UserInDB(**user_data)
-    except Exception as e:
-        # If there's an error with the response model, return a dict instead
-        # This is a fallback in case the enum conversion fails
-        return user_data
+    return UserInDB(**user_data)
 
 @router.post("/users", response_model=UserInDB)
 async def create_user(user, db):

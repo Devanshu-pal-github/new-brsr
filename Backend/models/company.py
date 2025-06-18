@@ -35,7 +35,7 @@ class Company(BaseModel):
 
 class CompanyBase(BaseModel):
     name: str
-    code: str
+    code: str  # Required field
     address: str
     contact_email: str
     contact_phone: str

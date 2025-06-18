@@ -1,6 +1,10 @@
-
 {
   "name": "Environment",
+  "identifiers": {
+    "companyId": "",
+    "plantId": "",
+    "financialYear": ""
+  },
   "submodules": [
     {
       "name": "Energy Management",
@@ -19,8 +23,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   { "parameter": "Total electricity consumption (A)" },
@@ -70,8 +83,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true },
@@ -94,7 +116,6 @@
           "name": "Water Discharge",
           "id": "water-discharge",
           "questions": [
-
             {
               "id": "WD-1",
               "type": "Essential",
@@ -115,8 +136,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
@@ -161,9 +191,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-            
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   { "parameter": "NOx (Kg)" },
@@ -193,9 +231,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   {
@@ -228,9 +274,17 @@
                 "type": "table",
                 "columns": [
                   { "label": "Parameter", "key": "parameter" },
-                
-                  { "label": "FY 2024-25 (Current Financial Year)", "key": "current_year" },
-                  { "label": "FY 2023-24 (Previous Financial Year)", "key": "previous_year" }
+                  { 
+                    "label": "Current Financial Year", 
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  { 
+                    "label": "Previous Financial Year", 
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
                 ],
                 "rows": [
                   {
