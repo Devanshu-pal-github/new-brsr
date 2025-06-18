@@ -7,6 +7,7 @@ from models.question import (
 from datetime import datetime
 from fastapi import HTTPException, status
 import uuid
+
 class QuestionService:
     def __init__(self, db: AsyncIOMotorDatabase):  # type: ignore
         self.db = db
@@ -21,7 +22,6 @@ class QuestionService:
         Create a new question and add it to the specified category.
         Why: Enforces category-question relationship and ensures order is maintained.
         """
-        # Check if category exists and find its module
         category_info = await self._get_category_info(category_id)
         if not category_info:
             raise HTTPException(
@@ -29,7 +29,6 @@ class QuestionService:
                 detail="Category not found"
             )
 
-        # Prepare question document
         question_dict = question_data.model_dump()
         question_dict["_id"] = str(uuid.uuid4())
         question_dict["id"] = question_dict["_id"]
@@ -38,10 +37,38 @@ class QuestionService:
         question_dict["created_at"] = datetime.utcnow()
         question_dict["updated_at"] = datetime.utcnow()
 
-        # Insert into database
-        await self.db.questions.insert_one(question_dict)
+        if question_dict.get("question_number"):
+            existing_question = await self.db.questions.find_one(
+                {"category_id": category_id, "question_number": question_dict["question_number"]}
+            )
+            if existing_question:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Question number {question_dict['question_number']} already exists in category {category_id}"
+                )
+        else:
+            highest_question = await self.db.questions.find_one(
+                {"category_id": category_id},
+                sort=[("question_number", -1)]
+            )
+            next_question_number = 1
+            if highest_question and "question_number" in highest_question:
+                try:
+                    next_question_number = int(highest_question["question_number"]) + 1
+                except ValueError:
+                    pass
+            question_dict["question_number"] = str(next_question_number)
 
-        # Update category's question_ids
+        try:
+            await self.db.questions.insert_one(question_dict)
+        except Exception as e:
+            if "E11000" in str(e):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Duplicate question number {question_dict['question_number']} detected in category {category_id}"
+                )
+            raise
+
         await self.db.categories.update_one(
             {"_id": category_id},
             {"$push": {"question_ids": question_dict["_id"]}}
@@ -66,7 +93,6 @@ class QuestionService:
             )
 
         if include_category:
-            # Get category information
             category_info = await self._get_category_info(question["category_id"])
             if category_info:
                 return QuestionWithCategory(
@@ -109,7 +135,6 @@ class QuestionService:
         Update question details.
         Why: Allows admin to correct or improve question metadata/logic.
         """
-        # First check if question exists
         existing_question = await self.collection.find_one({"_id": question_id})
         if not existing_question:
             raise HTTPException(
@@ -119,13 +144,25 @@ class QuestionService:
             
         update_data = question_data.model_dump(exclude_unset=True)
         if update_data:
+            if "question_number" in update_data:
+                existing_with_number = await self.collection.find_one(
+                    {
+                        "category_id": existing_question["category_id"],
+                        "question_number": update_data["question_number"],
+                        "_id": {"$ne": question_id}
+                    }
+                )
+                if existing_with_number:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Question number {update_data['question_number']} already exists in category"
+                    )
             update_data["updated_at"] = datetime.utcnow()
             await self.collection.update_one(
                 {"_id": question_id},
                 {"$set": update_data}
             )
 
-        # Get updated question
         question = await self.collection.find_one({"_id": question_id})
         return Question(**question)
 
@@ -134,18 +171,14 @@ class QuestionService:
         Delete a question and remove its reference from the category.
         Why: Maintains referential integrity and prevents orphaned data.
         """
-        # Get question to find category_id and module_id
         question = await self.collection.find_one({"_id": question_id})
         if not question:
             return False
             
-        # Get module_id from the question
         module_id = question.get("module_id")
         if not module_id:
-            # If module_id is not in the question, try to find it through the category
             category_id = question.get("category_id")
             if category_id:
-                # Find the module that contains this category
                 module = await self.db.modules.find_one(
                     {"submodules.categories.id": category_id},
                     {"_id": 1}
@@ -153,23 +186,19 @@ class QuestionService:
                 if module:
                     module_id = module["_id"]
         
-        # Remove question_id from category
         await self.db.modules.update_one(
             {"submodules.categories.id": question.get("category_id")},
             {"$pull": {"submodules.$[].categories.$[cat].question_ids": question_id}},
             array_filters=[{"cat.id": question.get("category_id")}]
         )
 
-        # Remove question from module answers if module_id is found
         if module_id:
             module_answers_collection = self.db[f"module_answers_{module_id}"]
-            # Remove the question ID from all answers in the collection
             await module_answers_collection.update_many(
-                {}, # Match all documents
+                {},
                 {"$unset": {f"answers.{question_id}": ""}, "$set": {"updated_at": datetime.utcnow()}}
             )
 
-        # Delete question
         result = await self.collection.delete_one({"_id": question_id})
         return result.deleted_count > 0
 
@@ -178,7 +207,6 @@ class QuestionService:
         Get category information including its module details.
         Why: Used for context-aware question management and UI display.
         """
-        # Find the module containing this category
         pipeline = [
             {"$match": {"submodules.categories.id": category_id}},
             {"$unwind": "$submodules"},
@@ -224,7 +252,6 @@ class QuestionService:
         Update the order of a question within its category.
         Why: Maintains question sequence for UI and business logic.
         """
-        # Get question to find current order and category
         question_doc = await self.collection.find_one({"_id": question_id})
         if not question_doc:
             raise HTTPException(
@@ -238,9 +265,7 @@ class QuestionService:
         if old_order == new_order:
             return Question(**question_doc)
 
-        # Update orders of other questions in the category
         if new_order > old_order:
-            # Moving down: decrease order of questions in between
             await self.collection.update_many(
                 {
                     "category_id": category_id,
@@ -249,7 +274,6 @@ class QuestionService:
                 {"$inc": {"order": -1}}
             )
         else:
-            # Moving up: increase order of questions in between
             await self.collection.update_many(
                 {
                     "category_id": category_id,
@@ -258,7 +282,6 @@ class QuestionService:
                 {"$inc": {"order": 1}}
             )
 
-        # Update question's order
         await self.collection.update_one(
             {"_id": question_id},
             {
@@ -269,7 +292,6 @@ class QuestionService:
             }
         )
         
-        # Get updated question
         updated_question = await self.collection.find_one({"_id": question_id})
         return Question(**updated_question)
 
@@ -282,7 +304,6 @@ class QuestionService:
         Add a validation rule to a question's metadata.
         Why: Supports dynamic, data-driven validation logic for all question types.
         """
-        # Check if question exists
         question_doc = await self.collection.find_one({"_id": question_id})
         if not question_doc:
             raise HTTPException(
@@ -290,15 +311,11 @@ class QuestionService:
                 detail="Question not found"
             )
             
-        # Get current metadata
         metadata = question_doc.get("metadata", {})
-        
-        # Add validation rule to metadata
         if "validation_rules" not in metadata:
             metadata["validation_rules"] = []
         metadata["validation_rules"].append(rule.model_dump())
         
-        # Update question with new metadata
         await self.collection.update_one(
             {"_id": question_id},
             {
@@ -309,7 +326,6 @@ class QuestionService:
             }
         )
 
-        # Get updated question
         updated_question = await self.collection.find_one({"_id": question_id})
         return Question(**updated_question)
 
@@ -322,7 +338,6 @@ class QuestionService:
         Add a dependency to a question's metadata.
         Why: Enables conditional logic and inter-question dependencies.
         """
-        # Check if question exists
         question_doc = await self.collection.find_one({"_id": question_id})
         if not question_doc:
             raise HTTPException(
@@ -330,7 +345,6 @@ class QuestionService:
                 detail="Question not found"
             )
 
-        # Check if dependent question exists
         dependent_question_doc = await self.collection.find_one({"_id": dependency.question_id})
         if not dependent_question_doc:
             raise HTTPException(
@@ -338,7 +352,6 @@ class QuestionService:
                 detail=f"Dependent question with ID {dependency.question_id} not found"
             )
 
-        # Add dependency as a validation rule (custom structure)
         validation_rule = {
             "type": "dependency",
             "parameters": {
@@ -352,15 +365,11 @@ class QuestionService:
             )
         }
 
-        # Get current metadata
         metadata = question_doc.get("metadata", {})
-        
-        # Add dependency to metadata
         if "validation_rules" not in metadata:
             metadata["validation_rules"] = []
         metadata["validation_rules"].append(validation_rule)
         
-        # Update question with new metadata
         await self.collection.update_one(
             {"_id": question_id},
             {
@@ -371,7 +380,6 @@ class QuestionService:
             }
         )
 
-        # Get updated question
         updated_question = await self.collection.find_one({"_id": question_id})
         return Question(**updated_question)
 
@@ -391,7 +399,6 @@ class QuestionService:
         questions = [q async for q in cursor]
 
         if include_category:
-            # Get category info including module details
             category_info = await self._get_category_info(category_id)
             if category_info:
                 return [
@@ -420,19 +427,16 @@ class QuestionService:
         if not question_doc:
             return False, ["Question not found"]
             
-        # Get validation rules from metadata
         metadata = question_doc.get("metadata", {})
         validation_rules = metadata.get("validation_rules", [])
         errors = []
 
-        # Each rule is a dict (from DB), not a ValidationRule object
         for rule in validation_rules:
             rule_type = rule.get("type")
             parameters = rule.get("parameters", {})
             error_message = rule.get("error_message", "Validation failed.")
             condition = rule.get("condition")
 
-            # Conditional validation
             if condition and context:
                 try:
                     if not eval(condition, {"context": context}):
@@ -488,13 +492,13 @@ class QuestionService:
         category_id: str,
         question_text: str,
         question_type: str,
-        metadata: dict = {}
+        metadata: dict = {},
+        question_number: Optional[str] = None
     ) -> Question:
         """
         Create a new question and add its ID to the specified category.
         This API creates a question in the questions collection and updates the category with both the UUID and human readable ID.
         """
-        # Check if category exists
         category_info = await self._get_category_info(category_id)
         if not category_info:
             raise HTTPException(
@@ -502,25 +506,28 @@ class QuestionService:
                 detail="Category not found"
             )
             
-        # Validate question type
-        valid_question_types = ["subjective", "table", "table_with_additional_rows"]
-        if question_type not in valid_question_types:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Question type must be one of: {', '.join(valid_question_types)}"
+        if question_number:
+            existing_question = await self.db.questions.find_one(
+                {"category_id": category_id, "question_number": question_number}
             )
-        
-        # Get the highest question number to start incrementing from
-        highest_question = await self.db.questions.find_one(
-            {"category_id": category_id},
-            sort=[("question_number", -1)]
-        )
-        
-        next_question_number = 1
-        if highest_question and "question_number" in highest_question:
-            next_question_number = int(highest_question["question_number"]) + 1
+            if existing_question:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Question number {question_number} already exists in category {category_id}"
+                )
+        else:
+            highest_question = await self.db.questions.find_one(
+                {"category_id": category_id},
+                sort=[("question_number", -1)]
+            )
+            next_question_number = 1
+            if highest_question and "question_number" in highest_question:
+                try:
+                    next_question_number = int(highest_question["question_number"]) + 1
+                except ValueError:
+                    pass
+            question_number = str(next_question_number)
             
-        # Prepare question document
         question_id = str(uuid.uuid4())
         question_dict = {
             "_id": question_id,
@@ -530,16 +537,22 @@ class QuestionService:
             "module_id": category_info.get("module_id"),
             "question_text": question_text,
             "question_type": question_type,
-            "question_number": str(next_question_number),
+            "question_number": question_number,
             "metadata": metadata,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
 
-        # Insert into database
-        await self.db.questions.insert_one(question_dict)
+        try:
+            await self.db.questions.insert_one(question_dict)
+        except Exception as e:
+            if "E11000" in str(e):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Duplicate question number {question_number} detected in category {category_id}"
+                )
+            raise
 
-        # Update category's question_ids in the modules collection
         await self.db.modules.update_one(
             {"submodules.categories.id": category_id},
             {"$push": {"submodules.$[].categories.$[cat].question_ids": question_id}},
@@ -557,9 +570,7 @@ class QuestionService:
         This API creates multiple questions in the questions collection and updates the categories with the question IDs.
         """
         created_questions = []
-        valid_question_types = ["subjective", "table", "table_with_additional_rows"]
         
-        # Group questions by category_id to handle question_number generation efficiently
         questions_by_category = {}
         for question_data in questions_data:
             category_id = question_data.get("category_id")
@@ -567,9 +578,15 @@ class QuestionService:
                 questions_by_category[category_id] = []
             questions_by_category[category_id].append(question_data)
         
-        # Get the highest question number for each category
         next_question_numbers = {}
         for category_id in questions_by_category.keys():
+            category_info = await self._get_category_info(category_id)
+            if not category_info:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Category with ID {category_id} not found"
+                )
+            
             highest_question = await self.db.questions.find_one(
                 {"category_id": category_id},
                 sort=[("question_number", -1)]
@@ -577,46 +594,41 @@ class QuestionService:
             
             next_question_number = 1
             if highest_question and "question_number" in highest_question:
-                next_question_number = int(highest_question["question_number"]) + 1
+                try:
+                    next_question_number = int(highest_question["question_number"]) + 1
+                except ValueError:
+                    pass
             
             next_question_numbers[category_id] = next_question_number
         
         for question_data in questions_data:
-            # Extract data from the question data
             human_readable_id = question_data.get("human_readable_id")
             category_id = question_data.get("category_id")
             question_text = question_data.get("question_text")
             question_type = question_data.get("question_type")
+            question_number = question_data.get("question_number")
             metadata = question_data.get("metadata", {})
             
-            # Validate required fields
             if not all([human_readable_id, category_id, question_text, question_type]):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Missing required fields: human_readable_id, category_id, question_text, question_type"
                 )
                 
-            # Check if category exists
-            category_info = await self._get_category_info(category_id)
-            if not category_info:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Category with ID {category_id} not found"
+            if question_number:
+                existing_question = await self.db.questions.find_one(
+                    {"category_id": category_id, "question_number": question_number}
                 )
+                if existing_question:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Question number {question_number} already exists in category {category_id}"
+                    )
+            else:
+                question_number = str(next_question_numbers[category_id])
+                next_question_numbers[category_id] += 1
                 
-            # Validate question type
-            if question_type not in valid_question_types:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Question type must be one of: {', '.join(valid_question_types)}"
-                )
-                
-            # Prepare question document
             question_id = str(uuid.uuid4())
-            
-            # Get the next question number for this category
-            next_question_number = next_question_numbers[category_id]
-            
             question_dict = {
                 "_id": question_id,
                 "id": question_id,
@@ -625,19 +637,22 @@ class QuestionService:
                 "module_id": category_info.get("module_id"),
                 "question_text": question_text,
                 "question_type": question_type,
-                "question_number": str(next_question_number),
+                "question_number": question_number,
                 "metadata": metadata,
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
             
-            # Increment the next question number for this category
-            next_question_numbers[category_id] += 1
+            try:
+                await self.db.questions.insert_one(question_dict)
+            except Exception as e:
+                if "E11000" in str(e):
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Duplicate question number {question_number} detected in category {category_id}"
+                    )
+                raise
             
-            # Insert into database
-            await self.db.questions.insert_one(question_dict)
-            
-            # Update category's question_ids in the modules collection
             await self.db.modules.update_one(
                 {"submodules.categories.id": category_id},
                 {"$push": {"submodules.$[].categories.$[cat].question_ids": question_id}},
@@ -661,11 +676,9 @@ class QuestionService:
         if not question_ids:
             return []
             
-        # Find all questions matching the provided IDs
         cursor = self.collection.find({"_id": {"$in": question_ids}})
         questions = []
         async for question in cursor:
-            # Ensure each question has a category_id
             if not question.get("category_id") and category_id:
                 question["category_id"] = category_id
             questions.append(question)
@@ -674,15 +687,11 @@ class QuestionService:
             return []
             
         if include_category:
-            # Get category information for each question
             result = []
             for question in questions:
-                # Ensure question has a category_id
                 if not question.get("category_id") and category_id:
                     question["category_id"] = category_id
                 elif not question.get("category_id") and not category_id:
-                    # If no category_id is available, we can't create a valid Question object
-                    # as category_id is required by the model
                     raise ValueError("category_id is required for each question")
                     
                 category_info = await self._get_category_info(question["category_id"])
@@ -696,17 +705,14 @@ class QuestionService:
                     result.append(Question(**question))
             return result
             
-        # Return questions in the same order as requested
         question_dict = {q["_id"]: q for q in questions}
         ordered_questions = []
         for qid in question_ids:
             if qid in question_dict:
-                # Ensure question has a category_id
                 question = question_dict[qid]
                 if not question.get("category_id") and category_id:
                     question["category_id"] = category_id
                 elif not question.get("category_id") and not category_id:
-                    # If no category_id is available, we can't create a valid Question object
                     raise ValueError("category_id is required for each question")
                 ordered_questions.append(Question(**question))
                 
@@ -721,7 +727,6 @@ class QuestionService:
         Update the metadata of a question.
         This API updates only the metadata field of a question.
         """
-        # Check if question exists
         question_doc = await self.collection.find_one({"_id": question_id})
         if not question_doc:
             raise HTTPException(
@@ -729,7 +734,6 @@ class QuestionService:
                 detail="Question not found"
             )
             
-        # Update question's metadata
         await self.collection.update_one(
             {"_id": question_id},
             {
@@ -740,6 +744,5 @@ class QuestionService:
             }
         )
         
-        # Get updated question
         updated_question = await self.collection.find_one({"_id": question_id})
         return Question(**updated_question)
