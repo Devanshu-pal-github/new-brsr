@@ -192,9 +192,36 @@ const Dashboard = ({ dynamicModules = [] }) => {
 
   return (
     <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen">
-      <div className="mb-4">
-        <h1 className="text-lg sm:text-xl font-semibold text-[#1A2341] tracking-tight">Dashboard Overview</h1>
-        <p className="text-xs text-slate-500 mt-0.5">Monitor your sustainability reporting progress</p>
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <h1 className="text-lg sm:text-xl font-semibold text-[#1A2341] tracking-tight">Dashboard Overview</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Monitor your sustainability reporting progress</p>
+        </div>
+        
+        {/* Quick Actions Section - Moved to top right */}
+        <div className="flex gap-3 sm:gap-4">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            onClick={() => {/* TODO: Implement report generation */}}
+          >
+            <Download className="w-4 h-4" />
+            <span>Generate Report</span>
+          </button>
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            onClick={() => {/* TODO: Implement AI chat */}}
+          >
+            <MessageSquareText className="w-4 h-4" />
+            <span>Ask AI Assistant</span>
+          </button>
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            onClick={() => {/* TODO: Implement documentation */}}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>View Documentation</span>
+          </button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -277,33 +304,6 @@ const Dashboard = ({ dynamicModules = [] }) => {
             </div>
           </div>
         </DashboardCard>
-
-        {/* Quick Actions Section */}
-        <div className="sm:col-span-2 lg:col-span-4 flex justify-start items-center py-2">
-          <div className="flex gap-3 sm:gap-4">
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
-              onClick={() => {/* TODO: Implement report generation */}}
-            >
-              <Download className="w-4 h-4" />
-              <span>Generate Report</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
-              onClick={() => {/* TODO: Implement AI chat */}}
-            >
-              <MessageSquareText className="w-4 h-4" />
-              <span>Ask AI Assistant</span>
-            </button>
-            <button 
-              className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
-              onClick={() => {/* TODO: Implement documentation */}}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>View Documentation</span>
-            </button>
-          </div>
-        </div>
 
         {/* Module Progress Card */}
         <DashboardCard 
