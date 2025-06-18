@@ -20,12 +20,44 @@ const CategoryRenderer = ({ category, financialYear }) => {
     console.log(`Processing question ${question.id}:`, { question, answer });
     
     // If we have an answer, ensure it has the correct structure
-    const processedAnswer = answer ? {
-      questionId: answer.questionId || question.id,
-      questionTitle: answer.questionTitle || question.title,
-      type: answer.type || 'subjective',
-      data: answer.updatedData || answer.data || { text: '' }
-    } : null;
+    let processedAnswer = null;
+    if (answer) {
+      const type = answer.type || question.metadata?.type || 'subjective';
+      
+      if (type === 'subjective') {
+        processedAnswer = {
+          questionId: answer.questionId || question.id,
+          questionTitle: answer.questionTitle || question.title,
+          type: type,
+          data: answer.updatedData || answer.data || { text: '' }
+        };
+      } else if (type === 'table' || type === 'multi-table' || type === 'dynamic-table') {
+        // For table types, transform the data into the expected format
+        const tableData = {};
+        const data = answer.updatedData || answer.data || [];
+        
+        // Convert array of objects to object with row indices
+        if (Array.isArray(data)) {
+          data.forEach((row, index) => {
+            if (row.row_index !== undefined) {
+              // If row_index is provided, use it
+              tableData[row.row_index] = { ...row };
+              delete tableData[row.row_index].row_index;
+            } else {
+              // Otherwise use array index
+              tableData[index] = row;
+            }
+          });
+        }
+
+        processedAnswer = {
+          questionId: answer.questionId || question.id,
+          questionTitle: answer.questionTitle || question.title,
+          type: type,
+          data: tableData
+        };
+      }
+    }
 
     return {
       ...question,

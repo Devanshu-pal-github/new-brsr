@@ -251,91 +251,15 @@ export const apiSlice = createApi({
             }
           }
 
-          /* ----------------------------------------------------------
-           * Dynamic (module-specific) flow
-           * ----------------------------------------------------------*/
-          if (moduleId) {
-            const payload = {
-              questionId,
-              questionTitle,
-              value: cleanedData,
-              lastUpdated: new Date().toISOString(),
-            };
-
-            const { auth } = getState();
-            const companyId = auth.user?.company_id;
-
-            console.log('🔑 Module flow with:', {
-              moduleId,
-              companyId,
-              financialYear,
-              payload,
-            });
-
-            try {
-              // Check if a document already exists
-              const getRes = await baseQuery({
-                url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
-                method: 'GET',
-              });
-
-              if (getRes.data) {
-                // Update existing
-                const putRes = await baseQuery({
-                  url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
-                  method: 'PUT',
-                  body: {
-                    answers: {
-                      [questionId]: payload,
-                    },
-                  },
-                });
-                return { data: putRes.data };
-              }
-            } catch (err) {
-              // Continue to create if 404; rethrow others
-              if (!err?.status || err.status !== 404) {
-                console.error('❌ Error fetching existing answer:', err);
-                throw err;
-              }
-            }
-
-            // Create new then update
-            const postRes = await baseQuery({
-              url: `/module-answers/${moduleId}`,
-              method: 'POST',
-              body: {
-                company_id: companyId,
-                financial_year: financialYear,
-                answers: {
-                  [questionId]: payload,
-                },
-              },
-            });
-
-            const putRes = await baseQuery({
-              url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
-              method: 'PUT',
-              body: {
-                answers: {
-                  [questionId]: payload,
-                },
-              },
-            });
-
-            return { data: putRes.data ?? postRes.data };
-          }
-
-          /* ----------------------------------------------------------
-           * Environment (legacy) flow
-           * ----------------------------------------------------------*/
           const envRes = await baseQuery({
-            url: `/environment/reports/${financialYear}/table-answer`,
+            url: `/environment/table-answer`,
             method: 'POST',
             body: {
               questionId,
               questionTitle,
               updatedData: cleanedData,
+              plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",  // Using the same static plant_id as in getCompanyReports
+              financial_year: financialYear || "2024-2025"  // Using the financial year passed in or default
             },
           });
 

@@ -91,6 +91,9 @@ const QuestionRenderer = ({ question, financialYear }) => {
   const [questionData, setQuestionData] = useState(() => {
     if (metadata?.type === 'subjective') {
       return question.answer || null;
+    } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+      // For table types, ensure we have the correct structure
+      return question.answer || { data: {} };
     }
     return question.answer || {};
   });
@@ -124,54 +127,17 @@ const QuestionRenderer = ({ question, financialYear }) => {
   // Update questionData when question.answer changes
   useEffect(() => {
     if (question.answer) {
-      // For subjective questions, just get the text
       if (metadata?.type === 'subjective') {
         setQuestionData(question.answer);
         setTempData(question.answer);
-      }
-      // For multi-table, transform the flattened array to the expected nested structure
-      else if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
-        const transformedData = {};
-        
-        // Process each item in the flattened array
-        question.answer.forEach(item => {
-          const tableKey = item.table_key;
-          const rowIndex = item.row_index;
-          
-          // Initialize the table if it doesn't exist
-          if (!transformedData[tableKey]) {
-            transformedData[tableKey] = {};
-          }
-          
-          // Initialize the row if it doesn't exist
-          if (!transformedData[tableKey][rowIndex]) {
-            transformedData[tableKey][rowIndex] = {};
-          }
-          
-          // Add the data to the nested structure
-          transformedData[tableKey][rowIndex].current_year = item.current_year || '';
-          transformedData[tableKey][rowIndex].previous_year = item.previous_year || '';
-        });
-        
-        setQuestionData(transformedData);
-      } 
-      // For dynamic-table, transform the flattened array to the expected structure
-      else if (metadata?.type === 'dynamic-table' && Array.isArray(question.answer)) {
-        const transformedData = {};
-        
-        // Convert array of objects to object with row indices as keys
-        question.answer.forEach(item => {
-          const rowIndex = item.row_index;
-          // Create a copy of the item without row_index
-          const rowData = { ...item };
-          delete rowData.row_index;
-          transformedData[rowIndex] = rowData;
-        });
-        
-        setQuestionData(transformedData);
-      }
-      else {
+      } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+        // For table types, ensure we have the correct structure
+        const tableData = question.answer.data || {};
         setQuestionData(question.answer);
+        setTempData(question.answer);
+      } else {
+        setQuestionData(question.answer);
+        setTempData(question.answer);
       }
     }
   }, [question.answer, metadata?.type]);
@@ -185,7 +151,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
       }
 
       if (metadata?.type === 'subjective') {
-        // Extract the text value from whatever form it comes in
+        // Handle subjective questions
         const textValue = typeof data === 'string' ? data : data?.data?.text || data?.text || '';
         
         const payload = {
@@ -200,55 +166,23 @@ const QuestionRenderer = ({ question, financialYear }) => {
         console.log('Submitting subjective answer:', payload);
         await updateSubjectiveAnswer(payload).unwrap();
         
-        // Update local state with the text value
         setQuestionData(payload);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
-      } else {
+      } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+        // Handle table questions
         let formattedData;
         
         // Create a deep copy of the data to avoid modifying read-only properties
-        const dataCopy = JSON.parse(JSON.stringify(data));
+        const dataCopy = JSON.parse(JSON.stringify(data?.data || data));
         
-        if (metadata.type === 'table') {
-          // Format single table data
-          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
-            row_index: parseInt(rowIndex),
-            current_year: rowData.current_year || '',
-            previous_year: rowData.previous_year || ''
-          }));
-        } else if (metadata.type === 'multi-table') {
-          // For multi-table, we need to handle the structure differently
-          // The backend expects an array of objects, not a nested structure
-          const tableEntries = Object.entries(dataCopy);
-          
-          if (tableEntries.length > 0) {
-            // Convert the multi-table structure to a flat array for the API
-            const flattenedData = [];
-            
-            tableEntries.forEach(([tableKey, tableData]) => {
-              Object.entries(tableData).forEach(([rowIndex, rowData]) => {
-                flattenedData.push({
-                  table_key: tableKey,
-                  row_index: parseInt(rowIndex),
-                  current_year: rowData.current_year || '',
-                  previous_year: rowData.previous_year || ''
-                });
-              });
-            });
-            
-            formattedData = flattenedData;
-          } else {
-            formattedData = [];
-          }
-        } else if (metadata.type === 'dynamic-table') {
-          // Format dynamic table data similar to single table
-          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
-            row_index: parseInt(rowIndex),
-            ...rowData
-          }));
-        }
+        // Convert object format to array format for API
+        formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
+          row_index: parseInt(rowIndex),
+          ...rowData
+        }));
 
+        console.log('Submitting table answer:', formattedData);
         await updateTableAnswer({
           financialYear,
           questionId: question.id,
@@ -256,8 +190,14 @@ const QuestionRenderer = ({ question, financialYear }) => {
           updatedData: formattedData
         }).unwrap();
 
-        // Create a deep copy before setting state
-        setQuestionData(JSON.parse(JSON.stringify(data)));
+        // Update local state with the new data
+        const newData = {
+          questionId: question.id,
+          questionTitle: title,
+          type: metadata.type,
+          data: dataCopy
+        };
+        setQuestionData(newData);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
       }
@@ -278,27 +218,27 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return (
           <TableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'multi-table':
         return (
           <MultiTableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'dynamic-table':
         return (
           <DynamicTableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'subjective':
@@ -339,7 +279,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return (
           <TableRenderer 
             metadata={metadata} 
-            data={questionData}
+            data={questionData?.data || {}}
             isEditing={false}
           />
         );
@@ -347,7 +287,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return (
           <MultiTableRenderer 
             metadata={metadata} 
-            data={questionData}
+            data={questionData?.data || {}}
             isEditing={false}
           />
         );
@@ -355,7 +295,7 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return (
           <DynamicTableRenderer 
             metadata={metadata} 
-            data={questionData}
+            data={questionData?.data || {}}
             isEditing={false}
           />
         );
