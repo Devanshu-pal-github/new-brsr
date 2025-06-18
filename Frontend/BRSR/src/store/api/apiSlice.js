@@ -135,14 +135,17 @@ export const apiSlice = createApi({
       invalidatesTags: ['Plants']
     }),
     getCompanyReports: builder.query({
-      query: () => ({
-        url: `/environment/reports/get`,
-        method: 'POST',
-        body: {
-          plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",  // Using the same static plant_id as in updateSubjectiveAnswer
-          financial_year: "2024-2025"  // Using the same financial year as in updateSubjectiveAnswer
-        }
-      }),
+      query: (params = {}) => {
+        const { plantId, financialYear = "2024-2025" } = params;
+        return {
+          url: `/environment/reports/get`,
+          method: 'POST',
+          body: {
+            plant_id: plantId || null,
+            financial_year: financialYear
+          }
+        };
+      },
       transformResponse: (response) => {
         console.log('🌍 Raw Environment Reports Response:', response);
         
@@ -211,7 +214,7 @@ export const apiSlice = createApi({
     
     updateTableAnswer: builder.mutation({
       queryFn: async (
-        { questionId, questionTitle, updatedData, financialYear, moduleId },
+        { questionId, questionTitle, updatedData, financialYear, plantId },
         { dispatch, getState },
         extraOptions,
         baseQuery
@@ -258,8 +261,8 @@ export const apiSlice = createApi({
               questionId,
               questionTitle,
               updatedData: cleanedData,
-              plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",  // Using the same static plant_id as in getCompanyReports
-              financial_year: financialYear || "2024-2025"  // Using the financial year passed in or default
+              plant_id: plantId,
+              financial_year: financialYear || "2024-2025"
             },
           });
 
@@ -269,14 +272,7 @@ export const apiSlice = createApi({
           return { error };
         }
       },
-      invalidatesTags: (result, error, arg) => [
-        'EnvironmentReports',
-        'ModuleAnswers',
-        {
-          type: 'ModuleAnswers',
-          id: `${arg.moduleId}-${result?.data?.company_id}-${arg.financialYear}`,
-        },
-      ],
+      invalidatesTags: ['EnvironmentReport']
     }),
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, financialYear }) => ({
@@ -297,51 +293,20 @@ export const apiSlice = createApi({
     }),
     
     updateSubjectiveAnswer: builder.mutation({
-      query: (payload) => {
-        console.log('📝 Updating subjective answer with payload:', payload);
-        return {
-          url: '/environment/subjective-answer',
-          method: 'POST',
-          body: {
-            questionId: payload.questionId,
-            questionTitle: payload.questionTitle,
-            type: 'subjective',
-            data: {
-              text: typeof payload === 'string' ? payload : payload.data?.text || ''
-            },
-            plant_id: "909eb785-6606-4588-80d9-b7d6e5ef254e",
-            financial_year: "2024-2025"
-          }
-        };
-      },
-      async onQueryStarted(payload, { dispatch, queryFulfilled }) {
-        try {
-          const { data: response } = await queryFulfilled;
-          console.log('✅ Subjective answer update successful:', response);
-          
-          // Optimistically update the cache
-          dispatch(
-            apiSlice.util.updateQueryData('getCompanyReports', undefined, (draft) => {
-              if (!draft?.[0]?.answers) return;
-              
-              const questionId = payload.questionId;
-              draft[0].answers[questionId] = {
-                questionId,
-                questionTitle: payload.questionTitle,
-                type: 'subjective',
-                data: {
-                  text: typeof payload === 'string' ? payload : payload.data?.text || ''
-                }
-              };
-            })
-          );
-        } catch (error) {
-          console.error('❌ Error updating subjective answer:', error);
+      query: ({ questionId, questionTitle, type, data, plantId, financialYear }) => ({
+        
+        url: `/environment/subjective-answer`,
+        method: 'POST',
+        body: {
+          questionId,
+          questionTitle,
+          type,
+          data,
+          plant_id: plantId,
+          financial_year: financialYear || "2024-2025"
         }
-      },
-      invalidatesTags: (result, error, { questionId }) => [
-        { type: 'EnvironmentReport', id: questionId }
-      ]
+      }),
+      invalidatesTags: ['EnvironmentReport']
     }),
     updateAuditStatus: builder.mutation({
       query: ({ financialYear, questionId, audit_status }) => ({

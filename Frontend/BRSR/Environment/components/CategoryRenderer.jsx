@@ -2,12 +2,20 @@ import React from 'react';
 import QuestionRenderer from './QuestionRenderer';
 import { useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
 
-const CategoryRenderer = ({ category, financialYear }) => {
-  const { data: reports, isLoading, error } = useGetCompanyReportsQuery();
+const CategoryRenderer = ({ category, financialYear, plantId }) => {
+  // Only fetch if we have a plantId
+  const { data: reports = [], isLoading, error } = useGetCompanyReportsQuery(
+    plantId ? { plantId, financialYear } : undefined,
+    { skip: !plantId }
+  );
   console.log("Reports from API:", reports);
   
   if (!financialYear) {
     console.warn('CategoryRenderer: financialYear prop is required');
+  }
+
+  if (!plantId) {
+    console.warn('CategoryRenderer: plantId prop is required');
   }
 
   // Find the report for the current financial year
@@ -81,6 +89,7 @@ const CategoryRenderer = ({ category, financialYear }) => {
           key={question.id}
           question={question}
           financialYear={financialYear}
+          plantId={plantId}
         />
       ))}
     </div>

@@ -84,7 +84,7 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
   );
 };
 
-const QuestionRenderer = ({ question, financialYear }) => {
+const QuestionRenderer = ({ question, financialYear, plantId }) => {
   console.log('Rendering Question:', question);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -150,6 +150,12 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return;
       }
 
+      if (!plantId) {
+        console.error('Missing required plantId');
+        toast.error('Plant ID is required');
+        return;
+      }
+
       if (metadata?.type === 'subjective') {
         // Handle subjective questions
         const textValue = typeof data === 'string' ? data : data?.data?.text || data?.text || '';
@@ -160,7 +166,9 @@ const QuestionRenderer = ({ question, financialYear }) => {
           type: 'subjective',
           data: {
             text: textValue
-          }
+          },
+          plantId,
+          financialYear
         };
 
         console.log('Submitting subjective answer:', payload);
@@ -187,7 +195,8 @@ const QuestionRenderer = ({ question, financialYear }) => {
           financialYear,
           questionId: question.id,
           questionTitle: title,
-          updatedData: formattedData
+          updatedData: formattedData,
+          plantId
         }).unwrap();
 
         // Update local state with the new data

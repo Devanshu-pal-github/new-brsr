@@ -27,6 +27,7 @@ const FinancialYearDropdown = () => {
 
   // Fetch company reports to derive available financial years dynamically
   const { data: reports = [] } = useGetCompanyReportsQuery();
+  console.log("reports", reports);
 
   const financialYears = useMemo(() => {
     const years = reports
