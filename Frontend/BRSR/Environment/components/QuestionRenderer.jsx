@@ -318,10 +318,10 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            <div className="font-semibold text-base text-[#20305D]">{title}</div>
+            {/* <div className="font-semibold text-base text-[#20305D]">{title}</div> */}
             {description && (
               <div 
-                className="text-sm text-gray-700 mb-2" 
+                className="text-sm font-semibold text-gray-700 mb-2" 
                 dangerouslySetInnerHTML={{ __html: description }}
               />
             )}

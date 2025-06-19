@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Tuple
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.operations import UpdateOne
 from models.environment import EnvironmentReport, QuestionAnswer, TableResponse, MultiTableResponse
@@ -280,6 +280,23 @@ class EnvironmentService:
         """Update table answer for a specific question"""
         now = datetime.utcnow()
 
+        def extract_number_and_unit(value: str) -> Tuple[float, str]:
+            """Extract numeric value and unit from a string like '10 joule' or '10'"""
+            if not value or value.strip() == "":
+                return 0.0, ""
+                
+            # Split the string into parts
+            parts = value.strip().split(maxsplit=1)
+            
+            try:
+                # Try to convert first part to float
+                number = float(parts[0].replace(',', ''))
+                # Get unit if it exists
+                unit = parts[1] if len(parts) > 1 else ""
+                return number, unit
+            except (ValueError, IndexError):
+                return 0.0, ""
+
         # If this is C001 plant, we should not trigger aggregation
         is_c001 = await self.aggregation_service.is_aggregator_plant(company_id, plant_id)
         
@@ -330,22 +347,34 @@ class EnvironmentService:
         )
 
         if result.modified_count > 0:
-            # After updating the plant's data, get all plants' data (including C001's existing data)
+            # After updating the plant's data, get all plants' data
             all_plants = await self.aggregation_service.get_all_regular_plants(company_id)
             aggregated_data = []
 
-            # First, initialize with the current plant's data
+            # First, initialize with zeros and store units from current plant's data
             if isinstance(table_data, list):
-                aggregated_data = [{"current_year": "0", "previous_year": "0"} for _ in table_data]
+                # Initialize with zeros and empty units
+                aggregated_data = [
+                    {
+                        "current_year": {"value": 0.0, "unit": ""},
+                        "previous_year": {"value": 0.0, "unit": ""}
+                    } 
+                    for _ in table_data
+                ]
                 
-                # Add current plant's data
+                # Add current plant's data and capture units
                 for i, row in enumerate(table_data):
-                    aggregated_data[i]["current_year"] = str(float(row.get("current_year", "0")))
-                    aggregated_data[i]["previous_year"] = str(float(row.get("previous_year", "0")))
+                    current_value, current_unit = extract_number_and_unit(row.get("current_year", "0"))
+                    previous_value, previous_unit = extract_number_and_unit(row.get("previous_year", "0"))
+                    
+                    aggregated_data[i]["current_year"]["value"] = current_value
+                    aggregated_data[i]["current_year"]["unit"] = current_unit
+                    aggregated_data[i]["previous_year"]["value"] = previous_value
+                    aggregated_data[i]["previous_year"]["unit"] = previous_unit
 
             # Then add data from other regular plants
             for other_plant in all_plants:
-                if other_plant["id"] != plant_id:  # Skip the current plant as we already added its data
+                if other_plant["id"] != plant_id:  # Skip the current plant
                     plant_report = await self.collection.find_one({
                         "companyId": company_id,
                         "plantId": other_plant["id"],
@@ -357,13 +386,31 @@ class EnvironmentService:
                         if isinstance(plant_data, list):
                             for i, row in enumerate(plant_data):
                                 if i < len(aggregated_data):
-                                    try:
-                                        current_sum = float(aggregated_data[i]["current_year"]) + float(row.get("current_year", "0"))
-                                        previous_sum = float(aggregated_data[i]["previous_year"]) + float(row.get("previous_year", "0"))
-                                        aggregated_data[i]["current_year"] = f"{current_sum:.2f}"
-                                        aggregated_data[i]["previous_year"] = f"{previous_sum:.2f}"
-                                    except (ValueError, TypeError):
-                                        continue
+                                    current_value, current_unit = extract_number_and_unit(row.get("current_year", "0"))
+                                    previous_value, previous_unit = extract_number_and_unit(row.get("previous_year", "0"))
+                                    
+                                    # Add values
+                                    aggregated_data[i]["current_year"]["value"] += current_value
+                                    aggregated_data[i]["previous_year"]["value"] += previous_value
+                                    
+                                    # Keep units if not already set
+                                    if not aggregated_data[i]["current_year"]["unit"] and current_unit:
+                                        aggregated_data[i]["current_year"]["unit"] = current_unit
+                                    if not aggregated_data[i]["previous_year"]["unit"] and previous_unit:
+                                        aggregated_data[i]["previous_year"]["unit"] = previous_unit
+
+            # Format the final data with units
+            final_data = []
+            for row in aggregated_data:
+                current_value = f"{row['current_year']['value']:.2f}"
+                current_unit = row['current_year']['unit']
+                previous_value = f"{row['previous_year']['value']:.2f}"
+                previous_unit = row['previous_year']['unit']
+                
+                final_data.append({
+                    "current_year": f"{current_value} {current_unit}".strip(),
+                    "previous_year": f"{previous_value} {previous_unit}".strip()
+                })
 
             # Update C001 with aggregated data
             c001_plant = await self.aggregation_service.get_company_aggregator_plant(company_id)
@@ -371,7 +418,7 @@ class EnvironmentService:
                 c001_answer = QuestionAnswer(
                     questionId=question_id,
                     questionTitle=question_title,
-                    updatedData=aggregated_data,
+                    updatedData=final_data,
                     lastUpdated=now
                 )
 
