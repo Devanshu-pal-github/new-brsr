@@ -6,10 +6,18 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
 
   // Update local data when the prop changes (skip while actively editing)
   useEffect(() => {
+    // Always sync in view mode
     if (!isEditing) {
       setLocalData(data || {});
+      return;
     }
-  }, [data, isEditing]);
+
+    // In edit mode, update once when incoming data differs (typically right after it arrives)
+    if (data && JSON.stringify(data) !== JSON.stringify(localData)) {
+      setLocalData(data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Debounced sync to parent to prevent rapid re-renders that disrupt typing
   useEffect(() => {
@@ -93,7 +101,7 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
                     className="form-radio h-4 w-4 text-blue-600"
                     name={fieldKey}
                     value="true"
-                    checked={fieldValue === true || fieldValue === 'true'}
+                    checked={['true', true, 'True', 'yes', 'Yes', 1, '1', 'YES'].includes(fieldValue)}
                     onChange={() => handleInputChange(fieldKey, true)}
                   />
                   <span className="ml-2">Yes</span>
@@ -104,7 +112,7 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
                     className="form-radio h-4 w-4 text-blue-600"
                     name={fieldKey}
                     value="false"
-                    checked={fieldValue === false || fieldValue === 'false'}
+                    checked={['false', false, 'False', 'no', 'No', 0, '0', 'NO'].includes(fieldValue)}
                     onChange={() => handleInputChange(fieldKey, false)}
                   />
                   <span className="ml-2">No</span>
@@ -112,8 +120,8 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
               </div>
             ) : (
               <div className="p-2 bg-gray-50 rounded border border-gray-200">
-                {fieldValue === true || fieldValue === 'true' ? 'Yes' : 
-                 fieldValue === false || fieldValue === 'false' ? 'No' : 
+                {['true', true, 'True', 'yes', 'Yes', 1, '1', 'YES'].includes(fieldValue) ? 'Yes' : 
+                 ['false', false, 'False', 'no', 'No', 0, '0', 'NO'].includes(fieldValue) ? 'No' : 
                  <span className="text-gray-400 italic">No response provided</span>}
               </div>
             )}

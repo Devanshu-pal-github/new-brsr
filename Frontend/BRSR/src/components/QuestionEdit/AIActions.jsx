@@ -28,7 +28,30 @@ const useAIActionHandlers = ({
 }) => {
     const handleQuickAIAction = useCallback(async (action, suggestion = null) => {
         if (action === "USE_THIS") {
-            setFormData(prev => ({ ...prev, string_value: suggestion }));
+            // Dynamically decide which form field should receive the AI suggestion
+            setFormData(prev => {
+                const next = { ...prev };
+                const cleanedSuggestion = typeof suggestion === 'string' ? suggestion.trim() : suggestion;
+
+                if (question.has_string_value) {
+                    next.string_value = cleanedSuggestion;
+                } else if (question.has_decimal_value) {
+                    // Keep only numeric / dot characters for decimal values
+                    const numeric = cleanedSuggestion.toString().match(/[\d.]+/g)?.[0] || '';
+                    next.decimal_value = numeric;
+                } else if (question.has_boolean_value) {
+                    const truthy = ['true', 'yes', 'y', '1'];
+                    next.boolean_value = truthy.includes(cleanedSuggestion.toString().toLowerCase());
+                } else if (question.has_link) {
+                    next.link = cleanedSuggestion;
+                } else if (question.has_note) {
+                    next.note = cleanedSuggestion;
+                } else {
+                    // Fallback to string_value if nothing matched
+                    next.string_value = cleanedSuggestion;
+                }
+                return next;
+            });
             setAiMessage(null);
             setLeftAiMessage(null);
             setSelectedTextInTextarea(null); // Clear selection after using the suggestion
@@ -401,8 +424,9 @@ export const LeftAIActions = ({
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    console.log("Using AI suggestion:", leftAiMessage.text);
-                                                    handleQuickAIAction("USE_THIS", leftAiMessage.text);
+                                                    const chosen = leftAiMessage.suggestion || leftAiMessage.text;
+                                                    console.log("Using AI suggestion:", chosen);
+                                                    handleQuickAIAction("USE_THIS", chosen);
                                                     setLeftAiMessage(null);
                                                 }}
                                                 className="
@@ -568,13 +592,34 @@ export const RightAIActionsContent = ({
             )}
 
             {aiMessage && (
-                <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="p-4 bg-blue-50 rounded-lg space-y-4">
                     <ReactMarkdown
                         rehypePlugins={[rehypeSanitize]}
                         className="prose prose-sm max-w-none text-blue-900"
                     >
                         {aiMessage.text}
                     </ReactMarkdown>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={() => setAiMessage(null)}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all duration-200"
+                            aria-label="Reject AI suggestion"
+                        >
+                            Reject
+                        </button>
+                        <button
+                            onClick={() => {
+                                console.log('Using AI suggestion:', aiMessage.suggestion || aiMessage.text);
+                                handleQuickAIAction('USE_THIS', aiMessage.suggestion || aiMessage.text);
+                                setAiMessage(null);
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-white bg-[#0F1D42] hover:bg-[#1A2B5C] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all duration-200"
+                            aria-label="Accept AI suggestion"
+                        >
+                            Accept
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

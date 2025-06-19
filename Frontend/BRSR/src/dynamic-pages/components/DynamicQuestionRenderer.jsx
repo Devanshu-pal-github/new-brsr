@@ -162,9 +162,11 @@ const DynamicQuestionRenderer = ({
     switch (questionType) {
       case 'subjective':
         return (
-          <div className="prose prose-sm max-w-none">
-            <p>{questionData.text || questionData.value}</p>
-          </div>
+          <SubjectiveRenderer 
+            metadata={metadata}
+            data={questionData}
+            isEditing={false}
+          />
         );
       case 'table':
         return (

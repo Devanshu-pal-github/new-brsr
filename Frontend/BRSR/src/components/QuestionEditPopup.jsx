@@ -63,19 +63,52 @@ const QuestionEditPopup = ({
     }, []);
 
     useEffect(() => {
-        if (initialAnswer) {
-            setFormData({
-                string_value: initialAnswer?.string_value || "",
-                decimal_value: initialAnswer?.decimal_value || "",
-                boolean_value: initialAnswer?.boolean_value || false,
-                link: initialAnswer?.link || "",
-                note: initialAnswer?.note || "",
-                has_details: initialAnswer?.has_details || false,
-                justification: initialAnswer?.justification || "",
+        if (!initialAnswer) return;
+
+        // Create a base object starting with any dynamic keys that already exist
+        let mappedFormData = {
+            ...initialAnswer,
+            string_value: initialAnswer?.string_value || initialAnswer?.text || initialAnswer?.value || "",
+            decimal_value: initialAnswer?.decimal_value ?? "",
+            boolean_value: initialAnswer?.boolean_value ?? false,
+            link: initialAnswer?.link || "",
+            note: initialAnswer?.note || "",
+        };
+
+        // If metadata for the question exists, make sure its field keys are populated
+        if (question?.metadata?.fields?.length) {
+            question.metadata.fields.forEach((field) => {
+                const key = field.key;
+                if (mappedFormData[key] === undefined || mappedFormData[key] === "") {
+                    switch (field.type) {
+                        case "text":
+                            mappedFormData[key] = initialAnswer?.string_value || initialAnswer?.text || initialAnswer?.value || "";
+                            break;
+                        case "boolean":
+                            mappedFormData[key] = initialAnswer?.boolean_value ?? false;
+                            break;
+                        case "number":
+                        case "decimal":
+                        case "integer":
+                        case "percentage":
+                            mappedFormData[key] = initialAnswer?.decimal_value ?? "";
+                            break;
+                        case "link":
+                            mappedFormData[key] = initialAnswer?.link || "";
+                            break;
+                        default:
+                            mappedFormData[key] = initialAnswer[key] ?? "";
+                    }
+                }
             });
-            setCurrentValue(initialAnswer);
         }
-    }, [initialAnswer]);
+
+        setFormData((prev) => ({
+            ...prev,
+            ...mappedFormData,
+        }));
+        setCurrentValue(initialAnswer);
+    }, [initialAnswer, question]);
 
     useInactivityDetector({
         timeouts: [300000],
