@@ -32,6 +32,7 @@ class Company(BaseModel):
     plant_ids: List[str] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    financialYear: str  # Added new field
 
 class CompanyBase(BaseModel):
     name: str
@@ -39,6 +40,7 @@ class CompanyBase(BaseModel):
     address: str
     contact_email: str
     contact_phone: str
+    financialYear: str  # Added new field
     metadata: Dict = {}
 
 class CompanyCreate(CompanyBase):
@@ -49,6 +51,7 @@ class CompanyUpdate(BaseModel):
     address: Optional[str] = None
     contact_email: Optional[str] = None
     contact_phone: Optional[str] = None
+    financialYear: Optional[str] = None  # Added new field
     is_active: Optional[bool] = None
     metadata: Optional[Dict] = None
 

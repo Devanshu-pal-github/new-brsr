@@ -28,6 +28,7 @@ class CompanyService:
         company_dict["updated_at"] = now
         company_dict["plant_ids"] = []
         company_dict["active_reports"] = []
+        company_dict["financialYear"] = company_data.financialYear  # Add financialYear from input data
 
         # Create default plants with UUIDs
         c001_id = str(uuid.uuid4())  # UUID for aggregator plant

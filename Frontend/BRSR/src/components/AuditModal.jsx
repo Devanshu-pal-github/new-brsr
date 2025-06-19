@@ -45,15 +45,18 @@ const AuditModal = ({ onClose }) => {
   const filteredRows = useMemo(() => {
     if (!auditData?.actions) return [];
     return auditData.actions.map((audit, index) => ({
-      id: audit.target_id,
-      serialNumber: index + 1,
+      id: audit.target_id + audit.performed_at + index, // unique id
       ...audit,
+      question_id: audit.details?.question_id,
+      question_title: audit.details?.question_title,
     })).filter(row => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         (row.action?.toLowerCase().includes(searchLower) || '') ||
         (row.user_role?.toLowerCase().includes(searchLower) || '') ||
-        (row.target_id?.toLowerCase().includes(searchLower) || '');
+        (row.target_id?.toLowerCase().includes(searchLower) || '') ||
+        (row.details?.question_id?.toLowerCase().includes(searchLower) || '') ||
+        (row.details?.question_title?.toLowerCase().includes(searchLower) || '');
       const matchesType = !filters.action_type || row.action === filters.action_type;
       return matchesSearch && matchesType;
     });
@@ -72,16 +75,6 @@ const AuditModal = ({ onClose }) => {
   };
 
   const columns = [
-    {
-      field: "serialNumber",
-      headerName: "S.No.",
-      flex: 0.5,
-      renderCell: (params) => (
-        <span className="text-sm text-gray-900">
-          {params.value}
-        </span>
-      )
-    },
     {
       field: "action",
       headerName: "Action Performed",
@@ -104,13 +97,19 @@ const AuditModal = ({ onClose }) => {
     },
     {
       field: "target_id",
-      headerName: "Target ID",
-      flex: 1.2,
-      renderCell: (params) => (
-        <span className="text-sm text-gray-500 truncate" title={params.value}>
-          {params.value}
-        </span>
-      )
+      headerName: "Target",
+      flex: 1.6,
+      renderCell: (params) => {
+        // Show question_id and question_title if available
+        const questionId = params.row.details?.question_id || params.row.question_id || params.value;
+        const questionTitle = params.row.details?.question_title || params.row.question_title || "";
+        return (
+          <span className="text-sm text-gray-900" title={questionTitle}>
+            {questionId}
+            {questionTitle ? ` - ${questionTitle}` : ""}
+          </span>
+        );
+      }
     },
     {
       field: "performed_at",
@@ -243,4 +242,4 @@ const AuditModal = ({ onClose }) => {
   );
 };
 
-export default AuditModal; 
+export default AuditModal;
