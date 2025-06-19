@@ -259,8 +259,8 @@ const ModuleView = () => {
 
           {/* Main Content - Scrollable */}
           <div
-            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
-            ${isSidebarOpen ? "ml-[200px]" : "ml-0 lg:ml-16"}`}
+            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden  
+            ${isSidebarOpen ? "ml-55"  : "ml-0 lg:ml-16"}`}
           >
             {selectedModuleId === "dashboard" ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
