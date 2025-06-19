@@ -36,12 +36,12 @@
                   }
                 ],
                 "rows": [
-                  { "parameter": "Total electricity consumption (A)" },
-                  { "parameter": "Total fuel consumption (B)" },
-                  { "parameter": "Energy consumption through other sources (C)" },
-                  { "parameter": "<b>Total energy consumption (A+B+C)</b>" },
-                  { "parameter": "Energy intensity per rupee of turnover<br/><i>(Total energy consumption/ turnover in rupees)</i>" },
-                  { "parameter": "Energy intensity (optional) – the relevant metric may be selected by the entity" }
+                  { "parameter": "Total electricity consumption (A)", "unit": "GJ (Gigajoules)" },
+                  { "parameter": "Total fuel consumption (B)", "unit": "GJ (Gigajoules)" },
+                  { "parameter": "Energy consumption through other sources (C)", "unit": "GJ (Gigajoules)" },
+                  { "parameter": "<b>Total energy consumption (A+B+C)</b>", "unit": "GJ (Gigajoules)" },
+                  { "parameter": "Energy intensity per rupee of turnover<br/><i>(Total energy consumption/ turnover in rupees)</i>", "unit": "GJ/₹" },
+                  { "parameter": "Energy intensity (optional) – the relevant metric may be selected by the entity", "unit": "GJ/ton" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
@@ -96,16 +96,16 @@
                   }
                 ],
                 "rows": [
-                  { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true },
-                  { "parameter": "(i) Surface water" },
-                  { "parameter": "(ii) Groundwater" },
-                  { "parameter": "(iii) Third party water" },
-                  { "parameter": "(iv) Seawater / desalinated water" },
-                  { "parameter": "(v) Others" },
-                  { "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>" },
-                  { "parameter": "<b>Total volume of water consumption (in kilolitres)</b>" },
-                  { "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>" },
-                  { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity" }
+                  { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true, "unit": "" },
+                  { "parameter": "(i) Surface water", "unit": "KL (Kilolitres)" },
+                  { "parameter": "(ii) Groundwater", "unit": "KL (Kilolitres)" },
+                  { "parameter": "(iii) Third party water", "unit": "KL (Kilolitres)" },
+                  { "parameter": "(iv) Seawater / desalinated water", "unit": "KL (Kilolitres)" },
+                  { "parameter": "(v) Others", "unit": "KL (Kilolitres)" },
+                  { "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>", "unit": "KL (Kilolitres)" },
+                  { "parameter": "<b>Total volume of water consumption (in kilolitres)</b>", "unit": "KL (Kilolitres)" },
+                  { "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>", "unit": "KL/₹" },
+                  { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity", "unit": "KL/unit" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
@@ -204,13 +204,13 @@
                   }
                 ],
                 "rows": [
-                  { "parameter": "NOx (Kg)" },
-                  { "parameter": "SOx (Kg)" },
-                  { "parameter": "Particulate matter (PM) (Kg)" },
-                  { "parameter": "Persistent organic pollutants (POP) (Kg)" },
-                  { "parameter": "Volatile organic compounds (VOC) (Kg)" },
-                  { "parameter": "Hazardous air pollutants (HAP (G)" },
-                  { "parameter": "Others – please specify" }
+                  { "parameter": "NOx", "unit": "kg/year" },
+                  { "parameter": "SOx", "unit": "kg/year" },
+                  { "parameter": "Particulate matter (PM)", "unit": "kg/year" },
+                  { "parameter": "Persistent organic pollutants (POP)", "unit": "kg/year" },
+                  { "parameter": "Volatile organic compounds (VOC)", "unit": "kg/year" },
+                  { "parameter": "Hazardous air pollutants (HAP)", "unit": "g/year" },
+                  { "parameter": "Others – please specify", "unit": "" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
@@ -245,20 +245,20 @@
                 ],
                 "rows": [
                   {
-                    "parameter": "<b>Total Scope 1 emissions (in metric tonnes of CO2 equivalent)</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
-                    "unit": "<i>Metric tonnes of CO2 equivalent</i>"
+                    "parameter": "<b>Total Scope 1 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "unit": "tCO2e"
                   },
                   {
-                    "parameter": "<b>Total Scope 2 emissions (in metric tonnes of CO2 equivalent)</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
-                    "unit": "<i>Metric tonnes of CO2 equivalent</i>"
+                    "parameter": "<b>Total Scope 2 emissions</b><br/>(Break-up of the GHG into CO2, CH4, N2O, HFCs, PFCs, SF6, NF3, if available)",
+                    "unit": "tCO2e"
                   },
                   {
                     "parameter": "<b>Total Scope 1 and Scope 2 emissions per rupee of turnover</b>",
-                    "unit": ""
+                    "unit": "tCO2e/₹"
                   },
                   {
                     "parameter": "<b>Total Scope 1 and Scope 2 emission intensity (optional)</b> – the relevant metric may be selected by the entity",
-                    "unit": ""
+                    "unit": "tCO2e/unit"
                   }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
