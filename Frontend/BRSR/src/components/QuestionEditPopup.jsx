@@ -295,13 +295,43 @@ interface StructuredAISuggestion {
         setError(null);
 
         try {
-            // Log form state before validation
-            console.log("📝 [QuestionEditPopup] Form data before validation:", formData);
+            // ----------------------------------------------------------------
+            // Build a mutable copy of formData so we can transform values
+            // without relying on asynchronous state updates.
+            // ----------------------------------------------------------------
+            let updatedFormData = { ...formData };
+            console.log("📝 [QuestionEditPopup] Form data before validation:", updatedFormData);
             console.log("📝 [QuestionEditPopup] Question type:", question.question_type);
             console.log("📝 [QuestionEditPopup] Question ID:", question.question_id);
-            
-            // Validate the form
-            const validationErrors = validateForm();
+
+            // Map additional fields to string_value for subjective questions
+            if (question.question_type === "subjective") {
+                if (updatedFormData.response) {
+                    updatedFormData.string_value = updatedFormData.response;
+                } else if (updatedFormData.has_provisions !== undefined) {
+                    const provisionText = updatedFormData.has_provisions ? "Yes" : "No";
+                    const explanationText = updatedFormData.explanation ? ` - ${updatedFormData.explanation}` : "";
+                    updatedFormData.string_value = `${provisionText}${explanationText}`;
+                }
+            }
+
+            // ------------------------------------------------------------
+            // Run validation on the transformed data
+            // ------------------------------------------------------------
+            const validationErrors = validateForm(updatedFormData);
+            console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
+
+            if (Object.keys(validationErrors).length > 0) {
+                setErrors(validationErrors);
+                setIsSaveLoading(false);
+                toast.error("Please correct the errors before submitting");
+                return;
+            }
+
+            // Persist the transformed data back to state so the UI is in sync
+            setFormData(updatedFormData);
+
+            console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
             console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
             
             if (Object.keys(validationErrors).length > 0) {
@@ -319,19 +349,19 @@ interface StructuredAISuggestion {
                 console.log("📝 [QuestionEditPopup] Preparing subjective answer");
                 
                 // Special handling for questions with has_provisions field
-                if (formData.has_provisions !== undefined) {
+                if (updatedFormData.has_provisions !== undefined) {
                     console.log("📝 [QuestionEditPopup] Special handling for has_provisions question", {
-                        has_provisions: formData.has_provisions,
-                        explanation: formData.explanation
+                        has_provisions: updatedFormData.has_provisions,
+                        explanation: updatedFormData.explanation
                     });
                     
                     // Make sure we're sending the correct fields
                     answerData = {
-                        has_provisions: formData.has_provisions,
-                        explanation: formData.explanation || "",
+                        has_provisions: updatedFormData.has_provisions,
+                        explanation: updatedFormData.explanation || "",
                         // Include other fields that might be required
-                        link: formData.link || "",
-                        note: formData.note || "",
+                        link: updatedFormData.link || "",
+                        note: updatedFormData.note || "",
                         // Include string_value as empty to satisfy API requirements
                         string_value: "",
                         decimal_value: "",
@@ -341,7 +371,7 @@ interface StructuredAISuggestion {
                     console.log("📝 [QuestionEditPopup] Prepared has_provisions answer data:", answerData);
                 } else {
                     // For regular subjective questions, use the formData directly
-                    answerData = formData;
+                    answerData = updatedFormData;
                 }
             } else if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
                 console.log("📝 [QuestionEditPopup] Preparing table answer");
@@ -350,13 +380,13 @@ interface StructuredAISuggestion {
                 // Legacy format for backward compatibility
                 console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
                 answerData = {
-                    string_value: formData.string_value,
-                    decimal_value: formData.decimal_value,
-                    boolean_value: formData.boolean_value,
-                    link: formData.link,
-                    note: formData.note,
-                    has_details: formData.has_details,
-                    justification: formData.justification
+                    string_value: updatedFormData.string_value,
+                    decimal_value: updatedFormData.decimal_value,
+                    boolean_value: updatedFormData.boolean_value,
+                    link: updatedFormData.link,
+                    note: updatedFormData.note,
+                    has_details: updatedFormData.has_details,
+                    justification: updatedFormData.justification
                 };
             }
 
@@ -531,58 +561,56 @@ interface StructuredAISuggestion {
         });
     };
 
-    const validateForm = () => {
+    const validateForm = (data) => {
         const errors = {};
-        console.log("🔍 [QuestionEditPopup] Validating form with data:", formData);
+        console.log("🔍 [QuestionEditPopup] Validating form with data:", data);
         console.log("🔍 [QuestionEditPopup] Question metadata:", question);
 
         // Special case for questions with has_provisions field
-            if (formData.has_provisions !== undefined) {
-                console.log("🔍 [QuestionEditPopup] Validating has_provisions question", {
-                    has_provisions: formData.has_provisions,
-                    explanation: formData.explanation
-                });
-                
-                // If has_provisions is true and explanation is provided, consider it valid
-                if (formData.has_provisions === true && formData.explanation) {
-                    console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is true and explanation is provided");
-                    return errors; // Return empty errors object (valid)
-                }
-                
-                // If has_provisions is true but no explanation is provided
-                if (formData.has_provisions === true && !formData.explanation) {
-                    console.log("❌ [QuestionEditPopup] Validation failed: has_provisions is true but no explanation provided");
-                    errors.explanation = "Explanation is required when provisions are selected.";
-                }
-                
-                // If has_provisions is false, no explanation is required
-                if (formData.has_provisions === false) {
-                    console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is false");
-                    return errors; // Return empty errors object (valid)
-                }
+        if (data.has_provisions !== undefined) {
+            console.log("🔍 [QuestionEditPopup] Validating has_provisions question", {
+                has_provisions: data.has_provisions,
+                explanation: data.explanation
+            });
+            // If has_provisions is true and explanation is provided, consider it valid
+            if (data.has_provisions === true && data.explanation) {
+                console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is true and explanation is provided");
+                return errors; // Return empty errors object (valid)
             }
 
-        if (!formData.string_value && question.question_type === "subjective" && 
-            // Skip this validation if we're using has_provisions/explanation fields instead
-            formData.has_provisions === undefined) {
+            // If has_provisions is true but no explanation is provided
+            if (data.has_provisions === true && !data.explanation) {
+                console.log("❌ [QuestionEditPopup] Validation failed: has_provisions is true but no explanation provided");
+                errors.explanation = "Explanation is required when provisions are selected.";
+            }
+
+            // If has_provisions is false, no explanation is required
+            if (data.has_provisions === false) {
+                console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is false");
+                return errors; // Return empty errors object (valid)
+            }
+        }
+
+        if (!data.string_value && question.question_type === "subjective" && data.has_provisions === undefined) {
             errors.string_value = "String value is required.";
         }
-        if (!formData.decimal_value && question.question_type === "decimal") {
+        if (!data.decimal_value && question.question_type === "decimal") {
             errors.decimal_value = "Decimal value is required.";
         }
-        if (formData.boolean_value === undefined && question.question_type === "boolean") {
+        if (data.boolean_value === undefined && question.question_type === "boolean") {
             errors.boolean_value = "Boolean value is required.";
         }
-        if (!formData.link && question.link_required) {
+        if (!data.link && question.link_required) {
             errors.link = "Link is required.";
         }
-        if (!formData.note && question.note_required) {
+        if (!data.note && question.note_required) {
             errors.note = "Note is required.";
         }
 
         console.log("🔍 [QuestionEditPopup] Validation errors:", errors);
         return errors;
     };
+
 
     const sharedAIActionsProps = {
         formData,

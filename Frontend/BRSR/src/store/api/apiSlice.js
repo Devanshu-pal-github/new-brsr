@@ -433,6 +433,30 @@ export const apiSlice = createApi({
         }
       }
     }),
+    createModuleAnswer: builder.mutation({
+      query: ({ moduleId, companyId, financialYear, answers = {} }) => ({
+        url: `/module-answers/${moduleId}`,
+        method: 'POST',
+        body: {
+          company_id: companyId,
+          financial_year: financialYear,
+          answers,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (response) => {
+        console.log('🆕 [apiSlice] Module answer created:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('❌ [apiSlice] Error creating module answer:', response);
+        return response;
+      },
+      invalidatesTags: ['ModuleAnswers'],
+    }),
+
     submitQuestionAnswer: builder.mutation({
       query: ({ moduleId, questionId, answerData }) => {
         console.log('🔍 [apiSlice] submitQuestionAnswer called with:', { moduleId, questionId, answerData });
@@ -546,86 +570,59 @@ export const apiSlice = createApi({
         } catch (error) {
           console.error('❌ [apiSlice] Error submitting question answer:', error);
           console.error('❌ [apiSlice] Error details:', {
+            message: error.message,
             status: error.status,
             data: error.data,
-            message: error.message,
             stack: error.stack
           });
-          
-          // If the error is because the document doesn't exist, try to create it first
-          if (error.status === 404) {
-            console.log('🔄 [apiSlice] Document not found (404), attempting to create it first');
+
+          // Check if it's a 404 error
+          if (error.status === 404 || (error.error && error.error.status === 404)) {
+            console.log('📝 [apiSlice] 404 Error detected. Attempting to create the module answer.');
             try {
-              const company_id = localStorage.getItem('company_id');
-              const financial_year = localStorage.getItem('financial_year');
-              
+              // Fetch required parameters from localStorage if not provided
+              let company_id = localStorage.getItem('company_id');
+              let financial_year = localStorage.getItem('financial_year');
+
               if (!company_id || !financial_year) {
-                console.error('❌ [apiSlice] Cannot create document: missing company_id or financial_year');
-                throw new Error('Missing required context: company_id or financial_year');
+                console.error('❌ [apiSlice] Missing company_id or financial_year for POST request');
+                throw new Error('Required parameters for creating module answer are missing');
               }
-              
-              console.log('🔄 [apiSlice] Creating document with:', { company_id, financial_year, moduleId });
-              
-              const payload = {
-                questionId,
-                questionTitle: questionId,
-                value: answerData,
-                lastUpdated: new Date().toISOString(),
-              };
-              
-              // Create the document first
-              const baseQueryFn = apiSlice.endpoints.submitQuestionAnswer.query;
-              console.log('🔄 [apiSlice] POST URL:', `/module-answers/${moduleId}`);
-              console.log('🔄 [apiSlice] POST body:', {
-                company_id,
-                financial_year,
-                answers: {
-                  [questionId]: payload,
-                },
-              });
-              
-              try {
-                const createResult = await dispatch(
-                  apiSlice.util.fetchWithBQ({
-                    url: `/module-answers/${moduleId}`,
-                    method: 'POST',
-                    body: {
-                      company_id,
-                      financial_year,
-                      answers: {
-                        [questionId]: payload,
-                      },
-                    },
-                  })
-                );
-                
-                console.log('✅ [apiSlice] Created new document:', createResult);
-                
-                // Then try the update again
-                console.log('🔄 [apiSlice] Now updating the created document');
-                console.log('🔄 [apiSlice] PUT URL:', `/module-answers/${moduleId}/${company_id}/${financial_year}`);
-                
-                const updateResult = await dispatch(
-                  apiSlice.util.fetchWithBQ({
-                    url: `/module-answers/${moduleId}/${company_id}/${financial_year}`,
-                    method: 'PUT',
-                    body: {
-                      answers: {
-                        [questionId]: payload,
-                      },
-                    },
-                  })
-                );
-                
-                console.log('✅ [apiSlice] Updated after creation:', updateResult);
-                dispatch(apiSlice.util.invalidateTags(['ModuleAnswers']));
-              } catch (fetchError) {
-                console.error('❌ [apiSlice] Error in fetch operations:', fetchError);
-                throw fetchError;
+
+              console.log('📝 [apiSlice] Creating module answer with POST request...');
+
+              // Use fetch to make a POST request to create the module answer
+              const createResult = await dispatch(
+                apiSlice.endpoints.createModuleAnswer.initiate({
+                  moduleId,
+                  companyId: company_id,
+                  financialYear: financial_year,
+                  answers: {}
+                })
+              );
+
+              if (createResult.error) {
+                console.error('❌ [apiSlice] Error creating module answer:', createResult.error);
+                throw createResult.error;
               }
-            } catch (createError) {
-              console.error('❌ [apiSlice] Error creating and updating document:', createError);
-              throw createError; // Re-throw to propagate the error
+
+              console.log('✅ [apiSlice] Module answer created successfully:', createResult.data);
+
+              // Retry the original PUT request after creation
+              console.log('🔄 [apiSlice] Retrying PUT request after creation...');
+              const updateResult = await dispatch(
+                apiSlice.endpoints.submitQuestionAnswer.initiate({
+                  moduleId,
+                  questionId,
+                  answerData
+                })
+              );
+              
+              console.log('✅ [apiSlice] Updated after creation:', updateResult);
+              dispatch(apiSlice.util.invalidateTags(['ModuleAnswers']));
+            } catch (fetchError) {
+              console.error('❌ [apiSlice] Error in fetch operations:', fetchError);
+              throw fetchError;
             }
           } else {
             throw error; // Re-throw other errors
@@ -665,6 +662,7 @@ export const {
   useCreatePlantMutation,
   useDeletePlantMutation,
   useUpdateSubjectiveAnswerMutation,
+  useCreateModuleAnswerMutation,
   useLazyGetModuleAnswerQuery,
   useGetPlantEmployeesQuery,
   useCreateEmployeeMutation,
