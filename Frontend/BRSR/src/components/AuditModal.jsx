@@ -23,6 +23,7 @@ const AuditModal = ({ onClose }) => {
   }, [onClose]);
 
   const { data: auditData, isLoading: auditLoading, error: auditError } = useGetAuditLogQuery();
+  console.log("auditData", auditData);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
