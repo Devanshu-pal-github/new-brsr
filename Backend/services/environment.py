@@ -279,6 +279,35 @@ class EnvironmentService:
     ) -> bool:
         """Update table answer for a specific question"""
         now = datetime.utcnow()
+
+        # If this is C001 plant, we should not trigger aggregation
+        is_c001 = await self.aggregation_service.is_aggregator_plant(company_id, plant_id)
+        
+        if is_c001:
+            # For C001, just update directly without aggregation
+            question_answer = QuestionAnswer(
+                questionId=question_id,
+                questionTitle=question_title,
+                updatedData=table_data,
+                lastUpdated=now
+            )
+
+            result = await self.collection.update_one(
+                {
+                    "companyId": company_id,
+                    "plantId": plant_id,
+                    "financialYear": financial_year
+                },
+                {
+                    "$set": {
+                        f"answers.{question_id}": question_answer.dict(),
+                        "updatedAt": now
+                    }
+                }
+            )
+            return result.modified_count > 0
+
+        # For other plants, first update this plant's data
         question_answer = QuestionAnswer(
             questionId=question_id,
             questionTitle=question_title,
@@ -299,6 +328,67 @@ class EnvironmentService:
                 }
             }
         )
+
+        if result.modified_count > 0:
+            # After updating the plant's data, get all plants' data (including C001's existing data)
+            all_plants = await self.aggregation_service.get_all_regular_plants(company_id)
+            aggregated_data = []
+
+            # First, initialize with the current plant's data
+            if isinstance(table_data, list):
+                aggregated_data = [{"current_year": "0", "previous_year": "0"} for _ in table_data]
+                
+                # Add current plant's data
+                for i, row in enumerate(table_data):
+                    aggregated_data[i]["current_year"] = str(float(row.get("current_year", "0")))
+                    aggregated_data[i]["previous_year"] = str(float(row.get("previous_year", "0")))
+
+            # Then add data from other regular plants
+            for other_plant in all_plants:
+                if other_plant["id"] != plant_id:  # Skip the current plant as we already added its data
+                    plant_report = await self.collection.find_one({
+                        "companyId": company_id,
+                        "plantId": other_plant["id"],
+                        "financialYear": financial_year
+                    })
+                    
+                    if plant_report and plant_report.get("answers", {}).get(question_id):
+                        plant_data = plant_report["answers"][question_id].get("updatedData", [])
+                        if isinstance(plant_data, list):
+                            for i, row in enumerate(plant_data):
+                                if i < len(aggregated_data):
+                                    try:
+                                        current_sum = float(aggregated_data[i]["current_year"]) + float(row.get("current_year", "0"))
+                                        previous_sum = float(aggregated_data[i]["previous_year"]) + float(row.get("previous_year", "0"))
+                                        aggregated_data[i]["current_year"] = f"{current_sum:.2f}"
+                                        aggregated_data[i]["previous_year"] = f"{previous_sum:.2f}"
+                                    except (ValueError, TypeError):
+                                        continue
+
+            # Update C001 with aggregated data
+            c001_plant = await self.aggregation_service.get_company_aggregator_plant(company_id)
+            if c001_plant:
+                c001_answer = QuestionAnswer(
+                    questionId=question_id,
+                    questionTitle=question_title,
+                    updatedData=aggregated_data,
+                    lastUpdated=now
+                )
+
+                await self.collection.update_one(
+                    {
+                        "companyId": company_id,
+                        "plantId": c001_plant["id"],
+                        "financialYear": financial_year
+                    },
+                    {
+                        "$set": {
+                            f"answers.{question_id}": c001_answer.dict(),
+                            "updatedAt": now
+                        }
+                    }
+                )
+
         return result.modified_count > 0
 
     async def patch_table_answer(
@@ -381,6 +471,17 @@ class EnvironmentService:
                 }
             }
         )
+
+        # After updating the answer, trigger aggregation
+        await self.aggregation_service.aggregate_answers(
+            company_id=company_id,
+            financial_year=financial_year,
+            question_id=question_id,
+            question_title=question_title,
+            answer_data={"updatedData": existing_data},
+            source_plant_id=plant_id
+        )
+
         return result.modified_count > 0
 
     async def update_subjective_answer(
