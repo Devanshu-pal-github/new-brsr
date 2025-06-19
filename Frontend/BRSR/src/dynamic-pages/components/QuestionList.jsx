@@ -1,6 +1,17 @@
 import React from 'react';
 import QuestionItem from './QuestionItem';
 
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="p-4 bg-red-50 text-red-800">Error loading question.</div>;
+    }
+    return this.props.children;
+  }
+}
+
 const QuestionList = ({ category, financialYear, moduleId }) => {
   console.log('📋 Rendering category:', category);
   console.log('📋 Category questions:', category.questions);
@@ -21,12 +32,13 @@ const QuestionList = ({ category, financialYear, moduleId }) => {
   return (
     <div className="space-y-4">
       {category.questions.map((question) => (
-        <QuestionItem 
-          key={question.id} 
-          question={question} 
-          financialYear={financialYear}
-          moduleId={moduleId}
-        />
+        <ErrorBoundary key={question.id}>
+          <QuestionItem 
+            question={question} 
+            financialYear={financialYear}
+            moduleId={moduleId}
+          />
+        </ErrorBoundary>
       ))}
     </div>
   );

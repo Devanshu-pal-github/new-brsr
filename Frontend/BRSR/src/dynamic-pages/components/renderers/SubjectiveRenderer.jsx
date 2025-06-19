@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave }) => {
+const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmit }) => {
   // Initialize localData with an empty object if data is null or undefined
   const [localData, setLocalData] = useState(data || {});
 
@@ -13,12 +13,22 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave }) => {
 
   // Debounced sync to parent to prevent rapid re-renders that disrupt typing
   useEffect(() => {
-    if (!isEditing || !onSave) return;
+    if (!isEditing) return;
+    
     const timer = setTimeout(() => {
-      onSave(localData);
+      // Call onSave for DynamicQuestionRenderer
+      if (onSave) {
+        onSave(localData);
+      }
+      
+      // Call onSubmit for QuestionEditPopup
+      if (onSubmit) {
+        onSubmit(localData);
+      }
     }, 300); // 300ms debounce
+    
     return () => clearTimeout(timer);
-  }, [localData, isEditing, onSave]);
+  }, [localData, isEditing, onSave, onSubmit]);
 
   const handleInputChange = (fieldKey, value) => {
     console.log(`🔄 Updating field ${fieldKey} with value:`, value, 'type:', typeof value);

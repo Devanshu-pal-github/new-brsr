@@ -54,7 +54,6 @@ const QuestionEditPopup = ({
     const [aiMessage, setAiMessage] = useState(null);
     const [leftAiMessage, setLeftAiMessage] = useState(null);
     const [refineTone, setRefineTone] = useState("concise");
-    // Access authenticated user for company and plant context
     const user = useSelector((state) => state.auth.user);
     const textareaRef = useRef(null);
     const leftPanelRef = useRef(null);
@@ -162,7 +161,7 @@ interface StructuredAISuggestion {
                     break;
                 case MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left:
                 case MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft (if any): "${currentValue}". Generate a professional answer in not more than 150 words. Return the full answer in mainContent. ${jsonInstruction}`;
+                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Generate a professional answer in not more than 150 words. Return the full answer in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.BREAK_DOWN_QUESTION:
                     prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft for context: "${currentValue}". Break down the question into 3-5 smaller components as points, explaining what information is needed for each, in not more than 100 words total. ${jsonInstruction}`;
@@ -291,11 +290,20 @@ interface StructuredAISuggestion {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Save Answer button clicked, handleSubmit triggered");
         setIsSaveLoading(true);
         setError(null);
 
         try {
+            // Log form state before validation
+            console.log("📝 [QuestionEditPopup] Form data before validation:", formData);
+            console.log("📝 [QuestionEditPopup] Question type:", question.question_type);
+            console.log("📝 [QuestionEditPopup] Question ID:", question.question_id);
+            
+            // Validate the form
             const validationErrors = validateForm();
+            console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
+            
             if (Object.keys(validationErrors).length > 0) {
                 setErrors(validationErrors);
                 setIsSaveLoading(false);
@@ -303,44 +311,200 @@ interface StructuredAISuggestion {
                 return;
             }
 
-            let answerData = {
-                string_value: formData.string_value,
-                decimal_value: formData.decimal_value,
-                boolean_value: formData.boolean_value,
-                link: formData.link,
-                note: formData.note,
-                has_details: formData.has_details,
-                justification: formData.justification
-            };
+            console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
 
-            console.log("Submitting answer for question:", question.id, answerData);
-
-            if (question.type === "TABLE") {
-                console.log("Table submission");
-                await submitAnswer({
-                    questionId: question.id,
-                    answerData: currentValue,
-                });
+            let answerData;
+            
+            if (question.question_type === "subjective") {
+                console.log("📝 [QuestionEditPopup] Preparing subjective answer");
+                
+                // Special handling for questions with has_provisions field
+                if (formData.has_provisions !== undefined) {
+                    console.log("📝 [QuestionEditPopup] Special handling for has_provisions question", {
+                        has_provisions: formData.has_provisions,
+                        explanation: formData.explanation
+                    });
+                    
+                    // Make sure we're sending the correct fields
+                    answerData = {
+                        has_provisions: formData.has_provisions,
+                        explanation: formData.explanation || "",
+                        // Include other fields that might be required
+                        link: formData.link || "",
+                        note: formData.note || "",
+                        // Include string_value as empty to satisfy API requirements
+                        string_value: "",
+                        decimal_value: "",
+                        boolean_value: false
+                    };
+                    
+                    console.log("📝 [QuestionEditPopup] Prepared has_provisions answer data:", answerData);
+                } else {
+                    // For regular subjective questions, use the formData directly
+                    answerData = formData;
+                }
+            } else if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
+                console.log("📝 [QuestionEditPopup] Preparing table answer");
+                answerData = currentValue;
             } else {
-                await submitAnswer({
-                    questionId: question.id,
-                    answerData,
-                });
+                // Legacy format for backward compatibility
+                console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
+                answerData = {
+                    string_value: formData.string_value,
+                    decimal_value: formData.decimal_value,
+                    boolean_value: formData.boolean_value,
+                    link: formData.link,
+                    note: formData.note,
+                    has_details: formData.has_details,
+                    justification: formData.justification
+                };
             }
+
+            console.log("📤 [QuestionEditPopup] Answer data prepared:", answerData);
+            console.log("📤 [QuestionEditPopup] Using moduleId:", moduleId);
+
+            if (!moduleId) {
+                console.error("❌ [QuestionEditPopup] Missing moduleId for question:", question.question_id);
+                throw new Error("Module ID is required but not provided");
+            }
+
+            // Get user data for fallback values
+            const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+            const selectedReport = JSON.parse(localStorage.getItem("selectedReport") || "{}");
+            
+            // Ensure company_id and financial_year are set in localStorage
+            let company_id = localStorage.getItem("company_id");
+            if (!company_id) {
+                company_id = userData?.company_id;
+                console.log("📤 [QuestionEditPopup] Using company_id from userData:", company_id);
+                if (company_id) {
+                    localStorage.setItem("company_id", company_id);
+                } else {
+                    console.error("❌ [QuestionEditPopup] No company_id available");
+                    throw new Error("Company ID is required but not available");
+                }
+            }
+            
+            let financial_year = localStorage.getItem("financial_year");
+            if (!financial_year) {
+                financial_year = selectedReport?.financial_year;
+                console.log("📤 [QuestionEditPopup] Using financial_year from selectedReport:", financial_year);
+                if (financial_year) {
+                    localStorage.setItem("financial_year", financial_year);
+                } else {
+                    console.error("❌ [QuestionEditPopup] No financial_year available");
+                    throw new Error("Financial year is required but not available");
+                }
+            }
+            
+            console.log("📤 [QuestionEditPopup] Context values:", {
+                questionId: question.question_id,
+                moduleId,
+                company_id,
+                financial_year
+            });
+
+            // Make the API call with explicit error handling
+            console.log("📤 [QuestionEditPopup] Calling submitAnswer mutation with:", {
+                questionId: question.question_id,
+                answerData,
+                moduleId,
+            });
+            console.log("📝 [QuestionEditPopup] Calling submitAnswer mutation with params:", {
+                questionId: question.question_id,
+                answerData,
+                moduleId,
+            });
+            
+            // Force a small delay to ensure localStorage is updated
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Verify all required parameters are present
+            if (!moduleId) {
+                throw new Error("Missing moduleId parameter");
+            }
+            if (!question.question_id) {
+                throw new Error("Missing questionId parameter");
+            }
+            
+            // Get current values from localStorage for verification
+            const currentCompanyId = localStorage.getItem("company_id");
+            const currentFinancialYear = localStorage.getItem("financial_year");
+            
+            console.log("📝 [QuestionEditPopup] Final verification before API call:", {
+                moduleId,
+                questionId: question.question_id,
+                company_id: currentCompanyId,
+                financial_year: currentFinancialYear,
+                answerData
+            });
+            
+            // Final validation check
+            if (!moduleId) {
+                throw new Error("Missing moduleId parameter");
+            }
+            if (!question.question_id) {
+                throw new Error("Missing questionId parameter");
+            }
+            if (!currentCompanyId) {
+                throw new Error("Missing company_id in localStorage");
+            }
+            if (!currentFinancialYear) {
+                throw new Error("Missing financial_year in localStorage");
+            }
+            
+            console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
+            console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
+            
+            // Add a small delay before making the API call
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            const response = await submitAnswer({
+                questionId: question.question_id,
+                answerData,
+                moduleId,
+            }).unwrap();
+            console.log("📝 [QuestionEditPopup] submitAnswer mutation successful:", response);
+
+            console.log("✅ [QuestionEditPopup] API response received:", response);
 
             if (onSuccess) {
-                onSuccess(answerData);
+                console.log("✅ [QuestionEditPopup] Calling onSuccess with data:", answerData);
+                await onSuccess(answerData);
             }
+            
             toast.success("Answer submitted successfully");
-            onClose();
+            console.log("✅ [QuestionEditPopup] Closing popup after successful submission");
+            
+            // Ensure the modal closes by using setTimeout
+            setTimeout(() => {
+                onClose();
+            }, 800); // Increased timeout to ensure state updates complete
         } catch (err) {
-            console.error("Error submitting answer:", err);
-            setError(
+            console.error("❌ [QuestionEditPopup] Error submitting answer:", err);
+            console.error("❌ [QuestionEditPopup] Error details:", {
+                status: err?.status,
+                data: err?.data,
+                message: err?.message,
+                stack: err?.stack
+            });
+            
+            // Try to extract a meaningful error message
+            const errorMessage = 
                 err?.data?.detail ||
-                  err?.message ||
-                  "Failed to submit answer. Please try again."
-            );
-            toast.error("Failed to submit answer");
+                err?.data?.message ||
+                err?.message ||
+                "Failed to submit answer. Please try again.";
+                
+            console.error("❌ [QuestionEditPopup] Error message:", errorMessage);
+            setError(errorMessage);
+            toast.error(`Failed to save answer: ${errorMessage}`);
+            
+            // Set form error for display in UI
+            setErrors(prev => ({
+                ...prev,
+                form: errorMessage
+            }));
         } finally {
             setIsSaveLoading(false);
         }
@@ -367,17 +531,46 @@ interface StructuredAISuggestion {
         });
     };
 
-    // Basic form validation function
     const validateForm = () => {
         const errors = {};
+        console.log("🔍 [QuestionEditPopup] Validating form with data:", formData);
+        console.log("🔍 [QuestionEditPopup] Question metadata:", question);
 
-        if (!formData.string_value && question.type === "STRING") {
+        // Special case for questions with has_provisions field
+            if (formData.has_provisions !== undefined) {
+                console.log("🔍 [QuestionEditPopup] Validating has_provisions question", {
+                    has_provisions: formData.has_provisions,
+                    explanation: formData.explanation
+                });
+                
+                // If has_provisions is true and explanation is provided, consider it valid
+                if (formData.has_provisions === true && formData.explanation) {
+                    console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is true and explanation is provided");
+                    return errors; // Return empty errors object (valid)
+                }
+                
+                // If has_provisions is true but no explanation is provided
+                if (formData.has_provisions === true && !formData.explanation) {
+                    console.log("❌ [QuestionEditPopup] Validation failed: has_provisions is true but no explanation provided");
+                    errors.explanation = "Explanation is required when provisions are selected.";
+                }
+                
+                // If has_provisions is false, no explanation is required
+                if (formData.has_provisions === false) {
+                    console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is false");
+                    return errors; // Return empty errors object (valid)
+                }
+            }
+
+        if (!formData.string_value && question.question_type === "subjective" && 
+            // Skip this validation if we're using has_provisions/explanation fields instead
+            formData.has_provisions === undefined) {
             errors.string_value = "String value is required.";
         }
-        if (!formData.decimal_value && question.type === "DECIMAL") {
+        if (!formData.decimal_value && question.question_type === "decimal") {
             errors.decimal_value = "Decimal value is required.";
         }
-        if (formData.boolean_value === undefined && question.type === "BOOLEAN") {
+        if (formData.boolean_value === undefined && question.question_type === "boolean") {
             errors.boolean_value = "Boolean value is required.";
         }
         if (!formData.link && question.link_required) {
@@ -387,6 +580,7 @@ interface StructuredAISuggestion {
             errors.note = "Note is required.";
         }
 
+        console.log("🔍 [QuestionEditPopup] Validation errors:", errors);
         return errors;
     };
 
@@ -411,7 +605,6 @@ interface StructuredAISuggestion {
         setRefineTone,
     };
 
-    // Define actions for AIActionButtons
     const actions = {
         [MiniAIAssistantAction.EXPLAIN_THIS_QUESTION]: { action: MiniAIAssistantAction.EXPLAIN_THIS_QUESTION, icon: 'InformationCircleIcon', title: "Explain current question." },
         [MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right]: { action: MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right, icon: 'SparklesIcon', title: "AI generates an answer." },
@@ -435,15 +628,15 @@ interface StructuredAISuggestion {
 
         const questionType = question.question_type || question.metadata.type;
         const metadata = question.metadata;
-        
+
         switch (questionType) {
             case 'subjective':
                 return (
                     <SubjectiveRenderer 
                         metadata={metadata} 
                         data={formData} 
-                        isEditing={true} 
-                        onSave={(data) => setFormData(data)} 
+                        isEditing={true}
+                        onSubmit={(data) => setFormData(data)} 
                     />
                 );
             case 'table':
@@ -451,8 +644,8 @@ interface StructuredAISuggestion {
                     <TableRenderer 
                         metadata={metadata} 
                         data={currentValue} 
-                        isEditing={true} 
-                        onSave={(data) => setCurrentValue(data)} 
+                        isEditing={true}
+                        onSubmit={(data) => setCurrentValue(data)} 
                     />
                 );
             case 'table_with_additional_rows':
@@ -460,8 +653,8 @@ interface StructuredAISuggestion {
                     <TableWithAdditionalRowsRenderer 
                         metadata={metadata} 
                         data={currentValue} 
-                        isEditing={true} 
-                        onSave={(data) => setCurrentValue(data)} 
+                        isEditing={true}
+                        onSubmit={(data) => setCurrentValue(data)} 
                     />
                 );
             default:
@@ -589,7 +782,7 @@ interface StructuredAISuggestion {
                                 type="submit"
                                 disabled={isSaveLoading}
                                 className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isSaveLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#000D30] hover:bg-[#001A4D]"}`}
-                                aria-label="Save answer"
+                                aria-label="Save Answer"
                             >
                                 {isSaveLoading ? "Submitting..." : "Save Answer"}
                             </button>

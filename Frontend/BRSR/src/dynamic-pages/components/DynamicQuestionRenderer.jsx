@@ -16,15 +16,18 @@ const DynamicQuestionRenderer = ({
   questionData, 
   onSave,
   isEditModalOpen,
-  setIsEditModalOpen
+  setIsEditModalOpen,
+  moduleId
 }) => {
   const [tempData, setTempData] = useState(questionData);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [chatbotInitialMode, setChatbotInitialMode] = useState('');
   const user = useSelector(state => state.auth.user);
-  const moduleId = question.module_id;
+  // Remove extraction of moduleId from question object
+  // const moduleId = question.module_id;
 
   console.log('🧩 Question:', question);
+  console.log('🧩 Using moduleId:', moduleId);
 
   useEffect(() => {
     setTempData(questionData);
@@ -43,11 +46,14 @@ const DynamicQuestionRenderer = ({
   const handleSave = async (data) => {
     console.log('💾 Saving data from DynamicQuestionRenderer:', data);
     console.log('🔍 data types:', Object.entries(data).map(([key, value]) => `${key}: ${typeof value}`));
+    console.log('🔍 Using moduleId for save:', moduleId);
     try {
       await onSave(data);
+      console.log('✅ Save successful, closing modal');
       setIsEditModalOpen(false);
     } catch (error) {
-      console.error('Error saving data:', error);
+      console.error('❌ Error saving data:', error);
+      // Keep modal open on error
     }
   };
 
@@ -88,10 +94,11 @@ const DynamicQuestionRenderer = ({
 
     // Store in localStorage
     try {
+      const questionId = question.question_id || question._id;
       const storedQuestions = JSON.parse(localStorage.getItem('questionData') || '{}');
-      storedQuestions[question.question_id] = questionContext;
+      storedQuestions[questionId] = questionContext;
       localStorage.setItem('questionData', JSON.stringify(storedQuestions));
-      console.log('Stored question data:', questionContext);
+      console.log('Stored question data for question ID:', questionId, questionContext);
     } catch (error) {
       console.error('Error storing question data:', error);
     }
@@ -213,7 +220,7 @@ const DynamicQuestionRenderer = ({
         {isEditModalOpen && (
           <QuestionEditPopup
             question={{
-              question_id: question.id,
+              question_id: question.question_id || question._id,
               question: question.question_text || question.title || question.human_readable_id,
               guidance: question.guidance,
               question_type: question.question_type,

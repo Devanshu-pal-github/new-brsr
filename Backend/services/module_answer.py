@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.module_answer import ModuleAnswer, ModuleAnswerCreate, ModuleAnswerUpdate
+from services.question import QuestionService
 from datetime import datetime
 import uuid
 from fastapi import HTTPException, status
@@ -151,8 +152,28 @@ class ModuleAnswerService:
             
             # For each question ID in the answers update
             for question_id, answer_value in answers_update.items():
-                # Set the specific question's answer
-                update_operations[f"answers.{question_id}"] = answer_value
+                # Fetch the question to get its metadata structure
+                question_service = QuestionService(self.db)
+                question = await question_service.get_question(question_id)
+
+                if not question:
+                    # If question not found, skip or raise an error
+                    print(f"Warning: Question with ID {question_id} not found. Skipping answer update for this question.")
+                    continue
+
+                # The answer_value for a subjective question is expected to be a dictionary
+                # where keys correspond to the 'key' fields in the question's metadata.
+                # We need to store this dictionary under the question_id.
+                if question.question_type == "subjective":
+                    # Ensure the incoming answer_value is a dictionary for subjective questions
+                    print(f"Debug: Incoming answer_value for subjective question {question_id}: {answer_value}, type: {type(answer_value)}")
+                    if isinstance(answer_value, dict):
+                        update_operations[f"answers.{question_id}"] = answer_value
+                    else:
+                        print(f"Warning: Expected dictionary for subjective question answer, but got {type(answer_value)}. Skipping update for question {question_id}.")
+                else:
+                    # For other question types, store the value directly
+                    update_operations[f"answers.{question_id}"] = answer_value
         
         # Add remaining fields to the update operations
         for key, value in update_dict.items():

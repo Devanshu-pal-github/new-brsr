@@ -177,7 +177,7 @@ export const apiSlice = createApi({
           ]
           : [{ type: 'Questions', id: 'LIST' }],
     }),
-    updateTableAnswer: builder.mutation({
+    updateQuestionAnswer: builder.mutation({
       queryFn: async (
         { questionId, questionTitle, updatedData, financialYear, moduleId },
         { dispatch, getState },
@@ -187,51 +187,56 @@ export const apiSlice = createApi({
         try {
           console.log('🔄 Updating answer for question:', questionId, 'with data:', updatedData);
 
-          // Re-use existing array cleaning logic so backend gets string values
+          // Clean updatedData based on its structure
           let cleanedData = updatedData;
-          if (Array.isArray(updatedData)) {
-            // Single table data (no table_key)
-            if (
-              updatedData.length > 0 &&
-              'row_index' in updatedData[0] &&
-              !('table_key' in updatedData[0])
-            ) {
-              cleanedData = updatedData.map(({ row_index, ...rest }) => {
-                const stringified = {};
-                Object.entries(rest).forEach(([k, v]) => {
-                  stringified[k] = v === null ? '' : String(v);
-                });
-                return stringified;
-              });
-            }
-            // Multi-table data (has table_key)
-            else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
-              cleanedData = updatedData.map((item) => {
-                const res = { ...item };
-                if (res.current_year !== undefined) {
-                  res.current_year = res.current_year === null ? '' : String(res.current_year);
-                }
-                if (res.previous_year !== undefined) {
-                  res.previous_year = res.previous_year === null ? '' : String(res.previous_year);
-                }
-                return res;
-              });
-            }
+
+          // Subjective question data (plain object, not an array)
+          if (!Array.isArray(updatedData) && typeof updatedData === 'object' && updatedData !== null) {
+            const { table_key, ...rest } = updatedData;
+            cleanedData = {};
+            Object.entries(rest).forEach(([k, v]) => {
+              cleanedData[k] = v === null ? '' : String(v);
+            });
+          }
+          // Table question data (array with table_key)
+          else if (Array.isArray(updatedData) && updatedData.length > 0 && 'table_key' in updatedData[0]) {
+            cleanedData = updatedData.map((item) => {
+              const res = { ...item };
+              if (res.current_year !== undefined) {
+                res.current_year = res.current_year === null ? '' : String(res.current_year);
+              }
+              if (res.previous_year !== undefined) {
+                res.previous_year = res.previous_year === null ? '' : String(res.previous_year);
+              }
+              return res;
+            });
           }
 
           /* ----------------------------------------------------------
-           * Dynamic (module-specific) flow
+           * Module-specific flow
            * ----------------------------------------------------------*/
           if (moduleId) {
+            if (!moduleId) {
+              throw new Error('Module ID is required for updating answers');
+            }
+
             const payload = {
               questionId,
-              questionTitle,
+              questionTitle: questionTitle || questionId, // Use questionId as title if not provided
               value: cleanedData,
               lastUpdated: new Date().toISOString(),
             };
 
             const { auth } = getState();
             const companyId = auth.user?.company_id;
+
+            if (!companyId) {
+              throw new Error('Company ID is required but not available');
+            }
+
+            if (!financialYear) {
+              throw new Error('Financial year is required but not provided');
+            }
 
             console.log('🔑 Module flow with:', {
               moduleId,
@@ -260,42 +265,49 @@ export const apiSlice = createApi({
                 });
                 return { data: putRes.data };
               }
-            } catch (err) {
-              // Continue to create if 404; rethrow others
-              if (!err?.status || err.status !== 404) {
-                console.error('❌ Error fetching existing answer:', err);
-                throw err;
+
+              // Create new then update
+              const postRes = await baseQuery({
+                url: `/module-answers/${moduleId}`,
+                method: 'POST',
+                body: {
+                  company_id: companyId,
+                  financial_year: financialYear,
+                  answers: {
+                    [questionId]: payload,
+                  },
+                },
+              });
+
+              if (postRes.error) {
+                console.error('Error creating module answer:', postRes.error);
+                throw new Error(postRes.error.data?.detail || 'Failed to create module answer');
               }
+
+              const putRes = await baseQuery({
+                url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
+                method: 'PUT',
+                body: {
+                  answers: {
+                    [questionId]: payload,
+                  },
+                },
+              });
+
+              if (putRes.error) {
+                console.error('Error updating module answer:', putRes.error);
+                throw new Error(putRes.error.data?.detail || 'Failed to update module answer');
+              }
+
+              return { data: putRes.data ?? postRes.data };
+            } catch (error) {
+              console.error('Error in module answer flow:', error);
+              throw error;
             }
-
-            // Create new then update
-            const postRes = await baseQuery({
-              url: `/module-answers/${moduleId}`,
-              method: 'POST',
-              body: {
-                company_id: companyId,
-                financial_year: financialYear,
-                answers: {
-                  [questionId]: payload,
-                },
-              },
-            });
-
-            const putRes = await baseQuery({
-              url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
-              method: 'PUT',
-              body: {
-                answers: {
-                  [questionId]: payload,
-                },
-              },
-            });
-
-            return { data: putRes.data ?? postRes.data };
           }
 
           /* ----------------------------------------------------------
-           * Environment (legacy) flow
+           * Environment (legacy) flow - keeping for backward compatibility
            * ----------------------------------------------------------*/
           const envRes = await baseQuery({
             url: `/environment/reports/${financialYear}/table-answer`,
@@ -422,59 +434,204 @@ export const apiSlice = createApi({
       }
     }),
     submitQuestionAnswer: builder.mutation({
-      query: ({ questionId, answerData }) => {
-        if (!questionId) throw new Error('Question ID is required');
-        if (!answerData || typeof answerData !== 'object') throw new Error('Answer data is required and must be an object');
+      query: ({ moduleId, questionId, answerData }) => {
+        console.log('🔍 [apiSlice] submitQuestionAnswer called with:', { moduleId, questionId, answerData });
+        
+        // Enhanced validation with detailed logging
+        if (!moduleId) {
+          console.error('❌ [apiSlice] Missing moduleId for submitQuestionAnswer');
+          throw new Error('Module ID is required but not provided');
+        }
+        
+        if (!questionId) {
+          console.error('❌ [apiSlice] Missing questionId for submitQuestionAnswer');
+          throw new Error('Question ID is required but not provided');
+        }
+        
+        if (!answerData) {
+          console.error('❌ [apiSlice] Missing answerData for submitQuestionAnswer');
+          throw new Error('Answer data is required but not provided');
+        }
 
         let company_id = localStorage.getItem("company_id");
         let financial_year = localStorage.getItem("financial_year");
+
+        console.log('🔍 [apiSlice] Initial values from localStorage:', { company_id, financial_year });
 
         // Fallback: derive from stored user object or selectedReport if not individually set
         if (!company_id) {
           try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            company_id = company_id || userData.company_id;
-          } catch (_) { /* ignore parse errors */ }
+            company_id = userData.company_id;
+            console.log('🔍 [apiSlice] Retrieved company_id from user data:', company_id);
+            
+            // Store it back to localStorage for future use
+            if (company_id) {
+              localStorage.setItem('company_id', company_id);
+              console.log('🔍 [apiSlice] Stored company_id in localStorage:', company_id);
+            }
+          } catch (err) { 
+            console.error('❌ [apiSlice] Error parsing user data:', err);
+          }
         }
+        
         if (!financial_year) {
           try {
             const selectedReport = JSON.parse(localStorage.getItem('selectedReport') || '{}');
             financial_year = selectedReport.financial_year || selectedReport.year || selectedReport.financialYear;
-          } catch (_) { /* ignore */ }
+            console.log('🔍 [apiSlice] Retrieved financial_year from selectedReport:', financial_year);
+            
+            // Store it back to localStorage for future use
+            if (financial_year) {
+              localStorage.setItem('financial_year', financial_year);
+              console.log('🔍 [apiSlice] Stored financial_year in localStorage:', financial_year);
+            }
+          } catch (err) { 
+            console.error('❌ [apiSlice] Error parsing selectedReport:', err);
+          }
         }
         
-        
-
         if (!company_id || !financial_year) {
+          console.error('❌ [apiSlice] Missing required context after fallbacks:', { company_id, financial_year });
           throw new Error('Missing required context: company_id or financial_year');
         }
 
-        const questionUpdate = {
-          question_id: questionId,
-          response: answerData
+        console.log('📤 [apiSlice] Submitting answer for question:', questionId, 'in module:', moduleId);
+        console.log('📤 [apiSlice] Using company_id:', company_id, 'and financial_year:', financial_year);
+        console.log('📤 [apiSlice] Answer data:', answerData);
+
+        // Format the payload for the module_answer API
+        const payload = {
+          questionId,
+          questionTitle: questionId, // Using questionId as title if not provided
+          value: answerData,
+          lastUpdated: new Date().toISOString(),
         };
 
+        console.log('📤 [apiSlice] Formatted payload:', payload);
+        console.log('📤 [apiSlice] PUT URL:', `/module-answers/${moduleId}/${company_id}/${financial_year}`);
+
         return {
-          url: `/company/${company_id}/reportsNew/${financial_year}`,
-          method: 'PATCH',
-          body: [questionUpdate],
+          url: `/module-answers/${moduleId}/${company_id}/${financial_year}`,
+          method: 'PUT',
+          body: {
+            answers: {
+              [questionId]: payload,
+            },
+          },
           headers: {
             'Content-Type': 'application/json',
           }
         };
       },
-      transformResponse: (response) => {
-        console.log('📥 Answer submission response:', response);
+      transformResponse: (response, meta, arg) => {
+        console.log('📥 [apiSlice] Answer submission response:', response);
+        console.log('📥 [apiSlice] Response meta:', meta);
         return response;
       },
-      async onQueryStarted({ questionId }, { queryFulfilled }) {
+      transformErrorResponse: (response, meta, arg) => {
+        console.error('❌ [apiSlice] Error response:', response);
+        console.error('❌ [apiSlice] Error meta:', meta);
+        return response;
+      },
+      async onQueryStarted({ moduleId, questionId, answerData }, { dispatch, queryFulfilled }) {
+        console.log('🔄 [apiSlice] Starting query for question:', questionId, 'in module:', moduleId);
         try {
           const { data } = await queryFulfilled;
-          console.log('✅ Question answer submitted successfully for:', questionId, data);
+          console.log('✅ [apiSlice] Question answer submitted successfully:', data);
+          
+          // Invalidate relevant tags to refresh data
+          dispatch(apiSlice.util.invalidateTags(['ModuleAnswers']));
+          return data; // Return data for chaining
         } catch (error) {
-          console.error('❌ Error submitting question answer for:', questionId, error);
+          console.error('❌ [apiSlice] Error submitting question answer:', error);
+          console.error('❌ [apiSlice] Error details:', {
+            status: error.status,
+            data: error.data,
+            message: error.message,
+            stack: error.stack
+          });
+          
+          // If the error is because the document doesn't exist, try to create it first
+          if (error.status === 404) {
+            console.log('🔄 [apiSlice] Document not found (404), attempting to create it first');
+            try {
+              const company_id = localStorage.getItem('company_id');
+              const financial_year = localStorage.getItem('financial_year');
+              
+              if (!company_id || !financial_year) {
+                console.error('❌ [apiSlice] Cannot create document: missing company_id or financial_year');
+                throw new Error('Missing required context: company_id or financial_year');
+              }
+              
+              console.log('🔄 [apiSlice] Creating document with:', { company_id, financial_year, moduleId });
+              
+              const payload = {
+                questionId,
+                questionTitle: questionId,
+                value: answerData,
+                lastUpdated: new Date().toISOString(),
+              };
+              
+              // Create the document first
+              const baseQueryFn = apiSlice.endpoints.submitQuestionAnswer.query;
+              console.log('🔄 [apiSlice] POST URL:', `/module-answers/${moduleId}`);
+              console.log('🔄 [apiSlice] POST body:', {
+                company_id,
+                financial_year,
+                answers: {
+                  [questionId]: payload,
+                },
+              });
+              
+              try {
+                const createResult = await dispatch(
+                  apiSlice.util.fetchWithBQ({
+                    url: `/module-answers/${moduleId}`,
+                    method: 'POST',
+                    body: {
+                      company_id,
+                      financial_year,
+                      answers: {
+                        [questionId]: payload,
+                      },
+                    },
+                  })
+                );
+                
+                console.log('✅ [apiSlice] Created new document:', createResult);
+                
+                // Then try the update again
+                console.log('🔄 [apiSlice] Now updating the created document');
+                console.log('🔄 [apiSlice] PUT URL:', `/module-answers/${moduleId}/${company_id}/${financial_year}`);
+                
+                const updateResult = await dispatch(
+                  apiSlice.util.fetchWithBQ({
+                    url: `/module-answers/${moduleId}/${company_id}/${financial_year}`,
+                    method: 'PUT',
+                    body: {
+                      answers: {
+                        [questionId]: payload,
+                      },
+                    },
+                  })
+                );
+                
+                console.log('✅ [apiSlice] Updated after creation:', updateResult);
+                dispatch(apiSlice.util.invalidateTags(['ModuleAnswers']));
+              } catch (fetchError) {
+                console.error('❌ [apiSlice] Error in fetch operations:', fetchError);
+                throw fetchError;
+              }
+            } catch (createError) {
+              console.error('❌ [apiSlice] Error creating and updating document:', createError);
+              throw createError; // Re-throw to propagate the error
+            }
+          } else {
+            throw error; // Re-throw other errors
+          }
         }
-      }
+      },
     }),
     getAuditLog: builder.query({
       query: () => '/audit/',
@@ -504,7 +661,7 @@ export const {
   useGetCompanyReportsQuery,
   useGetQuestionsByIdsQuery,
   useLazyGetQuestionsByIdsQuery,
-  useUpdateTableAnswerMutation,
+  useUpdateQuestionAnswerMutation: useUpdateTableAnswerMutation, // Aliasing updateQuestionAnswer to useUpdateTableAnswerMutation
   useCreatePlantMutation,
   useDeletePlantMutation,
   useUpdateSubjectiveAnswerMutation,
@@ -517,5 +674,4 @@ export const {
   useGetAuditLogQuery,
   useUpdateAuditStatusMutation
 } = apiSlice;
-
 export default apiSlice;
