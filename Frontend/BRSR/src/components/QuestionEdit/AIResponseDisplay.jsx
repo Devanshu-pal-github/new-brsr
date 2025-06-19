@@ -68,15 +68,68 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
         );
     };
 
-    // Format the AI response text into structured markdown
+    // Format AI response into professional, grouped markdown
     const formatResponseToMarkdown = (text) => {
-        const sentences = text.split('. ').filter(sentence => sentence.trim().length > 0);
-        const markdownPoints = sentences.map((sentence, index) => {
-            const trimmedSentence = sentence.trim().replace(/\.$/, '');
-            const pointTitle = trimmedSentence.split(' ').slice(0, 2).join(' '); // Take first two words for point title
-            return `- **${pointTitle}**: ${trimmedSentence}`;
-        }).join('\n');
-        return `### Human Rights Integration\n${markdownPoints}`;
+        if (!text) return '';
+
+        // First, look for explicit tagged lines like [Strength]: ...
+        const tagRegex = /\[(Strength|Issue|Recommendation)\]:\s*([^\[]+)/gi;
+        const groups = { Strength: [], Issue: [], Recommendation: [] };
+        let match;
+        while ((match = tagRegex.exec(text)) !== null) {
+            const tag = match[1];
+            const content = match[2].trim();
+            groups[tag].push(content);
+        }
+
+        const anyTagged = groups.Strength.length + groups.Issue.length + groups.Recommendation.length > 0;
+
+        const buildMarkdown = (obj) => {
+            let md = '### Compliance Review\n';
+            const append = (title, arr) => {
+                if (!arr.length) return;
+                md += `\n**${title}**\n`;
+                arr.forEach(pt => {
+                    md += `- ${pt}\n`;
+                });
+            };
+            append('Strengths', obj.Strength);
+            append('Issues', obj.Issue);
+            append('Recommendations', obj.Recommendation);
+            return md.trim();
+        };
+
+        if (anyTagged) {
+            return buildMarkdown(groups);
+        }
+
+        // -------- Fallback heuristic grouping (no tags) -------- //
+        const strengths = [];
+        const issues = [];
+        const recommendations = [];
+        const others = [];
+
+        text.split(/[\.\n]/).forEach(rawSegment => {
+            const segment = rawSegment.trim();
+            if (!segment) return;
+            if (/^strengths?:/i.test(segment)) {
+                strengths.push(segment.replace(/^strengths?:/i, '').trim());
+            } else if (/^(issues?|concerns?):/i.test(segment)) {
+                issues.push(segment.replace(/^(issues?|concerns?):/i, '').trim());
+            } else if (/^recommendations?:/i.test(segment)) {
+                recommendations.push(segment.replace(/^recommendations?:/i, '').trim());
+            } else {
+                others.push(segment);
+            }
+        });
+
+        const mdObj = { Strength: strengths, Issue: issues, Recommendation: recommendations };
+        let md = buildMarkdown(mdObj);
+        if (others.length) {
+            md += '\n\n**Observations**\n';
+            others.forEach(pt => { md += `- ${pt}\n`; });
+        }
+        return md.trim();
     };
 
     const formattedText = formatResponseToMarkdown(aiMessage.text);

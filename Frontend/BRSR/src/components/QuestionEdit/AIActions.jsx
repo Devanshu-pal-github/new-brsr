@@ -33,23 +33,56 @@ const useAIActionHandlers = ({
                 const next = { ...prev };
                 const cleanedSuggestion = typeof suggestion === 'string' ? suggestion.trim() : suggestion;
 
-                if (question.has_string_value) {
-                    next.string_value = cleanedSuggestion;
-                } else if (question.has_decimal_value) {
-                    // Keep only numeric / dot characters for decimal values
-                    const numeric = cleanedSuggestion.toString().match(/[\d.]+/g)?.[0] || '';
-                    next.decimal_value = numeric;
-                } else if (question.has_boolean_value) {
-                    const truthy = ['true', 'yes', 'y', '1'];
-                    next.boolean_value = truthy.includes(cleanedSuggestion.toString().toLowerCase());
-                } else if (question.has_link) {
-                    next.link = cleanedSuggestion;
-                } else if (question.has_note) {
-                    next.note = cleanedSuggestion;
+                // 1. Try metadata-based mapping first (Subjective & custom questions)
+                if (question?.metadata?.fields?.length) {
+                    question.metadata.fields.forEach(field => {
+                        const key = field.key;
+                        switch (field.type) {
+                            case 'text':
+                                if (typeof cleanedSuggestion === 'string') {
+                                    next[key] = cleanedSuggestion;
+                                }
+                                break;
+                            case 'boolean': {
+                                const truthy = ['true', 'yes', 'y', '1'];
+                                next[key] = truthy.includes(String(cleanedSuggestion).toLowerCase());
+                                break;
+                            }
+                            case 'number':
+                            case 'decimal':
+                            case 'integer':
+                            case 'percentage': {
+                                const numeric = String(cleanedSuggestion).match(/[\d.]+/)?.[0] || '';
+                                next[key] = numeric;
+                                break;
+                            }
+                            case 'link':
+                                next[key] = cleanedSuggestion;
+                                break;
+                            default:
+                                // fallback: treat as text
+                                next[key] = cleanedSuggestion;
+                        }
+                    });
                 } else {
-                    // Fallback to string_value if nothing matched
-                    next.string_value = cleanedSuggestion;
+                    // 2. Legacy mapping based on generic properties
+                    if (question.has_string_value) {
+                        next.string_value = cleanedSuggestion;
+                    } else if (question.has_decimal_value) {
+                        const numeric = String(cleanedSuggestion).match(/[\d.]+/)?.[0] || '';
+                        next.decimal_value = numeric;
+                    } else if (question.has_boolean_value) {
+                        const truthy = ['true', 'yes', 'y', '1'];
+                        next.boolean_value = truthy.includes(String(cleanedSuggestion).toLowerCase());
+                    } else if (question.has_link) {
+                        next.link = cleanedSuggestion;
+                    } else if (question.has_note) {
+                        next.note = cleanedSuggestion;
+                    } else {
+                        next.string_value = cleanedSuggestion;
+                    }
                 }
+
                 return next;
             });
             setAiMessage(null);
@@ -117,7 +150,7 @@ interface StructuredAISuggestion {
                     prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Refine and enhance this draft to be more ${refineTone} and comprehensive in not more than 150 words. Return the full refined answer in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Perform a quick compliance check, highlighting 2-3 strengths and 2-3 potential issues as points in not more than 100 words total. Indicate if the question seems addressed in mainContent. ${jsonInstruction}`;
+                    prompt = `You are an ESG report compliance reviewer. Analyse the following answer draft in relation to the question.\n\nQuestion: "${question.question}"\nGuidance: "${question.guidance || 'None'}"\nDraft: "${currentValue}"\n\nIf the draft is empty or fewer than 15 characters, clearly state there are *no substantive strengths*.\nReturn *2-3 Strengths* (if any), *2-3 Issues* (gaps, risks, missing evidence) and *clear Recommendations* (next steps). For at least one recommendation, provide a concrete example snippet (e.g., a short table layout or sentence template). Wherever relevant, cite the primary Indian statute or international standard in parentheses, e.g., “(EPF Act, 1952)”. Provide data-driven guidance where possible (e.g., “state employer + employee PF contribution rates”).\nIn *mainContent*, output each point on its own line, prefixed EXACTLY with one of these tags: [Strength], [Issue], or [Recommendation] followed by a colon.\nExample:\n[Strength]: Covers PF, Gratuity and Pension schemes (comprehensive).\n[Issue]: Draft lacks contribution rates.\n[Recommendation]: Add a summary table with employer/employee PF rates.\nDo not include any additional headings or prose outside these tagged lines.\nKeep wording formal and objective. Do not repeat the same heading for every bullet. Use concise phrasing. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.IMPROVE_CLARITY:
                     prompt = `Draft: "${currentValue}". Improve the clarity and readability of this answer while maintaining its meaning in not more than 150 words. Return the improved version in mainContent. ${jsonInstruction}`;
@@ -170,10 +203,12 @@ interface StructuredAISuggestion {
                 questionText: question.question,
                 guidanceText: question.guidance || "",
                 metadata: {
+                    ...question.metadata,
                     question_id: question.question_id,
-                    module_id: moduleId
+                    question_type: question.question_type || question.type,
+                    module_id: moduleId,
                 },
-                answer: currentValue
+                answer: formData // provide the full set of current answer fields
             };
 
             const rawResponse = await generateText({ message: prompt, context }).unwrap();
