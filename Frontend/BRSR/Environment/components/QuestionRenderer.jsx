@@ -10,27 +10,24 @@ import { AppProvider } from '../../src/AICHATBOT/AppProvider';
 
 const AuditBadge = ({ isAuditRequired }) => (
   <div className={`inline-block px-3 py-1 rounded text-xs ${
-    isAuditRequired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+    isAuditRequired ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
   }`}>
     {isAuditRequired ? 'Audit Required' : 'No Audit Required'}
   </div>
 );
 
-const AuditStatusDot = ({ status }) => {
-  let color = 'bg-gray-400';
-  let label = 'Unset';
+const AuditStatusBox = ({ status }) => {
+  let color = 'bg-gray-200 text-gray-700 border-gray-300';
+  let label = 'Not Audited';
   if (status === true) {
-    color = 'bg-green-500';
-    label = 'Yes';
+    color = 'bg-green-100 text-green-800 border-green-400';
+    label = 'Audited';
   } else if (status === false) {
-    color = 'bg-red-500';
-    label = 'No';
+    color = 'bg-red-100 text-red-700 border-red-400';
+    label = 'Not Audited';
   }
   return (
-    <span className={`inline-flex items-center gap-1`} title={`Audit Status: ${label}`}>
-      <span className={`w-3 h-3 rounded-full ${color} border border-gray-300`} />
-      <span className="text-xs text-gray-600">{label}</span>
-    </span>
+    <span className={`inline-block px-2 py-1 rounded border text-xs font-semibold ${color}`}>{label}</span>
   );
 };
 
@@ -101,7 +98,7 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
           {children}
           {question?.isAuditRequired && (
             <div className="mt-4 flex items-center space-x-4 border-t pt-4">
-              <span className="text-sm text-gray-600">Audit Status:</span>
+              <span className="text-sm text-gray-600">Audit Done :</span>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
@@ -420,12 +417,12 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
               />
             )}
           </div>
-          <div className="flex items-center space-x-3 ml-4">
+          <div className="flex items-center space-x-3 ml-4 ">
             <AuditBadge isAuditRequired={isAuditRequired} />
-            {/* Audit Status Dot */}
+            {/* Audit Status Box */}
             {isAuditRequired && (
-              <div className="flex items-center gap-1">
-                <AuditStatusDot status={auditStatus} />
+              <div className="flex items-center gap-1  ">
+                <AuditStatusBox status={auditStatus} />
                 {isAuditStatusFetching && <span className="text-xs text-gray-400 ml-1">...</span>}
               </div>
             )}
