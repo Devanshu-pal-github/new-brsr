@@ -366,6 +366,25 @@ export const apiSlice = createApi({
     }),
 
 
+
+
+    updateSubjectiveAnswer: builder.mutation({
+      query: ({ questionId, questionTitle, type, data, plantId, financialYear }) => ({
+        
+        url: `/environment/subjective-answer`,
+        method: 'POST',
+        body: {
+          questionId,
+          questionTitle,
+          type,
+          data,
+          plant_id: plantId,
+          financial_year: financialYear || "2024-2025"
+        }
+      }),
+      invalidatesTags: ['EnvironmentReport']
+    }),
+
     updateTableAnswerEnvironment: builder.mutation({
       queryFn: async (
         { questionId, questionTitle, updatedData, financialYear, plantId },
@@ -447,22 +466,7 @@ export const apiSlice = createApi({
       ]
     }),
     
-    updateSubjectiveAnswer: builder.mutation({
-      query: ({ questionId, questionTitle, type, data, plantId, financialYear }) => ({
-        
-        url: `/environment/subjective-answer`,
-        method: 'POST',
-        body: {
-          questionId,
-          questionTitle,
-          type,
-          data,
-          plant_id: plantId,
-          financial_year: financialYear || "2024-2025"
-        }
-      }),
-      invalidatesTags: ['EnvironmentReport']
-    }),
+  
     updateAuditStatus: builder.mutation({
       query: ({ financialYear, questionId, audit_status }) => ({
         url: `/environment/reports/${financialYear}/audit-status/${questionId}`,

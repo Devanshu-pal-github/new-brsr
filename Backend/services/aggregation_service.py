@@ -102,7 +102,7 @@ class AggregationService:
         question_type = question_types.get(question_id)
         
         if question_type == "subjective":
-            return QuestionType.TEXT.value
+            return QuestionType.SUBJECTIVE.value
         elif question_type == "table":
             return QuestionType.TABLE.value
         
@@ -237,7 +237,7 @@ class AggregationService:
         logger.info(f"Processing question {question_id} of type {question_type}")
 
         # For subjective questions, copy P001's answer to C001
-        if question_type == QuestionType.TEXT.value:
+        if question_type == QuestionType.SUBJECTIVE.value:
             logger.info(f"Handling subjective question {question_id}")
             # Get P001's answer
             home_report = await self.collection.find_one({
