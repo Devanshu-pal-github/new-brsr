@@ -690,16 +690,34 @@ interface StructuredAISuggestion {
         const questionType = question.question_type || question.metadata.type;
         const metadata = question.metadata;
 
+        // Build sanitized metadata once to avoid duplicate question text as field label
+        const normalize = (str) => (str || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+        const questionNorm = normalize(question.question);
+        const sanitizedMetadata = {
+            ...metadata,
+            main_question_text: question.question,
+            fields: metadata.fields?.map((f) => {
+                const labelNorm = normalize(f.label);
+                const isDuplicate = labelNorm === questionNorm || questionNorm.includes(labelNorm);
+                return {
+                    ...f,
+                    label: isDuplicate ? '' : f.label,
+                };
+            }),
+        };
+
+
         switch (questionType) {
-            case 'subjective':
-                return (
-                    <SubjectiveRenderer 
-                        metadata={metadata} 
-                        data={formData} 
-                        isEditing={true}
-                        onSubmit={(data) => setFormData(data)} 
-                    />
-                );
+            case 'subjective': {
+                    return (
+                        <SubjectiveRenderer
+                            metadata={sanitizedMetadata}
+                            data={formData}
+                            isEditing={true}
+                            onSubmit={(data) => setFormData(data)}
+                        />
+                    );
+                }
             case 'table':
                 return (
                     <TableRenderer 

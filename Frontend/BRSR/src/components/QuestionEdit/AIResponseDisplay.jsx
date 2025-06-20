@@ -148,6 +148,20 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
                 </span>
             </div>
 
+            {/* Carousel Slides */}
+            {aiMessage.slides?.length > 0 && (
+                <div className="flex gap-3 overflow-x-auto py-4 snap-x snap-mandatory">
+                    {aiMessage.slides.map((slide, idx) => (
+                        <div
+                            key={idx}
+                            className="min-w-[220px] max-w-[220px] snap-start bg-white border border-gray-200 rounded-lg shadow-sm p-3 flex-shrink-0"
+                        >
+                            <p className="text-[13px] text-gray-800 leading-snug">{slide}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* AI Response with Classy Markdown */}
             <div className="prose prose-sm max-w-none text-gray-300 pt-6">
                 <ReactMarkdown 

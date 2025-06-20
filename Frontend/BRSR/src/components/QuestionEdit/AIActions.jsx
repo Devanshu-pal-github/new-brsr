@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { AlertCircle, Lightbulb, Sparkles, Info, FileText, ShieldCheck, Database, HelpCircle, Star, BookOpen, Edit3, Zap, Book, Edit2, HelpCircle as ExplainIcon, Key, Mic, RefreshCcw, BookMarked } from "lucide-react";
 import AIActionButtons from "./AIActionButtons";
 import ReactMarkdown from 'react-markdown';
@@ -9,8 +9,16 @@ import AIResponseDisplay from "./AIResponseDisplay";
 import ToneSelector from "./ToneSelector";
 import Loader from '../../components/loader.jsx'
 
+// ---------- Domain & UX constants ----------
+// Keep AI grounded in Indian ESG/BRSR and related disclosure frameworks
+const INDIA_ESG_CONTEXT = "You are an industry-veteran ESG consultant specialising in India's Business Responsibility & Sustainability Report (BRSR) and other Indian compliance frameworks (SEBI BRSR, Companies Act, CSR Rules, EPF Act, Factories Act, ISO-14064, GHG Protocol). Ground every recommendation in this context with relevant Indian citations where appropriate.";
+
+// Encourage freshness to avoid repetitive phrasing
+const FRESHNESS_NOTE = "Vary your phrasing from previous suggestions; avoid repeating exact sentences or structures.";
+// Ensure answers read as coming directly from the organisation
+const COMPANY_VOICE_NOTE = "Write the answer from the company's perspective using first-person plural (\"We\", \"Our\"), reflecting organisational commitment rather than third-person commentary.";
+
 // Shared logic for AI actions
-// Shared logic for AI actions (unchanged from your original code)
 const useAIActionHandlers = ({
     formData,
     setFormData,
@@ -96,6 +104,7 @@ const useAIActionHandlers = ({
             MiniAIAssistantAction.MAKE_MORE_CONCISE,
             MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left,
             MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK,
+            MiniAIAssistantAction.IMPROVE_POST_COMPLIANCE,
         ];
         const isLeftAction = leftActions.includes(action);
 
@@ -107,6 +116,10 @@ const useAIActionHandlers = ({
         try {
             let prompt;
             const currentValue = formData?.string_value || "";
+            // Capture the current Yes/No radio selection (if any) so AI keeps consistency
+            const yesNoChoice = (formData?.boolean_value !== undefined)
+                ? (formData.boolean_value ? 'Yes' : 'No')
+                : null;
 
             const jsonInstruction = `\n\nIMPORTANT: Respond ONLY with a single, minified JSON object. Do NOT include any conversational text, explanations, or markdown formatting outside of this JSON structure. The JSON object must strictly match this TypeScript interface:
 interface StructuredAISuggestion {
@@ -116,6 +129,8 @@ interface StructuredAISuggestion {
   mainContent?: string; // For a single block of text, summary, or full recommendation. Be concise.
   points?: string[]; // For breakdowns, lists. Each point concise.
   sections?: Array<{ heading: string; content: string }>; // For detailed explanations. Each section concise.
+  slides?: string[]; // Optional carousel slides, 4–6 items, each ≤ 80 chars.
+  complianceFeedback?: string; // For IMPROVE_POST_COMPLIANCE, raw feedback text.
   confidence: 'low' | 'medium' | 'high'; // Your confidence in this suggestion. MANDATORY.
   error?: string; // If you encounter an issue providing the suggestion
   ${action === MiniAIAssistantAction.REFINE_ANSWER || action === MiniAIAssistantAction.REFINE_SELECTION ? `refineParams?: { tone: "${refineTone}" };` : ''}
@@ -126,10 +141,10 @@ interface StructuredAISuggestion {
                     prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Explain the purpose, expected information, and importance of this question in not more than 100 words. Return the explanation in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft (if any): "${currentValue}". Generate a professional answer in not more than 150 words. Return the full answer in mainContent. ${jsonInstruction}`;
+                    prompt = `${INDIA_ESG_CONTEXT}\n${FRESHNESS_NOTE}\n${COMPANY_VOICE_NOTE}\n\nQuestion: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft (if any): "${currentValue}". ${yesNoChoice ? `Current selection: \"${yesNoChoice}\". Your answer must begin with \"${yesNoChoice},\" and remain consistent. ` : ''}Generate a professional, industry-grade answer in not more than 150 words. Return the full answer in mainContent. Also break the answer into exactly 4 slides (≤80 characters each) and return them in slides. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft (if any): "${currentValue}". Generate a professional answer in not more than 150 words. Return the full answer in mainContent. ${jsonInstruction}`;
+                    prompt = `${INDIA_ESG_CONTEXT}\n${FRESHNESS_NOTE}\n${COMPANY_VOICE_NOTE}\n\nQuestion: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft (if any): "${currentValue}". ${yesNoChoice ? `Current selection: \"${yesNoChoice}\". Your answer must begin with \"${yesNoChoice},\" and remain consistent. ` : ''}Generate a professional, industry-grade answer in not more than 150 words. Return the full answer in mainContent. Also break the answer into exactly 4 slides (≤80 characters each) and return them in slides. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.BREAK_DOWN_QUESTION:
                     prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft for context: "${currentValue}". Break down the question into 3-5 smaller components as points, explaining what information is needed for each, in not more than 100 words total. ${jsonInstruction}`;
@@ -147,16 +162,19 @@ interface StructuredAISuggestion {
                     prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Provide a concise summary highlighting key points in 2-3 sentences, not more than 50 words. Return the summary in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.REFINE_ANSWER:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Refine and enhance this draft to be more ${refineTone} and comprehensive in not more than 150 words. Return the full refined answer in mainContent. ${jsonInstruction}`;
+                    prompt = `${INDIA_ESG_CONTEXT}\n${FRESHNESS_NOTE}\n${COMPANY_VOICE_NOTE}\n\nQuestion: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Refine and enhance this draft to be more ${refineTone} and comprehensive in not more than 150 words. Return the full refined answer in mainContent. Also break the refined answer into exactly 4 slides (≤80 characters each) in slides. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK:
                     prompt = `You are an ESG report compliance reviewer. Analyse the following answer draft in relation to the question.\n\nQuestion: "${question.question}"\nGuidance: "${question.guidance || 'None'}"\nDraft: "${currentValue}"\n\nIf the draft is empty or fewer than 15 characters, clearly state there are *no substantive strengths*.\nReturn *2-3 Strengths* (if any), *2-3 Issues* (gaps, risks, missing evidence) and *clear Recommendations* (next steps). For at least one recommendation, provide a concrete example snippet (e.g., a short table layout or sentence template). Wherever relevant, cite the primary Indian statute or international standard in parentheses, e.g., “(EPF Act, 1952)”. Provide data-driven guidance where possible (e.g., “state employer + employee PF contribution rates”).\nIn *mainContent*, output each point on its own line, prefixed EXACTLY with one of these tags: [Strength], [Issue], or [Recommendation] followed by a colon.\nExample:\n[Strength]: Covers PF, Gratuity and Pension schemes (comprehensive).\n[Issue]: Draft lacks contribution rates.\n[Recommendation]: Add a summary table with employer/employee PF rates.\nDo not include any additional headings or prose outside these tagged lines.\nKeep wording formal and objective. Do not repeat the same heading for every bullet. Use concise phrasing. ${jsonInstruction}`;
+                    break;
+                case MiniAIAssistantAction.IMPROVE_POST_COMPLIANCE:
+                    prompt = `${INDIA_ESG_CONTEXT}\n${FRESHNESS_NOTE}\n${COMPANY_VOICE_NOTE}\n\nQuestion: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Compliance review feedback:\n"${suggestion}"\n\nUsing the compliance feedback, strengthen the existing strengths, address each issue, and implement every recommendation. Produce an improved, fully compliant answer (<=150 words) in mainContent plus exactly 4 slides (≤80 chars) in slides. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.IMPROVE_CLARITY:
                     prompt = `Draft: "${currentValue}". Improve the clarity and readability of this answer while maintaining its meaning in not more than 150 words. Return the improved version in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.EXPAND_ANSWER:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Expand this answer with more detailed information and examples while maintaining professionalism in not more than 150 words. Return the expanded answer in mainContent. ${jsonInstruction}`;
+                    prompt = `${INDIA_ESG_CONTEXT}\n${FRESHNESS_NOTE}\n${COMPANY_VOICE_NOTE}\n\nQuestion: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Expand this answer with more detailed information and examples while maintaining professionalism in not more than 150 words. Return the expanded answer in mainContent. Also break the expanded answer into exactly 4 slides (≤80 characters each) in slides. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.MAKE_MORE_CONCISE:
                     prompt = `Draft: "${currentValue}". Make this answer more concise while retaining all important information in not more than 50 words. Return the concise version in mainContent. ${jsonInstruction}`;
@@ -210,7 +228,6 @@ interface StructuredAISuggestion {
                 },
                 answer: formData // provide the full set of current answer fields
             };
-
             const rawResponse = await generateText({ message: prompt, context }).unwrap();
             let jsonString = rawResponse.trim();
 
@@ -229,15 +246,18 @@ interface StructuredAISuggestion {
                 const message = {
                     id: Date.now().toString(),
                     action,
-                    text: parsedResponse.mainContent || parsedResponse.points?.join('\n') || parsedResponse.sections?.map(s => `${s.heading}\n${s.content}`).join('\n') || rawResponse,
+                    text: parsedResponse.mainContent || parsedResponse.points?.map((pt)=>`- ${pt}`).join('\n') || parsedResponse.sections?.map(s => `${s.heading}\n${s.content}`).join('\n') || rawResponse,
                     suggestion: parsedResponse.mainContent && (
                         action === MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right ||
                         action === MiniAIAssistantAction.REFINE_ANSWER ||
                         action === MiniAIAssistantAction.REFINE_SELECTION ||
                         action === MiniAIAssistantAction.SUMMARIZE_SELECTION
                     ) ? parsedResponse.mainContent :
-                        action === MiniAIAssistantAction.SUGGEST_ALTERNATIVE_PHRASING && parsedResponse.points ? parsedResponse.points.join('\n') : null,
+                        action === MiniAIAssistantAction.SUGGEST_ALTERNATIVE_PHRASING && parsedResponse.points ? parsedResponse.points.map((pt)=>`- ${pt}`).join('\n') : null,
                     confidence: parsedResponse.confidence,
+                    generic: parsedResponse.mainContent || null,
+                    points: parsedResponse.points || null,
+                    slides: parsedResponse.slides || null,
                 };
 
                 if (isLeftAction) {
@@ -268,7 +288,7 @@ interface StructuredAISuggestion {
     return { handleQuickAIAction, handleRefineDraftWithTone };
 };
 
-// LeftAIActions component (unchanged from your original code)
+// LeftAIActions component
 export const LeftAIActions = ({
     formData,
     setFormData,
@@ -314,6 +334,42 @@ export const LeftAIActions = ({
     const hasDraft = formData.string_value?.trim().length > 0;
 
     const [hoveredAction, setHoveredAction] = useState(null);
+    // Carousel state for long AI responses
+    const [slideIndex, setSlideIndex] = useState(0);
+
+    // Build slides: prefer explicit slides from backend, else parse tagged sections, else sentence grouping.
+    const slides = useMemo(() => {
+        if (!leftAiMessage) return [];
+
+        // 1. Explicit slides from backend – respect but cap at 6
+        if (Array.isArray(leftAiMessage.slides) && leftAiMessage.slides.length) {
+            return leftAiMessage.slides.slice(0, 6);
+        }
+
+        const raw = leftAiMessage.text || '';
+        const blocks = [];
+
+        // 2. Parse [Strength]/[Issue]/[Recommendation] blocks (max 6)
+        const tagRegex = /\[(Strength|Issue|Recommendation)\]:\s*([\s\S]*?)(?=\s*\[(?:Strength|Issue|Recommendation)\]:|$)/gi;
+        let m;
+        while ((m = tagRegex.exec(raw)) && blocks.length < 6) {
+            const tag = m[1];
+            const body = m[2].trim();
+            blocks.push(`### ${tag}\n\n${body}`);
+        }
+
+        if (blocks.length) return blocks;
+
+        // 3. Fallback – split sentences evenly into ≤6 chunks
+        const sentences = raw.split(/(?<=[.!?])\s+/);
+        if (!sentences.length) return [];
+        const chunkSize = Math.ceil(sentences.length / 6);
+        for (let i = 0; i < sentences.length && blocks.length < 6; i += chunkSize) {
+            blocks.push(sentences.slice(i, i + chunkSize).join(' '));
+        }
+        return blocks;
+    }, [leftAiMessage]);
+    useEffect(() => { setSlideIndex(0); }, [leftAiMessage]);
 
     // Add proactive follow-up actions for left-side responses
     const renderProactiveFollowUps = (contextText) => {
@@ -435,13 +491,66 @@ export const LeftAIActions = ({
                         ) : leftAiMessage ? (
                             <div>
                                 <div className="flex-1 bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl shadow-inner border border-slate-200/60 overflow-y-auto backdrop-blur-sm scrollbar-none p-4 text-gray-700">
-                                    <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                                        {leftAiMessage.text}
-                                    </ReactMarkdown>
+                                    {leftAiMessage.generic && (
+                                        <div className="mb-3"><ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                                            {leftAiMessage.generic}
+                                        </ReactMarkdown></div>
+                                    )}
+                                    {leftAiMessage.points?.length > 0 && (
+                                        <ul className="list-disc pl-5 mb-4 text-sm text-gray-700">
+                                            {leftAiMessage.points.map((pt, idx) => (
+                                                <li key={idx}>{pt}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    {slides.length > 0 && (
+                                        <div>
+                                            {(() => {
+                                                const raw = slides[slideIndex] || '';
+                                                const [headingLine, ...bodyLines] = raw.split('\n');
+                                                const body = bodyLines.join('\n').trim();
+                                                return (
+                                                    <div className="relative bg-sky-50 rounded-2xl p-6 shadow border border-sky-100 text-gray-800">
+                                                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-500 rounded-l-2xl" />
+                                                        <h3 className="text-lg font-semibold text-[#002B5B] mb-3">{headingLine}</h3>
+                                                        {body && (
+                                                            <div className="text-sm leading-relaxed">
+                                                                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                                                                    {body}
+                                                                </ReactMarkdown>
+                                                            </div>
+                                                        )}
+                                                        <div className="h-1 bg-slate-200 rounded-full overflow-hidden mt-4">
+                                                            <div
+                                                                className="h-full bg-sky-400"
+                                                                style={{ width: `${((slideIndex + 1) / slides.length) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                            {slides.length > 1 && (
+                                                <div className="flex items-center justify-between mt-4">
+                                                    <button
+                                                        onClick={() => setSlideIndex(idx => Math.max(idx - 1, 0))}
+                                                        disabled={slideIndex === 0}
+                                                        className="px-3 py-1 text-xs font-medium bg-gray-200 rounded disabled:opacity-40"
+                                                    >Prev</button>
+                                                    <span className="text-xs text-gray-600">{slideIndex + 1}/{slides.length}</span>
+                                                    <button
+                                                        onClick={() => setSlideIndex(idx => Math.min(idx + 1, slides.length - 1))}
+                                                        disabled={slideIndex === slides.length - 1}
+                                                        className="px-3 py-1 text-xs font-medium bg-gray-200 rounded disabled:opacity-40"
+                                                    >Next</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="mt-4 flex flex-wrap justify-end gap-3">
                                     {leftAiMessage.action === MiniAIAssistantAction.MAKE_MORE_CONCISE ||
-                                        leftAiMessage.action === MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left ? (
+                                        leftAiMessage.action === MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left ||
+                                        leftAiMessage.action === MiniAIAssistantAction.IMPROVE_POST_COMPLIANCE ? (
                                         <>
                                             <button
                                                 onClick={() => setLeftAiMessage(null)}
@@ -478,20 +587,38 @@ export const LeftAIActions = ({
                                             </button>
                                         </>
                                     ) : (
-                                        <button
-                                            onClick={() => setLeftAiMessage(null)}
-                                            className="
-                                                px-4 py-2 text-sm font-medium
-                                                text-white bg-[#0F1D42]
-                                                hover:bg-[#1A2B5C]
-                                                rounded-lg
-                                                focus:outline-none focus:ring-2 focus:ring-indigo-300
-                                                transition-all duration-200
-                                            "
-                                            aria-label="Acknowledge AI suggestion"
-                                        >
-                                            Okay
-                                        </button>
+                                        <>
+                                            {leftAiMessage.action === MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK && (
+                                                <button
+                                                    onClick={() => handleQuickAIAction(MiniAIAssistantAction.IMPROVE_POST_COMPLIANCE, leftAiMessage.text)}
+                                                    className="
+                                                        px-4 py-2 text-sm font-medium
+                                                        text-white bg-green-700
+                                                        hover:bg-green-800
+                                                        rounded-lg
+                                                        focus:outline-none focus:ring-2 focus:ring-green-300
+                                                        transition-all duration-200
+                                                    "
+                                                    aria-label="Generate improved response"
+                                                >
+                                                    Generate Improved Draft
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setLeftAiMessage(null)}
+                                                className="
+                                                    px-4 py-2 text-sm font-medium
+                                                    text-white bg-[#0F1D42]
+                                                    hover:bg-[#1A2B5C]
+                                                    rounded-lg
+                                                    focus:outline-none focus:ring-2 focus:ring-indigo-300
+                                                    transition-all duration-200
+                                                "
+                                                aria-label="Acknowledge AI suggestion"
+                                            >
+                                                Okay
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                                 {leftAiMessage.suggestion && renderProactiveFollowUps(leftAiMessage.suggestion)}
@@ -560,7 +687,7 @@ LeftAIActions.propTypes = {
     refineTone: PropTypes.string.isRequired,
 };
 
-// RightAIActionsContent component (unchanged from your original code)
+// RightAIActionsContent component
 export const RightAIActionsContent = ({
     formData,
     setFormData,

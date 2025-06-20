@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmit }) => {
+  const normalize = (str) => (str || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+  const mainNorm = normalize(metadata?.main_question_text);
+
   // Initialize localData with an empty object if data is null or undefined
   const [localData, setLocalData] = useState(data || {});
 
@@ -57,6 +60,8 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
     // This prevents duplicate calls and ensures data is always synced
   };
 
+  // Helper to normalise strings
+  const normalizeLabel = (str) => (str || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
   // Render different input types based on field type
   const renderField = (field) => {
     const fieldKey = field.key;
@@ -64,19 +69,22 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
     const fieldValue = localData[fieldKey] !== undefined ? localData[fieldKey] : '';
     console.log(`🔍 Rendering field ${fieldKey} with value:`, fieldValue, 'type:', typeof fieldValue);
     
+    const showLabel = field.label && normalizeLabel(field.label) !== '' && normalizeLabel(field.label) !== mainNorm && !mainNorm.includes(normalizeLabel(field.label));
     switch (field.type) {
       case 'text':
         return (
           <div className="mb-4" key={fieldKey}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            {showLabel && (
+             <label className="block text-sm font-medium text-gray-700 mb-1">
               {field.label}
             </label>
+           )}
             {isEditing ? (
               <textarea
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[160px] h-60 resize-y"
                 value={fieldValue}
                 onChange={(e) => handleInputChange(fieldKey, e.target.value)}
-                rows={3}
+                rows={6}
                 placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
               />
             ) : (
@@ -90,9 +98,11 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
       case 'boolean':
         return (
           <div className="mb-4" key={fieldKey}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label}
-            </label>
+            {showLabel && (
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {field.label}
+              </label>
+            )}
             {isEditing ? (
               <div className="flex space-x-4">
                 <label className="inline-flex items-center">
@@ -120,8 +130,8 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
               </div>
             ) : (
               <div className="p-2 bg-gray-50 rounded border border-gray-200">
-                {['true', true, 'True', 'yes', 'Yes', 1, '1', 'YES'].includes(fieldValue) ? 'Yes' : 
-                 ['false', false, 'False', 'no', 'No', 0, '0', 'NO'].includes(fieldValue) ? 'No' : 
+                {['true', true, 'True', 'yes', 'Yes', 1, '1', 'YES'].includes(fieldValue) ? 'Yes' :
+                 ['false', false, 'False', 'no', 'No', 0, '0', 'NO'].includes(fieldValue) ? 'No' :
                  <span className="text-gray-400 italic">No response provided</span>}
               </div>
             )}
@@ -134,9 +144,11 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
       case 'percentage':
         return (
           <div className="mb-4" key={fieldKey}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            {showLabel && (
+             <label className="block text-sm font-medium text-gray-700 mb-1">
               {field.label}
             </label>
+           )}
             {isEditing ? (
               <input
                 type="number"
@@ -158,9 +170,11 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
       case 'link':
         return (
           <div className="mb-4" key={fieldKey}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            {showLabel && (
+             <label className="block text-sm font-medium text-gray-700 mb-1">
               {field.label}
             </label>
+           )}
             {isEditing ? (
               <input
                 type="url"
@@ -191,9 +205,11 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
       default:
         return (
           <div className="mb-4" key={fieldKey}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            {showLabel && (
+             <label className="block text-sm font-medium text-gray-700 mb-1">
               {field.label}
             </label>
+           )}
             {isEditing ? (
               <input
                 type="text"

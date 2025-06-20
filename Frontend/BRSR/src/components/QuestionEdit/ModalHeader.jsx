@@ -12,9 +12,7 @@ const ModalHeader = ({ questionId, questionText, closeModal }) => {
                 >
                     Question {questionId}
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                    {questionText}
-                </p>
+
             </div>
             <button
                 onClick={closeModal}

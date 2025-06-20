@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import {PropTypes } from 'prop-types';
+import { useState, useEffect, useRef } from 'react';
 import DynamicQuestionRenderer from './DynamicQuestionRenderer';
 import * as apiSlice from '../../store/api/apiSlice';
 import { useUpdateTableAnswerMutation, useLazyGetModuleAnswerQuery, useSubmitQuestionAnswerMutation } from '../../store/api/apiSlice';
@@ -12,7 +13,7 @@ console.log('🔍 [QuestionItem] Imported useLazyGetModuleAnswerQuery:', useLazy
 console.log('🔍 [QuestionItem] Imported useSubmitQuestionAnswerMutation:', useSubmitQuestionAnswerMutation);
 console.log('🔍 [QuestionItem] Environment:', {
   nodeEnv: process.env.NODE_ENV,
-  buildTool: import.meta.env?.VITE ? 'Vite' : 'Other',
+  buildTool: import.meta.env?.VITE_ENV ? 'Vite' : 'Other',
 });
 
 const AuditBadge = ({ isAuditRequired }) => (
@@ -28,6 +29,7 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState({});
+  const rendererRef = useRef(null);
   
   // Normalize question ID (handle both _id and question_id formats)
   const questionId = question?.question_id || question?._id;
@@ -218,22 +220,50 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-lg font-medium text-[#20305D]">
+    <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-white shadow-sm hover:shadow-md transition-shadow relative">
+      <div className="flex items-start flex-wrap gap-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-medium text-[#20305D] break-words">
             {questionTitle}
           </h3>
           {question.description && (
             <p className="text-sm text-gray-600 mt-1">{question.description}</p>
           )}
         </div>
-        {question.is_audit && (
-          <AuditBadge isAuditRequired={question.is_audit} />
-        )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* AI Button (relocated) */}
+          <button
+            onClick={() => {
+              if (rendererRef.current && typeof rendererRef.current.openAIChat === 'function') {
+                rendererRef.current.openAIChat();
+              }
+            }}
+            className="bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
+            aria-label="AI Assist"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            AI
+          </button>
+
+          {/* Edit Response Button */}
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="px-3 py-1 bg-[#20305D] text-white rounded hover:bg-[#162442] text-xs font-medium"
+            disabled={isSaving || isLoadingAnswer}
+          >
+            {isSaving ? 'Saving...' : isLoadingAnswer ? 'Loading...' : 'Edit Response'}
+          </button>
+
+          {question.is_audit && <AuditBadge isAuditRequired={question.is_audit} />}
+        </div>
       </div>
 
       <DynamicQuestionRenderer
+         ref={rendererRef}
         question={question}
         questionData={questionData}
         onSave={handleSave}
@@ -241,16 +271,6 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
         setIsEditModalOpen={setIsEditModalOpen}
         moduleId={moduleId}
       />
-
-      <div className="mt-4">
-        <button
-          onClick={() => setIsEditModalOpen(true)}
-          className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442] text-sm"
-          disabled={isSaving || isLoadingAnswer}
-        >
-          {isSaving ? 'Saving...' : isLoadingAnswer ? 'Loading...' : 'Edit Response'}
-        </button>
-      </div>
     </div>
   );
 };

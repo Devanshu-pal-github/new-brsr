@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useSelector } from 'react-redux';
 import QuestionEditPopup from '../../components/QuestionEditPopup';
 import ChatbotWindow from '../../AICHATBOT/ChatbotWindow';
@@ -11,14 +11,14 @@ import {
   TableWithAdditionalRowsRenderer 
 } from './renderers';
 
-const DynamicQuestionRenderer = ({ 
+const DynamicQuestionRenderer = forwardRef(({ 
   question, 
   questionData, 
   onSave,
   isEditModalOpen,
   setIsEditModalOpen,
   moduleId
-}) => {
+}, ref) => {
   const [tempData, setTempData] = useState(questionData);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [chatbotInitialMode, setChatbotInitialMode] = useState('');
@@ -98,51 +98,79 @@ const DynamicQuestionRenderer = ({
       const storedQuestions = JSON.parse(localStorage.getItem('questionData') || '{}');
       storedQuestions[questionId] = questionContext;
       localStorage.setItem('questionData', JSON.stringify(storedQuestions));
-      console.log('Stored question data for question ID:', questionId, questionContext);
+      console.log('Stored questions data for question ID:', questionId);
+      console.log('Stored question data:', questionContext);
     } catch (error) {
       console.error('Error storing question data:', error);
     }
 
     setChatbotInitialMode("question");
     setAiChatOpen(true);
+
+    // expose method to parent via ref
+    if (ref) {
+      // useImperativeHandle will handle elsewhere
+    }
+
+  };
+
+  const handleChatbotAccept = (answerText) => {
+    // Set the AI-generated answer in tempData
+    const updatedData = {
+      ...questionData,
+      string_value: answerText
+    };
+    setTempData(updatedData);
+    
+    // Open the edit popup
+    setIsEditModalOpen(true);
+    
+    // Close the AI chat
+    setAiChatOpen(false);
   };
 
   const renderEditableContent = () => {
     const metadata = question.metadata;
-    const questionType = question.question_type || (metadata && metadata.type);
+    const questionType = questionData.question_type || (metadata && metadata.type);
     
-    if (!metadata) {
+    if (!question.metadata) {
       return <p className="text-gray-500">No metadata available for this question.</p>;
     }
 
     switch (questionType) {
       case 'subjective':
         return (
-          <SubjectiveRenderer 
-            metadata={metadata} 
-            data={tempData} 
-            isEditing={true} 
-            onSave={handleDataChange} 
-          />
+          <>
+            <SubjectiveRenderer 
+              metadata={metadata} 
+              data={tempData} 
+              isEditing={true} 
+              onSave={handleDataChange} 
+            />
+          </>
         );
       case 'table':
         return (
-          <TableRenderer 
-            metadata={metadata} 
-            data={tempData} 
-            isEditing={true} 
-            onSave={handleDataChange} 
-          />
-        );
+            <>
+            <TableRenderer 
+              metadata={metadata} 
+              data={tempData} 
+              isEditing={true} 
+              onSave={handleDataChange} 
+            />TableRenderer
+            </>
+          );
       case 'table_with_additional_rows':
         return (
-          <TableWithAdditionalRowsRenderer 
-            metadata={metadata} 
-            data={tempData} 
-            isEditing={true} 
-            onSave={handleDataChange} 
-          />
-        );
+            <>
+            <TableWithAdditionalRowsRenderer 
+              metadata={metadata} 
+              data={tempData} 
+              isEditing={true} 
+              onSave={handleDataChange} 
+            />
+            </>
+          );
       default:
         return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
     }
@@ -200,12 +228,16 @@ const DynamicQuestionRenderer = ({
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    openAIChat: handleAIClick,
+  }));
+
   return (
     <AppProvider>
       <div className="relative">
-        {/* AI Button */}
+        {/* AI Button (hidden placeholder for relocated header button) */}
         <button
-          className="absolute right-2 top-2 bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded-[4px] text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
+          className="absolute right-2 top-2 hidden bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded-[4px] text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] items-center gap-1"
           onClick={handleAIClick}
           aria-label="AI Assist"
         >
@@ -245,7 +277,10 @@ const DynamicQuestionRenderer = ({
               <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
                 <ChatbotWindow
                   onClose={() => setAiChatOpen(false)}
+                  activeQuestion={question}
+                  currentAnswer={questionData}
                   initialMode={chatbotInitialMode}
+                  onAcceptAnswer={handleChatbotAccept}
                 />
               </div>
             </div>
@@ -254,6 +289,6 @@ const DynamicQuestionRenderer = ({
       </div>
     </AppProvider>
   );
-};
+});
 
 export default DynamicQuestionRenderer;

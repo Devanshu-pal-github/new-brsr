@@ -579,6 +579,7 @@ const ChatbotMessages = ({
   formatTimestamp,
   handleAction,
   handleAcceptAnswer,
+  handleRejectAnswer,
   effectiveActiveQuestion,
   carouselData,
 }) => {
@@ -685,23 +686,35 @@ const ChatbotMessages = ({
                     renderMessageContent(msg)
                   )}
                   {msg.sender === 'ai' &&
-                    msg.is_content_answer === 'TRUE' &&
+                    ((msg.is_content_answer && msg.is_content_answer !== 'FALSE') || (msg.tags && msg.tags.includes('answer'))) &&
                     effectiveActiveQuestion && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          handleAcceptAnswer(
-                            sanitizeText(msg.text),
-                            effectiveActiveQuestion.question_id
-                          )
-                        }
-                        className="mt-2 px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition font-medium flex items-center gap-1"
-                        aria-label="Save this answer"
-                      >
-                        <FaCheckCircle className="w-3 h-3" />
-                        Save Answer
-                      </motion.button>
+                      <div className="mt-2 flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() =>
+                            handleAcceptAnswer(
+                              sanitizeText(msg.text),
+                              effectiveActiveQuestion.question_id
+                            )
+                          }
+                          className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition font-medium flex items-center gap-1"
+                          aria-label="Save this answer"
+                        >
+                          <FaCheckCircle className="w-3 h-3" />
+                          Accept
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleRejectAnswer()}
+                          className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition font-medium flex items-center gap-1"
+                          aria-label="Reject this answer"
+                        >
+                          <FaTimes className="w-3 h-3" />
+                          Reject
+                        </motion.button>
+                      </div>
                     )}
                 </motion.div>
                 
@@ -855,7 +868,7 @@ const ChatbotQuickActions = ({ quickActions, handleAction, isLoading, isApiKeyAv
 };
 
 // SECTION 4: MAIN COMPONENT
-const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer , initialMode }) => {
+const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer, initialMode, onAcceptAnswer }) => {
   const { state, dispatch } = useContext(AppContext);
   const [messages, dispatchMessages] = useReducer(messageReducer, []);
   const [input, setInput] = useState('');
@@ -1029,7 +1042,7 @@ const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer , initialMode })
           tags: parsedResponse.tags,
           followUpActions: parsedResponse.followUpActions,
           originalUserMessage: currentInput,
-          is_content_answer: parsedResponse.is_content_answer,
+          is_content_answer: ['DRAFT_ANSWER','IMPROVE_DRAFT'].includes(action) ? 'answer' : parsedResponse.is_content_answer,
           sources: parsedResponse.sources || [],
         },
       });
@@ -1073,8 +1086,10 @@ const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer , initialMode })
 
   const answerText = useMemo(() => {
     if (!currentAnswer) return '';
+    if (currentAnswer.string_value) return currentAnswer.string_value;
     if (currentAnswer.text_value) return currentAnswer.text_value;
     if (currentAnswer.choice_value) return currentAnswer.choice_value;
+    if (currentAnswer.bool_value !== undefined) return String(currentAnswer.bool_value);
     if (currentAnswer.boolean_value !== undefined) return String(currentAnswer.boolean_value);
     if (currentAnswer.decimal_value !== undefined) return String(currentAnswer.decimal_value);
     return '';
@@ -1142,6 +1157,10 @@ const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer , initialMode })
   };
 
   const handleAcceptAnswer = useCallback(async (answerText, questionId) => {
+    if (onAcceptAnswer) {
+      onAcceptAnswer(answerText);
+    }
+
     if (!questionId || !dispatch) {
       dispatchMessages({
         type: 'ADD_MESSAGE',
@@ -1177,7 +1196,19 @@ const ChatbotWindow = ({ onClose, activeQuestion, currentAnswer , initialMode })
         },
       });
     }
-  }, [dispatch]);
+  }, [dispatch, onAcceptAnswer]);
+
+  const handleRejectAnswer = useCallback(() => {
+    dispatchMessages({
+      type: 'ADD_MESSAGE',
+      payload: {
+        sender: 'ai',
+        text: '❌ Draft rejected.',
+        isMarkdown: true,
+        tags: ['info'],
+      },
+    });
+  }, []);
 
   const handleSendMessage = async () => {
     await processMessage({
@@ -1343,6 +1374,7 @@ return (
           formatTimestamp={formatTimestamp}
           handleAction={handleAction}
           handleAcceptAnswer={handleAcceptAnswer}
+          handleRejectAnswer={handleRejectAnswer}
           effectiveActiveQuestion={effectiveActiveQuestion}
           carouselData={carouselData}
         />
