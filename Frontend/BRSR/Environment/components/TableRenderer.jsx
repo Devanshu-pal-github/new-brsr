@@ -40,12 +40,17 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
     return <div className="text-sm text-gray-500">No rows defined for this table</div>;
   }
 
+  // Add units column to columns array if not present
+  const columnsWithUnits = metadata.columns.find(col => col.key === 'unit') 
+    ? metadata.columns 
+    : [...metadata.columns, { label: 'Unit', key: 'unit' }];
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border border-gray-300">
         <thead>
           <tr>
-            {metadata.columns.map((column, idx) => (
+            {columnsWithUnits.map((column, idx) => (
               <th 
                 key={idx}
                 scope="col"
@@ -58,17 +63,29 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
         <tbody>
           {metadata.rows.map((row, rowIdx) => (
             <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              {metadata.columns.map((column, colIdx) => {
+              {columnsWithUnits.map((column, colIdx) => {
                 const columnKey = column.key || `col${colIdx}`;
                 
                 // For the first column (parameter column), display the row parameter
-                if (colIdx === 0) {
+                if (columnKey === 'parameter') {
                   return (
                     <td 
                       key={colIdx} 
                       className="border border-gray-300 px-4 py-2 text-sm"
                       dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
                     />
+                  );
+                }
+
+                // For unit column, display the unit from metadata
+                if (columnKey === 'unit') {
+                  return (
+                    <td 
+                      key={colIdx} 
+                      className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
+                    >
+                      {row.unit || ''}
+                    </td>
                   );
                 }
                 

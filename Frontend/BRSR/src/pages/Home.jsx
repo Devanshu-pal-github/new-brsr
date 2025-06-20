@@ -91,7 +91,7 @@ const Home = () => {
       </div>
 
       {/* Navbar */}
-      <Navbar className="bg-white/10 backdrop-blur-xl border-b border-white/10 relative z-50" />
+      <Navbar className="bg-white/10 backdrop-blur-xl border-b border-white/10 relative z-50 " />
 
       {/* Main Content */}
       <motion.div

@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
+from models.plant import PlantType
 import uuid
 
 class TableResponse(BaseModel):
@@ -27,8 +28,10 @@ class EnvironmentReport(BaseModel):
     """Stores only the answer data and metadata for an environment report"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     companyId: str
+    plantId: str
+    plant_type: PlantType = PlantType.REGULAR  # Default to regular plant type
     financialYear: str
-    answers: Dict[str, QuestionAnswer] = Field(default_factory=dict)
+    answers: Dict[str, QuestionAnswer] = Field(default_factory=dict)  # Initialize as empty dict
     status: str = "draft"
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)

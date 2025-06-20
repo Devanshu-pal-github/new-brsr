@@ -5,27 +5,39 @@ import ManagePlantsControl from "./ManagePlantsControl";
 import NotificationControl from "./NotificationControl";
 import UserMenu from "./UserMenu";
 import { Webhook } from "lucide-react";
+import { useSelector } from "react-redux"; // <-- import useSelector
 
-const ReportNavbar = () => (
-  <nav className="bg-[#000D30] text-white w-full shadow-md z-50">
-    <div className="mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center justify-between h-16">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center gap-3 mr-8 hover:opacity-90 transition-opacity">
-            <Webhook className="w-8 h-8 text-[#E0F2FE] stroke-[1.5]" />
-            <span className="font-semibold text-2xl bg-gradient-to-r from-[#E0F2FE] to-white bg-clip-text text-transparent">Serenity</span>
-          </Link>
-          <FinancialYearDropdown />
-        </div>
-        <div className="flex items-center gap-4">
-          <ManagePlantsControl />
-          <NotificationControl />
-          <UserMenu />
+const ReportNavbar = () => {
+  // Get company details from Redux store
+  const companyDetails = useSelector((state) => state.auth.companyDetails);
+
+  return (
+    <nav className="bg-[#000D30] text-white w-full shadow-md z-50">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <Link
+              to="/"
+              className="flex items-center gap-3 mr-8 hover:opacity-90 transition-opacity"
+            >
+              <Webhook className="w-8 h-8 text-[#E0F2FE] stroke-[1.5]" />
+              <span className="font-semibold text-2xl bg-gradient-to-r from-[#E0F2FE] to-white bg-clip-text text-transparent">
+                Serenity
+              </span>
+            </Link>
+            {/* Pass companyDetails as a prop */}
+            <FinancialYearDropdown company={companyDetails} />
+          </div>
+          <div className="flex items-center gap-4">
+            <ManagePlantsControl />
+            <NotificationControl />
+            <UserMenu />
+          </div>
         </div>
       </div>
-    </div>
-  </nav>
-);
+    </nav>
+  );
+};
 
 export default ReportNavbar;
 

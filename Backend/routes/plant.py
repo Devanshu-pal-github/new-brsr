@@ -34,6 +34,7 @@ async def create_plant(
 ):
     """Create a new plant"""
     try:
+        now = datetime.utcnow()
         # Create plant dictionary
         plant_dict = {
             "id": str(uuid.uuid4()),
@@ -42,8 +43,11 @@ async def create_plant(
             "company_id": plant.company_id,
             "plant_type": plant.type.value,
             "access_level": "calc_modules_only",  # Default access level
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "address": plant.address,  # Add address field
+            "contact_email": plant.contact_email,  # Add email field
+            "contact_phone": plant.contact_phone,  # Add phone field
+            "created_at": now,
+            "updated_at": now
         }
         
         # Basic validation
@@ -56,13 +60,30 @@ async def create_plant(
         # Insert plant into database
         await db.plants.insert_one(plant_dict)
 
+        # Initialize environment report for the new plant
+        environment_report = {
+            "id": str(uuid.uuid4()),
+            "companyId": plant.company_id,
+            "plantId": plant_dict["id"],
+            "plant_type": plant.type.value,
+            "financialYear": "2024-2025",
+            "answers": {},  # Initialize with empty answers
+            "status": "draft",
+            "createdAt": now,
+            "updatedAt": now,
+            "version": 1
+        }
+        
+        # Insert the environment report
+        await db.environment.insert_one(environment_report)
+
         # Create audit log for plant creation
         action_log = ActionLog(
             action="Plant Created",
             target_id=plant_dict["id"],
             user_id=user["id"],
             user_role=user.get("role", [])[0],
-            performed_at=datetime.utcnow(),
+            performed_at=now,
             details={
                 "plant_name": plant_dict["plant_name"],
                 "plant_code": plant_dict["plant_code"],
@@ -87,7 +108,7 @@ async def create_plant(
             {"_id": plant.company_id},
             {
                 "$push": {"plant_ids": plant_dict["id"]},
-                "$set": {"updated_at": datetime.utcnow()}
+                "$set": {"updated_at": now}
             }
         )
 

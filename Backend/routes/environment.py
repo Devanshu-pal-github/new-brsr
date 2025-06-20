@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, Any, Union
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Body
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from services.environment import EnvironmentService
@@ -20,70 +20,128 @@ def get_environment_service(db: AsyncIOMotorDatabase = Depends(get_database)) ->
 def get_audit_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> AuditService:
     return AuditService(db)
 
-@router.post("/reports/{financial_year}", response_model=dict)
-async def create_environment_report(
-    financial_year: str,
-    company_id: str = Query(..., description="Company ID"),
-    service: EnvironmentService = Depends(get_environment_service)
-):
-    """Create a new environment report"""
-    try:
-        report_id = await service.create_report(
-            company_id=company_id,
-            financial_year=financial_year
-        )
-        return {"reportId": report_id, "message": "Report created successfully"}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+class ReportCreate(BaseModel):
+    plant_id: str
+    financial_year: str
 
-@router.get("/reports", response_model=List[EnvironmentReport])
-async def get_company_reports(
+class ReportQuery(BaseModel):
+    plant_id: str
+    financial_year: str = Field(description="Format: YYYY-YYYY (e.g., 2024-2025)")
+
+@router.post("/reports/get", response_model=Optional[EnvironmentReport])
+async def get_plant_report(
+    report_query: ReportQuery,
     service: EnvironmentService = Depends(get_environment_service),
     user: Dict = Depends(get_current_active_user)
 ):
-    """Get all environment reports for a company"""
-    # Check if user has company access
-    if not user.get("company_id"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User does not have company access"
-        )
+   
     
-    return await service.get_company_reports(user["company_id"])
 
-@router.get("/reports/{financial_year}", response_model=Optional[EnvironmentReport])
-async def get_report(
-    financial_year: str,
-    service: EnvironmentService = Depends(get_environment_service),
-    user: Dict = Depends(get_current_active_user)
-):
-    """Get a specific environment report"""
-    # Check if user has company access
+    """
+    Get environment report for a specific plant and financial year.
+    This endpoint is used when a user clicks on a plant card to view its report.
+    
+    Request Body:
+    {
+        "plant_id": "uuid-of-plant",
+        "financial_year": "2024-2025"
+    }
+    
+    The company_id is automatically taken from the authenticated user's token.
+    If no report exists, returns 404.
+    If report exists but has no answers, returns report with empty answers object.
+    """
     if not user.get("company_id"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not have company access"
         )
         
-    report = await service.get_report(user["company_id"], financial_year)
+    report = await service.get_report(
+        company_id=user["company_id"],
+        plant_id=report_query.plant_id,
+        financial_year=report_query.financial_year
+    )
+    
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No report found for plant {report_query.plant_id} in financial year {report_query.financial_year}"
+        )
+    
     return report
+
+@router.post("/reports", response_model=dict)
+async def create_environment_report(
+    report_data: ReportCreate,
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    """Create a new environment report"""
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+        
+    try:
+        report_id = await service.create_report(
+            company_id=user["company_id"],
+            plant_id=report_data.plant_id,
+            financial_year=report_data.financial_year
+        )
+        return {"reportId": report_id, "message": "Report created successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+class PlantFilter(BaseModel):
+    plant_id: Optional[str] = None
+    financial_year: Optional[str] = None
+
+@router.post("/reports/list", response_model=List[EnvironmentReport])
+async def list_company_reports(
+    filter: PlantFilter = Body(default=None),
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    
+    """
+    List all environment reports for the company.
+    Can be filtered by plant_id and/or financial_year in request body.
+    Company ID is automatically taken from the authenticated user's token.
+    
+    Request Body (optional):
+    {
+        "plant_id": "uuid-of-plant",
+        "financial_year": "2024-2025"
+    }
+    """
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+    
+    return await service.get_company_reports(
+        company_id=user["company_id"],
+        plant_id=filter.plant_id if filter else None,
+        financial_year=filter.financial_year if filter else None
+    )
 
 class AnswerUpdate(BaseModel):
     questionTitle: str
     answer_data: Dict[str, Any]
+    plant_id: str
+    financial_year: str
 
-@router.put("/reports/{financial_year}/answers/{question_id}")
+@router.put("/answers/{question_id}")
 async def update_answer(
-    financial_year: str,
     question_id: str,
     update: AnswerUpdate,
     service: EnvironmentService = Depends(get_environment_service),
     user: Dict = Depends(get_current_active_user)
 ):
     """Update answer for a specific question"""
-    # Check if user has company access
     if not user.get("company_id"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -92,7 +150,8 @@ async def update_answer(
         
     success = await service.update_answer(
         company_id=user["company_id"],
-        financial_year=financial_year,
+        plant_id=update.plant_id,
+        financial_year=update.financial_year,
         question_id=question_id,
         question_title=update.questionTitle,
         answer_data=update.answer_data
@@ -164,10 +223,11 @@ class TableAnswerUpdate(BaseModel):
     questionId: str
     questionTitle: str
     updatedData: Union[List[Dict[str, str]], Dict[str, List[Dict[str, str]]]]
+    plant_id: str
+    financial_year: str
 
-@router.post("/reports/{financial_year}/table-answer")
+@router.post("/table-answer")
 async def update_table_answer(
-    financial_year: str,
     update: TableAnswerUpdate,
     current_user: dict = Depends(get_current_active_user),
     service: EnvironmentService = Depends(get_environment_service),
@@ -175,16 +235,20 @@ async def update_table_answer(
 ):
     """Update table answer for a specific question"""
     company_id = current_user["company_id"]
-    print("current_user:", current_user)
     
     # First check if the report exists
-    report = await service.get_report(company_id, financial_year)
+    report = await service.get_report(
+        company_id=company_id,
+        plant_id=update.plant_id,
+        financial_year=update.financial_year
+    )
     if not report:
         raise HTTPException(status_code=404, detail="Report not found. Please create a report first.")
 
     success = await service.update_table_answer(
         company_id=company_id,
-        financial_year=financial_year,
+        plant_id=update.plant_id,
+        financial_year=update.financial_year,
         question_id=update.questionId,
         question_title=update.questionTitle,
         table_data=update.updatedData
@@ -202,17 +266,15 @@ async def update_table_answer(
         details={
             "question_id": update.questionId,
             "question_title": update.questionTitle,
-            "financial_year": financial_year
+            "financial_year": update.financial_year,
+            "plant_id": update.plant_id
         }
     )
 
-    # Log the action using audit service - only include plant_id for plant admin role
-    plant_id = current_user["plant_id"] if current_user.get("role", [])[0] == "plant_admin" else None
-    
     await audit_service.log_action(
-        company_id=current_user["company_id"],
-        plant_id=plant_id,
-        financial_year=financial_year,
+        company_id=company_id,
+        plant_id=update.plant_id,
+        financial_year=update.financial_year,
         action_log=action_log
     )
 
@@ -270,15 +332,17 @@ class SubjectiveAnswerCreate(BaseModel):
     questionTitle: str
     type: str = "subjective"
     data: Dict[str, str]
+    plant_id: str
+    financial_year: str
 
-@router.post("/reports/{financial_year}/subjective-answer")
+@router.post("/subjective-answer")
 async def update_subjective_answer(
-    financial_year: str,
     answer: SubjectiveAnswerCreate,
     service: EnvironmentService = Depends(get_environment_service),
     user: Dict = Depends(get_current_active_user),
     audit_service: AuditService = Depends(get_audit_service)
 ):
+    
     """Update answer for a subjective question"""
     if not user.get("company_id"):
         raise HTTPException(
@@ -289,7 +353,8 @@ async def update_subjective_answer(
     try:
         success = await service.update_answer(
             company_id=user["company_id"],
-            financial_year=financial_year,
+            plant_id=answer.plant_id,
+            financial_year=answer.financial_year,
             question_id=answer.questionId,
             question_title=answer.questionTitle,
             answer_data={
@@ -308,17 +373,15 @@ async def update_subjective_answer(
                 details={
                     "question_id": answer.questionId,
                     "question_title": answer.questionTitle,
-                    "financial_year": financial_year
+                    "financial_year": answer.financial_year,
+                    "plant_id": answer.plant_id
                 }
             )
-
-            # Log the action using audit service - only include plant_id for plant admin role
-            plant_id = user["plant_id"] if user.get("role", [])[0] == "plant_admin" else None
             
             await audit_service.log_action(
                 company_id=user["company_id"],
-                plant_id=plant_id,
-                financial_year=financial_year,
+                plant_id=answer.plant_id,
+                financial_year=answer.financial_year,
                 action_log=action_log
             )
 

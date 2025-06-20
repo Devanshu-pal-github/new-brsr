@@ -86,6 +86,7 @@ const EnvironmentContent = ({
         submodules={moduleData.submodules}
         answers={answers}
         currentSubmodule={currentSubmodule}
+        plantId={plantId}
       />
 
       {/* AI Chat Button */}
