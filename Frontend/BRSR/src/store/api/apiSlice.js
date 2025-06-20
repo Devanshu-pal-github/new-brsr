@@ -135,21 +135,54 @@ export const apiSlice = createApi({
       invalidatesTags: ['Plants']
     }),
     getCompanyReports: builder.query({
-      query: () => ({
-        url: `/environment/reports`,
-        method: 'GET',
-      }),
-      transformResponse: (response) => {
-        console.log('🌍 Environment Reports Response:', response);
-        return Array.isArray(response) ? response : [];
+      query: (params = {}) => {
+        const { plantId, financialYear = "2024-2025" } = params;
+        return {
+          url: `/environment/reports/get`,
+          method: 'POST',
+          body: {
+            plant_id: plantId || null,
+            financial_year: financialYear
+          }
+        };
       },
-      providesTags: (result) =>
-        result
-          ? [
-            ...result.map((report) => ({ type: 'EnvironmentReports', id: report.id })),
-            { type: 'EnvironmentReports', id: 'LIST' },
-          ]
-          : [{ type: 'EnvironmentReports', id: 'LIST' }],
+      transformResponse: (response) => {
+        console.log('🌍 Raw Environment Reports Response:', response);
+        
+        // If no response, return empty array
+        if (!response) return [];
+
+        // Transform the response to include required fields
+        const transformedResponse = {
+          ...response,
+          answers: Object.entries(response.answers || {}).reduce((acc, [questionId, answer]) => {
+            acc[questionId] = {
+              questionId,
+              questionTitle: answer.questionTitle || '',
+              type: answer.type || 'subjective',
+              data: answer.updatedData || answer.data || { text: '' }
+            };
+            return acc;
+          }, {})
+        };
+
+        console.log('🌍 Transformed Response:', transformedResponse);
+        return [transformedResponse];
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 Environment Reports Error:', response);
+        return response;
+      },
+      providesTags: (result) => {
+        if (!result) return ['EnvironmentReport'];
+        return [
+          'EnvironmentReport',
+          ...Object.keys(result[0]?.answers || {}).map(questionId => ({
+            type: 'EnvironmentReport',
+            id: questionId
+          }))
+        ];
+      }
     }),
     getQuestionsByIds: builder.query({
       query: ({ questionIds, categoryId }) => ({
@@ -177,9 +210,11 @@ export const apiSlice = createApi({
           ]
           : [{ type: 'Questions', id: 'LIST' }],
     }),
+
+    
     updateQuestionAnswer: builder.mutation({
       queryFn: async (
-        { questionId, questionTitle, updatedData, financialYear, moduleId },
+        { questionId, questionTitle, updatedData, financialYear, plantId },
         { dispatch, getState },
         extraOptions,
         baseQuery
@@ -310,12 +345,14 @@ export const apiSlice = createApi({
            * Environment (legacy) flow - keeping for backward compatibility
            * ----------------------------------------------------------*/
           const envRes = await baseQuery({
-            url: `/environment/reports/${financialYear}/table-answer`,
+            url: `/environment/table-answer`,
             method: 'POST',
             body: {
               questionId,
               questionTitle,
               updatedData: cleanedData,
+              plant_id: plantId,
+              financial_year: financialYear || "2024-2025"
             },
           });
 
@@ -325,14 +362,7 @@ export const apiSlice = createApi({
           return { error };
         }
       },
-      invalidatesTags: (result, error, arg) => [
-        'EnvironmentReports',
-        'ModuleAnswers',
-        {
-          type: 'ModuleAnswers',
-          id: `${arg.moduleId}-${result?.data?.company_id}-${arg.financialYear}`,
-        },
-      ],
+      invalidatesTags: ['EnvironmentReport']
     }),
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, financialYear }) => ({
@@ -351,12 +381,22 @@ export const apiSlice = createApi({
         { type: 'ModuleAnswers', id: `${arg.moduleId}-${arg.companyId}-${arg.financialYear}` }
       ]
     }),
+    
     updateSubjectiveAnswer: builder.mutation({
-      query: ({ financialYear, ...data }) => ({
-        url: `/environment/reports/${financialYear}/subjective-answer`,
+      query: ({ questionId, questionTitle, type, data, plantId, financialYear }) => ({
+        
+        url: `/environment/subjective-answer`,
         method: 'POST',
-        body: data,
+        body: {
+          questionId,
+          questionTitle,
+          type,
+          data,
+          plant_id: plantId,
+          financial_year: financialYear || "2024-2025"
+        }
       }),
+      invalidatesTags: ['EnvironmentReport']
     }),
     updateAuditStatus: builder.mutation({
       query: ({ financialYear, questionId, audit_status }) => ({

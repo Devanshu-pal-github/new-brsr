@@ -34,7 +34,11 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
   } = useGetCompanyPlantsQuery(user?.company_id, {
     skip: !user?.company_id,
   });
-  const { data: environmentReports = [] } = useGetCompanyReportsQuery();
+
+  // Skip fetching reports until we have a company ID
+  const { data: environmentReports = [] } = useGetCompanyReportsQuery(undefined, {
+    skip: true // We'll fetch reports when a specific plant is selected
+  });
 
   /* ────────────────────────────── HELPERS ─────────────────────────────── */
   const tabs = ['Main Facilities', 'Other Plants'];

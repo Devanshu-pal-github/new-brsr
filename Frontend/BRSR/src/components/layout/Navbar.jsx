@@ -558,7 +558,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#000D30] shadow-md">
+    <nav className="bg-[#000D30] shadow-md mt-5">
       <div className="w-[100%] px-6 lg:px-12 mx-auto">
         <div className="flex items-center justify-between h-[48px]">
           {/* Left side - Report Type and Logo */}

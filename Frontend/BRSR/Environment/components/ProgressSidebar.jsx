@@ -2,10 +2,21 @@ import React from 'react';
 import { useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
 import { useSearchParams } from 'react-router-dom';
 
-const ProgressSidebar = ({ submodules, currentSubmodule }) => {
+const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     const [searchParams] = useSearchParams();
     const financialYear = searchParams.get('financialYear') || '2024-2025';
-    const { data: reports = [] } = useGetCompanyReportsQuery();
+    
+    // Update query to include plantId like CategoryRenderer
+    const { data: reports = [], isLoading, error } = useGetCompanyReportsQuery(
+        plantId ? { plantId, financialYear } : undefined,
+        { skip: !plantId }
+    );
+
+    console.log("Progress Sidebar Reports:", { reports, plantId, financialYear });
+
+    if (!plantId) {
+        console.warn('ProgressSidebar: plantId prop is required');
+    }
 
     // Get current report based on financial year
     const currentReport = reports.find(report => report.financialYear === financialYear);
@@ -13,16 +24,25 @@ const ProgressSidebar = ({ submodules, currentSubmodule }) => {
 
     // Utility function to check if a question is answered
     const isQuestionAnswered = (questionId) => {
-        if (!answers[questionId]) return false;
+        if (!answers[questionId]) {
+            console.debug(`Question ${questionId} has no answer`);
+            return false;
+        }
         
         const answer = answers[questionId];
-        const updatedData = answer.updatedData;
+        console.debug(`Checking answer for ${questionId}:`, answer);
         
-        if (!updatedData) return false;
+        // Handle subjective answers
+        if (answer.type === 'subjective') {
+            const text = answer.data?.text;
+            const isAnswered = text !== undefined && text !== null && text.trim() !== '';
+            console.debug(`Subjective question ${questionId} answered:`, isAnswered);
+            return isAnswered;
+        }
 
-        // Check if it's an array of objects (table data)
-        if (Array.isArray(updatedData)) {
-            return updatedData.some(row => {
+        // Handle table answers
+        if (Array.isArray(answer.data)) {
+            const isAnswered = answer.data.some(row => {
                 if (typeof row === 'object') {
                     // Check if any field in the row has data
                     return Object.values(row).some(value => 
@@ -34,13 +54,16 @@ const ProgressSidebar = ({ submodules, currentSubmodule }) => {
                 }
                 return false;
             });
+            console.debug(`Table question ${questionId} answered:`, isAnswered);
+            return isAnswered;
         }
 
-        // For other types of answers
-        return updatedData !== undefined && 
-               updatedData !== null && 
-               updatedData !== '' && 
-               updatedData !== '0';
+        // For any other type of answer, check if data exists
+        const isAnswered = answer.data !== undefined && 
+               answer.data !== null && 
+               Object.keys(answer.data).length > 0;
+        console.debug(`Other type question ${questionId} answered:`, isAnswered);
+        return isAnswered;
     };
 
     // Calculate overall module progress

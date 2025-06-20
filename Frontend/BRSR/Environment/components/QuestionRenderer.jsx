@@ -84,13 +84,16 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
   );
 };
 
-const QuestionRenderer = ({ question, financialYear }) => {
+const QuestionRenderer = ({ question, financialYear, plantId }) => {
   console.log('Rendering Question:', question);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(() => {
     if (metadata?.type === 'subjective') {
-      return question.answer?.text || '';
+      return question.answer || null;
+    } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+      // For table types, ensure we have the correct structure
+      return question.answer || { data: {} };
     }
     return question.answer || {};
   });
@@ -124,162 +127,88 @@ const QuestionRenderer = ({ question, financialYear }) => {
   // Update questionData when question.answer changes
   useEffect(() => {
     if (question.answer) {
-      // For subjective questions, just get the text
       if (metadata?.type === 'subjective') {
-        const answerText = question.answer?.text || '';
-        setQuestionData(answerText);
-        setTempData(answerText);
-      }
-      // For multi-table, transform the flattened array to the expected nested structure
-      else if (metadata?.type === 'multi-table' && Array.isArray(question.answer)) {
-        const transformedData = {};
-        
-        // Process each item in the flattened array
-        question.answer.forEach(item => {
-          const tableKey = item.table_key;
-          const rowIndex = item.row_index;
-          
-          // Initialize the table if it doesn't exist
-          if (!transformedData[tableKey]) {
-            transformedData[tableKey] = {};
-          }
-          
-          // Initialize the row if it doesn't exist
-          if (!transformedData[tableKey][rowIndex]) {
-            transformedData[tableKey][rowIndex] = {};
-          }
-          
-          // Add the data to the nested structure
-          transformedData[tableKey][rowIndex].current_year = item.current_year || '';
-          transformedData[tableKey][rowIndex].previous_year = item.previous_year || '';
-        });
-        
-        setQuestionData(transformedData);
-      } 
-      // For dynamic-table, transform the flattened array to the expected structure
-      else if (metadata?.type === 'dynamic-table' && Array.isArray(question.answer)) {
-        const transformedData = {};
-        
-        // Convert array of objects to object with row indices as keys
-        question.answer.forEach(item => {
-          const rowIndex = item.row_index;
-          // Create a copy of the item without row_index
-          const rowData = { ...item };
-          delete rowData.row_index;
-          transformedData[rowIndex] = rowData;
-        });
-        
-        setQuestionData(transformedData);
-      }
-      else {
         setQuestionData(question.answer);
+        setTempData(question.answer);
+      } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+        // For table types, ensure we have the correct structure
+        const tableData = question.answer.data || {};
+        setQuestionData(question.answer);
+        setTempData(question.answer);
+      } else {
+        setQuestionData(question.answer);
+        setTempData(question.answer);
       }
     }
   }, [question.answer, metadata?.type]);
 
-  const handleSave = async (data, newAuditStatus) => {
-    console.log('Saving data with:', {
-      questionId: question.id,
-      questionTitle: title,
-      financialYear,
-      type: metadata?.type,
-      data,
-      auditStatus: newAuditStatus
-    });
-
+  const handleSave = async (data) => {
     try {
-      if (!question.id || !title || !financialYear) {
-        console.error('Missing required data:', {
-          questionId: question.id,
-          questionTitle: title,
-          financialYear
-        });
+      if (!question.id || !title) {
+        console.error('Missing required data:', { questionId: question.id, questionTitle: title });
         toast.error('Missing required question information');
         return;
       }
 
+      if (!plantId) {
+        console.error('Missing required plantId');
+        toast.error('Plant ID is required');
+        return;
+      }
+
       if (metadata?.type === 'subjective') {
-        // Handle subjective question data
-        await updateSubjectiveAnswer({
+        // Handle subjective questions
+        const textValue = typeof data === 'string' ? data : data?.data?.text || data?.text || '';
+        
+        const payload = {
           questionId: question.id,
           questionTitle: title,
-          financialYear,
           type: 'subjective',
           data: {
-            text: data
-          }
-        }).unwrap();
+            text: textValue
+          },
+          plantId,
+          financialYear
+        };
 
-        // Update the local state with the string value
-        const newText = typeof data === 'string' ? data : data?.text || '';
-        setQuestionData(newText);
+        console.log('Submitting subjective answer:', payload);
+        await updateSubjectiveAnswer(payload).unwrap();
+        
+        setQuestionData(payload);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
       } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
+        // Handle table questions
         let formattedData;
         
         // Create a deep copy of the data to avoid modifying read-only properties
-        const dataCopy = JSON.parse(JSON.stringify(data));
+        const dataCopy = JSON.parse(JSON.stringify(data?.data || data));
         
-        if (metadata.type === 'table') {
-          // Format single table data
-          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
-            row_index: parseInt(rowIndex),
-            current_year: rowData.current_year || '',
-            previous_year: rowData.previous_year || ''
-          }));
-        } else if (metadata.type === 'multi-table') {
-          // For multi-table, we need to handle the structure differently
-          // The backend expects an array of objects, not a nested structure
-          const tableEntries = Object.entries(dataCopy);
-          
-          if (tableEntries.length > 0) {
-            // Convert the multi-table structure to a flat array for the API
-            const flattenedData = [];
-            
-            tableEntries.forEach(([tableKey, tableData]) => {
-              Object.entries(tableData).forEach(([rowIndex, rowData]) => {
-                flattenedData.push({
-                  table_key: tableKey,
-                  row_index: parseInt(rowIndex),
-                  current_year: rowData.current_year || '',
-                  previous_year: rowData.previous_year || ''
-                });
-              });
-            });
-            
-            formattedData = flattenedData;
-          } else {
-            formattedData = [];
-          }
-        } else if (metadata.type === 'dynamic-table') {
-          // Format dynamic table data similar to single table
-          formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
-            row_index: parseInt(rowIndex),
-            ...rowData
-          }));
-        }
+        // Convert object format to array format for API
+        formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
+          row_index: parseInt(rowIndex),
+          ...rowData
+        }));
 
+        console.log('Submitting table answer:', formattedData);
         await updateTableAnswer({
           financialYear,
           questionId: question.id,
           questionTitle: title,
-          updatedData: formattedData
+          updatedData: formattedData,
+          plantId
         }).unwrap();
 
-        // Create a deep copy before setting state
-        setQuestionData(JSON.parse(JSON.stringify(data)));
+        // Update local state with the new data
+        const newData = {
+          questionId: question.id,
+          questionTitle: title,
+          type: metadata.type,
+          data: dataCopy
+        };
+        setQuestionData(newData);
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
-      }
-
-      // Update audit status if changed
-      if (isAuditRequired && newAuditStatus !== question.answer?.auditStatus) {
-        await updateAuditStatus({
-          financialYear,
-          questionId: question.id,
-          audit_status: newAuditStatus
-        });
       }
     } catch (error) {
       console.error('Failed to save answer:', error);
@@ -298,27 +227,27 @@ const QuestionRenderer = ({ question, financialYear }) => {
         return (
           <TableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'multi-table':
         return (
           <MultiTableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'dynamic-table':
         return (
           <DynamicTableRenderer 
             metadata={metadata} 
-            data={tempData} 
+            data={tempData?.data || {}} 
             isEditing={true} 
-            onSave={handleDataChange} 
+            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
           />
         );
       case 'subjective':
@@ -326,19 +255,61 @@ const QuestionRenderer = ({ question, financialYear }) => {
           <textarea
             className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
             placeholder="Enter your response here..."
-            value={tempData || ''}
-            onChange={(e) => setTempData(e.target.value)}
+            value={tempData?.data?.text || ''}
+            onChange={(e) => setTempData({
+              questionId: question.id,
+              questionTitle: title,
+              type: 'subjective',
+              data: { text: e.target.value }
+            })}
           />
         );
       default:
+        return null;
+    }
+  };
+
+  const renderQuestion = () => {
+    console.log('Rendering Question:', question);
+    
+    switch (metadata?.type) {
+      case 'subjective':
         return (
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
-            placeholder="Enter your response here..."
-            value={tempData.text || ''}
-            onChange={(e) => setTempData({ text: e.target.value })}
+          <SubjectiveQuestionRenderer
+            question={question}
+            answer={questionData}
+            onAnswerChange={(newData) => {
+              handleSave(newData);
+            }}
+            isReadOnly={!isEditModalOpen}
           />
         );
+      case 'table':
+        return (
+          <TableRenderer 
+            metadata={metadata} 
+            data={questionData?.data || {}}
+            isEditing={false}
+          />
+        );
+      case 'multi-table':
+        return (
+          <MultiTableRenderer 
+            metadata={metadata} 
+            data={questionData?.data || {}}
+            isEditing={false}
+          />
+        );
+      case 'dynamic-table':
+        return (
+          <DynamicTableRenderer 
+            metadata={metadata} 
+            data={questionData?.data || {}}
+            isEditing={false}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -347,17 +318,15 @@ const QuestionRenderer = ({ question, financialYear }) => {
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            <div className="font-semibold text-base text-[#20305D]">{title}</div>
+            {/* <div className="font-semibold text-base text-[#20305D]">{title}</div> */}
             {description && (
               <div 
-                className="text-sm text-gray-700 mb-2" 
+                className="text-sm font-semibold text-gray-700 mb-2" 
                 dangerouslySetInnerHTML={{ __html: description }}
               />
             )}
           </div>
           <div className="flex items-center space-x-3 ml-4">
-            {/* Add AI Button */}
-
             <AuditBadge isAuditRequired={isAuditRequired} />
 
             <button
@@ -381,51 +350,11 @@ const QuestionRenderer = ({ question, financialYear }) => {
               Edit Response
             </button>
           </div>
-        </div>      {/* Content Display */}
-        {metadata?.type === 'table' && (
-          <TableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'multi-table' && (
-          <MultiTableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'dynamic-table' && (
-          <DynamicTableRenderer 
-            metadata={metadata} 
-            data={questionData}
-          />
-        )}
-        {metadata?.type === 'subjective' && (
-          <>
-            {!isEditModalOpen && (
-              <div className="mb-4">
-                {/* <div className="text-gray-700 whitespace-pre-wrap p-3 bg-gray-50 rounded-md border border-gray-200 min-h-[120px]">
-                  {typeof questionData === 'string' ? questionData : questionData?.text || 'No response provided yet'}
-                </div> */}
-              </div>
-            )}
-            <SubjectiveQuestionRenderer 
-              question={question}
-              answer={{
-                text: typeof questionData === 'string' ? questionData : questionData?.text || '',
-                updatedData: {
-                  text: typeof questionData === 'string' ? questionData : questionData?.text || ''
-                }
-              }}
-              isReadOnly={!isEditModalOpen}
-              onAnswerChange={(newAnswer) => {
-                const newText = newAnswer.data.text;
-                setTempData(newText);
-                handleSave(newText, question.answer?.auditStatus);
-              }}
-            />
-          </>
-        )}
+        </div>
+
+        {/* Content Display */}
+        {renderQuestion()}
+
         {(isTableLoading || isSubjectiveLoading) && (
           <div className="text-sm text-gray-500 mt-2">Saving changes...</div>
         )}
@@ -467,9 +396,9 @@ const QuestionRenderer = ({ question, financialYear }) => {
                   initialMode="question"
                   activeQuestion={activeQuestion}
                   currentAnswer={{
-                    text: typeof questionData === 'string' ? questionData : questionData?.text || '',
+                    text: questionData?.data?.text || '',
                     updatedData: {
-                      text: typeof questionData === 'string' ? questionData : questionData?.text || ''
+                      text: questionData?.data?.text || ''
                     }
                   }}
                 />

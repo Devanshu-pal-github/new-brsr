@@ -1,11 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { useGetCompanyReportsQuery } from "../../store/api/apiSlice";
 
-// Financial years will be derived dynamically from backend reports
-
-const FinancialYearDropdown = () => {
+// Accept company as a prop
+const FinancialYearDropdown = ({ company }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentFY = searchParams.get("financialYear") || "";
   const [open, setOpen] = useState(false);
@@ -25,17 +23,13 @@ const FinancialYearDropdown = () => {
     };
   }, []);
 
-  // Fetch company reports to derive available financial years dynamically
-  const { data: reports = [] } = useGetCompanyReportsQuery();
-
+  // Use company.financialYear if available, else fallback to empty array
   const financialYears = useMemo(() => {
-    const years = reports
-      .map((r) => r.financial_year || r.financialYear || r.year)
-      .filter(Boolean);
-
-    // Return unique years sorted descending (latest first)
-    return [...new Set(years)].sort().reverse();
-  }, [reports]);
+    if (company && company.financialYear) {
+      return [company.financialYear];
+    }
+    return [];
+  }, [company]);
 
   // Set the latest financial year by default if none is selected
   useEffect(() => {

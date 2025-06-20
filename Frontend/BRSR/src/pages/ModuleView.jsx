@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   selectCurrentUser,
@@ -30,8 +30,24 @@ import {
 const ModuleView = () => {
   const { reportId } = useParams();
   const navigate = useNavigate();
-  const [selectedModuleId, setSelectedModuleId] = useState("dashboard"); // Set default to dashboard
-  const [selectedPlantData, setSelectedPlantData] = useState(null);
+  const location = useLocation();
+  
+  // Get module and plant from URL search params
+  const searchParams = new URLSearchParams(location.search);
+  const moduleFromUrl = searchParams.get('module') || 'dashboard';
+  const plantIdFromUrl = searchParams.get('plantId');
+  const plantReportsFromUrl = searchParams.get('plantReports');
+
+  const [selectedModuleId, setSelectedModuleId] = useState(moduleFromUrl);
+  const [selectedPlantData, setSelectedPlantData] = useState(
+    plantIdFromUrl && plantReportsFromUrl 
+      ? { 
+          plantId: plantIdFromUrl, 
+          environmentReports: JSON.parse(plantReportsFromUrl)
+        }
+      : null
+  );
+
   const user = useSelector(selectCurrentUser);
   const userRole = useSelector(selectUserRole);
   const companyDetails = useSelector(selectCompanyDetails);
@@ -98,9 +114,24 @@ const ModuleView = () => {
 
   const handleModuleClick = (moduleId) => {
     setSelectedModuleId(moduleId);
-    if (moduleId !== 'environment') {
-      setSelectedPlantData(null); // reset any plant selection when switching away
-    }
+    setSelectedPlantData(null);
+    
+    // Update URL with new module
+    const params = new URLSearchParams(location.search);
+    params.set('module', moduleId);
+    params.delete('plantId');
+    params.delete('plantReports');
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
+  const handlePlantSelect = (plantId, environmentReports) => {
+    setSelectedPlantData({ plantId, environmentReports });
+    
+    // Update URL with plant data
+    const params = new URLSearchParams(location.search);
+    params.set('plantId', plantId);
+    params.set('plantReports', JSON.stringify(environmentReports));
+    navigate({ search: params.toString() }, { replace: true });
   };
 
   const handleLogout = () => {
@@ -228,8 +259,8 @@ const ModuleView = () => {
 
           {/* Main Content - Scrollable */}
           <div
-            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
-            ${isSidebarOpen ? "ml-[200px]" : "ml-0 lg:ml-16"}`}
+            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden  
+            ${isSidebarOpen ? "ml-55"  : "ml-0 lg:ml-16"}`}
           >
             {selectedModuleId === "dashboard" ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
@@ -248,9 +279,7 @@ const ModuleView = () => {
                 <div className="h-[calc(100vh-48px)] overflow-y-auto">
                   <Plants
                     renderBare
-                    onPlantSelect={(plantId, environmentReports) =>
-                      setSelectedPlantData({ plantId, environmentReports })
-                    }
+                    onPlantSelect={handlePlantSelect}
                   />
                 </div>
               )
