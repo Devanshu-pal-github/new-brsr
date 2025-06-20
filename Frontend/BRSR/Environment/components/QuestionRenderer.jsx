@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
-import { useUpdateTableAnswerMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation } from '../../src/store/api/apiSlice';
+import { useUpdateTableAnswerEnvironmentMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
 import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
 import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
@@ -98,7 +98,7 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
     return question.answer || {};
   });
   const [tempData, setTempData] = useState(questionData);
-  const [updateTableAnswer, { isLoading: isTableLoading }] = useUpdateTableAnswerMutation();
+  const [updateTableAnswer, { isLoading: isTableLoading }] = useUpdateTableAnswerEnvironmentMutation();
   const [updateSubjectiveAnswer, { isLoading: isSubjectiveLoading }] = useUpdateSubjectiveAnswerMutation();
   const [updateAuditStatus] = useUpdateAuditStatusMutation();
 

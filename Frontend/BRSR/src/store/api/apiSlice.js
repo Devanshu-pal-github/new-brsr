@@ -364,6 +364,71 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ['EnvironmentReport']
     }),
+
+
+    updateTableAnswerEnvironment: builder.mutation({
+      queryFn: async (
+        { questionId, questionTitle, updatedData, financialYear, plantId },
+        { dispatch, getState },
+        extraOptions,
+        baseQuery
+      ) => {
+        try {
+          console.log('🔄 Updating answer for question:', questionId, 'with data:', updatedData);
+
+          // Re-use existing array cleaning logic so backend gets string values
+          let cleanedData = updatedData;
+          if (Array.isArray(updatedData)) {
+            // Single table data (no table_key)
+            if (
+              updatedData.length > 0 &&
+              'row_index' in updatedData[0] &&
+              !('table_key' in updatedData[0])
+            ) {
+              cleanedData = updatedData.map(({ row_index, ...rest }) => {
+                const stringified = {};
+                Object.entries(rest).forEach(([k, v]) => {
+                  stringified[k] = v === null ? '' : String(v);
+                });
+                return stringified;
+              });
+            }
+            // Multi-table data (has table_key)
+            else if (updatedData.length > 0 && 'table_key' in updatedData[0]) {
+              cleanedData = updatedData.map((item) => {
+                const res = { ...item };
+                if (res.current_year !== undefined) {
+                  res.current_year = res.current_year === null ? '' : String(res.current_year);
+                }
+                if (res.previous_year !== undefined) {
+                  res.previous_year = res.previous_year === null ? '' : String(res.previous_year);
+                }
+                return res;
+              });
+            }
+          }
+
+          const envRes = await baseQuery({
+            url: `/environment/table-answer`,
+            method: 'POST',
+            body: {
+              questionId,
+              questionTitle,
+              updatedData: cleanedData,
+              plant_id: plantId,
+              financial_year: financialYear || "2024-2025"
+            },
+          });
+
+          return { data: envRes.data };
+        } catch (error) {
+          console.error('❌ Error updating answer:', error);
+          return { error };
+        }
+      },
+      invalidatesTags: ['EnvironmentReport']
+    }),
+
     getModuleAnswer: builder.query({
       query: ({ moduleId, companyId, financialYear }) => ({
         url: `/module-answers/${moduleId}/${companyId}/${financialYear}`,
@@ -710,6 +775,7 @@ export const {
   useStoreQuestionDataMutation,
   useSubmitQuestionAnswerMutation,
   useGetAuditLogQuery,
-  useUpdateAuditStatusMutation
+  useUpdateAuditStatusMutation,
+  useUpdateTableAnswerEnvironmentMutation
 } = apiSlice;
 export default apiSlice;
