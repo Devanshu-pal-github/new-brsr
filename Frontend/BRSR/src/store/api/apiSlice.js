@@ -148,11 +148,9 @@ export const apiSlice = createApi({
       },
       transformResponse: (response) => {
         console.log('🌍 Raw Environment Reports Response:', response);
-        
-        // If no response, return empty array
         if (!response) return [];
-
-        // Transform the response to include required fields
+        // Add audit_statuses to each answer if present
+        const auditStatuses = response.audit_statuses || {};
         const transformedResponse = {
           ...response,
           answers: Object.entries(response.answers || {}).reduce((acc, [questionId, answer]) => {
@@ -160,12 +158,12 @@ export const apiSlice = createApi({
               questionId,
               questionTitle: answer.questionTitle || '',
               type: answer.type || 'subjective',
-              data: answer.updatedData || answer.data || { text: '' }
+              data: answer.updatedData || answer.data || { text: '' },
+              auditStatus: auditStatuses[questionId] // Attach audit status for convenience (optional)
             };
             return acc;
           }, {})
         };
-
         console.log('🌍 Transformed Response:', transformedResponse);
         return [transformedResponse];
       },
@@ -468,13 +466,14 @@ export const apiSlice = createApi({
     
   
     updateAuditStatus: builder.mutation({
-      query: ({ financialYear, questionId, audit_status }) => ({
+      query: ({ financialYear, questionId, audit_status, plantId }) => ({
         url: `/environment/reports/${financialYear}/audit-status/${questionId}`,
         method: 'PUT',
-        body: { audit_status: Boolean(audit_status) }
+        body: { audit_status: Boolean(audit_status), plant_id: plantId }
       }),
       invalidatesTags: ['EnvironmentReports']
     }),
+    
     getPlantEmployees: builder.query({
       query: (data) => ({
         url: '/plants/employees',
@@ -751,6 +750,21 @@ export const apiSlice = createApi({
       },
       providesTags: ['AuditLog']
     }),
+    // --- AUDIT STATUS FETCH API ---
+    getAuditStatus: builder.query({
+      query: ({ financialYear, questionId, plantId }) => ({
+        url: `/environment/reports/${financialYear}/audit-status/${questionId}`,
+        method: 'GET',
+        params: { plant_id: plantId },
+      }),
+      transformResponse: (response) => {
+        // Optionally log or process response
+        return response;
+      },
+      providesTags: (result, error, arg) => [
+        { type: 'AuditStatus', id: `${arg.questionId}-${arg.plantId}-${arg.financialYear}` }
+      ]
+    }),
   }),
 });
 
@@ -780,6 +794,7 @@ export const {
   useSubmitQuestionAnswerMutation,
   useGetAuditLogQuery,
   useUpdateAuditStatusMutation,
-  useUpdateTableAnswerEnvironmentMutation
+  useUpdateTableAnswerEnvironmentMutation,
+  useGetAuditStatusQuery, // <-- add this
 } = apiSlice;
 export default apiSlice;

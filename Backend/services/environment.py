@@ -75,13 +75,19 @@ class EnvironmentService:
             if "answers" in doc:
                 for question_id, answer in doc["answers"].items():
                     if isinstance(answer, dict):
-                        # Add required fields if missing
                         answer["questionId"] = answer.get("questionId", question_id)
                         answer["questionTitle"] = answer.get("questionTitle", "")
                         answer["updatedData"] = answer.get("updatedData", {})
                         answer["lastUpdated"] = answer.get("lastUpdated", datetime.utcnow())
-                        answer["auditStatus"] = answer.get("auditStatus", False)
-            
+                        # Remove auditStatus from answer if present
+                        answer.pop("auditStatus", None)
+            # Migrate audit statuses from answers to audit_statuses if needed
+            if "audit_statuses" not in doc:
+                doc["audit_statuses"] = {}
+                for qid, ans in doc.get("answers", {}).items():
+                    if isinstance(ans, dict) and "auditStatus" in ans:
+                        doc["audit_statuses"][qid] = ans["auditStatus"]
+                        ans.pop("auditStatus", None)
             return EnvironmentReport(**doc)
         return None
 
@@ -116,14 +122,12 @@ class EnvironmentService:
     ) -> bool:
         """Update answer for a specific question"""
         now = datetime.utcnow()
-        
         question_answer = QuestionAnswer(
             questionId=question_id,
             questionTitle=question_title,
             updatedData=answer_data,
             lastUpdated=now
         )
-
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
@@ -227,7 +231,6 @@ class EnvironmentService:
     async def bulk_update_answers(
         self,
         company_id: str,
-        plant_id: str,
         financial_year: str,
         answers: Dict[str, Dict[str, Any]]
     ) -> bool:
@@ -249,7 +252,6 @@ class EnvironmentService:
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
-                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {"$set": update_dict}
@@ -262,8 +264,7 @@ class EnvironmentService:
                 financial_year=financial_year,
                 question_id=question_id,
                 question_title=answer_data.get("questionTitle", ""),
-                answer_data=answer_data.get("answer_data", {}),
-                source_plant_id=plant_id  # Pass the plant_id to identify the source of the update
+                answer_data=answer_data.get("answer_data", {})
             )
 
         return result.modified_count > 0
@@ -441,7 +442,6 @@ class EnvironmentService:
     async def patch_table_answer(
         self,
         company_id: str,
-        plant_id: str,
         financial_year: str,
         question_id: str,
         question_title: str,
@@ -453,7 +453,6 @@ class EnvironmentService:
         # First get the existing answer
         report = await self.collection.find_one({
             "companyId": company_id,
-            "plantId": plant_id,
             "financialYear": financial_year
         })
 
@@ -508,7 +507,6 @@ class EnvironmentService:
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
-                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {
@@ -526,7 +524,6 @@ class EnvironmentService:
             question_id=question_id,
             question_title=question_title,
             answer_data={"updatedData": existing_data},
-            source_plant_id=plant_id
         )
 
         return result.modified_count > 0
@@ -569,24 +566,42 @@ class EnvironmentService:
     async def update_audit_status(
         self,
         company_id: str,
+        plant_id: str,
         financial_year: str,
         question_id: str,
         audit_status: bool
     ) -> bool:
         """Update audit status for a specific question"""
         now = datetime.utcnow()
-        
         result = await self.collection.update_one(
             {
                 "companyId": company_id,
+                "plantId": plant_id,
                 "financialYear": financial_year
             },
             {
                 "$set": {
-                    f"answers.{question_id}.auditStatus": audit_status,
+                    f"audit_statuses.{question_id}": audit_status,
                     "updatedAt": now
                 }
             }
         )
         return result.modified_count > 0
+
+    async def get_audit_status(
+        self,
+        company_id: str,
+        plant_id: str,
+        financial_year: str,
+        question_id: str
+    ) -> Optional[bool]:
+        """Get audit status for a specific question, plant, and year"""
+        report = await self.get_report(
+            company_id=company_id,
+            plant_id=plant_id,
+            financial_year=financial_year
+        )
+        if not report or not hasattr(report, 'audit_statuses'):
+            return None
+        return report.audit_statuses.get(question_id)
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
-import { useUpdateTableAnswerEnvironmentMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation } from '../../src/store/api/apiSlice';
+import { useUpdateTableAnswerEnvironmentMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation, useGetAuditStatusQuery } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
 import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
 import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
@@ -16,8 +16,36 @@ const AuditBadge = ({ isAuditRequired }) => (
   </div>
 );
 
-const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, question }) => {
-  const [localAuditStatus, setLocalAuditStatus] = useState(question?.answer?.auditStatus || false);
+const AuditStatusDot = ({ status }) => {
+  let color = 'bg-gray-400';
+  let label = 'Unset';
+  if (status === true) {
+    color = 'bg-green-500';
+    label = 'Yes';
+  } else if (status === false) {
+    color = 'bg-red-500';
+    label = 'No';
+  }
+  return (
+    <span className={`inline-flex items-center gap-1`} title={`Audit Status: ${label}`}>
+      <span className={`w-3 h-3 rounded-full ${color} border border-gray-300`} />
+      <span className="text-xs text-gray-600">{label}</span>
+    </span>
+  );
+};
+
+const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, question, plantId, financialYear, updateAuditStatus, refetchAuditStatus }) => {
+  // Use auditStatus from audit_statuses if available, fallback to undefined
+  const [localAuditStatus, setLocalAuditStatus] = useState(undefined);
+  useEffect(() => {
+    if (typeof question.auditStatus !== 'undefined') {
+      setLocalAuditStatus(question.auditStatus);
+    }
+  }, [question.auditStatus]);
+
+  const [showAuditConfirm, setShowAuditConfirm] = useState(false);
+  const [pendingAuditStatus, setPendingAuditStatus] = useState(null);
+  const [isAuditLoading, setIsAuditLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -28,8 +56,31 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
     }
   };
 
-  const handleSaveWithAudit = () => {
-    onSave(tempData, localAuditStatus);
+  // When user clicks Yes/No, show confirm popup
+  const handleAuditStatusClick = (value) => {
+    setPendingAuditStatus(value);
+    setShowAuditConfirm(true);
+  };
+
+  // On confirm, call API and update local state
+  const handleAuditConfirm = async () => {
+    setIsAuditLoading(true);
+    try {
+      await updateAuditStatus({
+        financialYear,
+        questionId: question.id,
+        audit_status: pendingAuditStatus,
+        plantId
+      }).unwrap();
+      setLocalAuditStatus(pendingAuditStatus);
+      toast.success('Audit status updated!');
+      if (refetchAuditStatus) refetchAuditStatus();
+    } catch (err) {
+      toast.error('Failed to update audit status');
+    }
+    setIsAuditLoading(false);
+    setShowAuditConfirm(false);
+    setPendingAuditStatus(null);
   };
 
   return (
@@ -48,22 +99,33 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
-          
           {question?.isAuditRequired && (
-            <div className="mt-4 flex items-center space-x-2 border-t pt-4">
-              <input
-                type="checkbox"
-                id={`audit-${question.id}`}
-                checked={localAuditStatus}
-                onChange={(e) => setLocalAuditStatus(e.target.checked)}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              />
-              <label htmlFor={`audit-${question.id}`} className="text-sm text-gray-600">
-                Mark as Audited
+            <div className="mt-4 flex items-center space-x-4 border-t pt-4">
+              <span className="text-sm text-gray-600">Audit Status:</span>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`audit-status-${question.id}`}
+                  checked={localAuditStatus === true}
+                  onChange={() => handleAuditStatusClick(true)}
+                  disabled={showAuditConfirm || isAuditLoading}
+                  className="accent-green-600"
+                />
+                <span className="text-green-700">Yes</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`audit-status-${question.id}`}
+                  checked={localAuditStatus === false}
+                  onChange={() => handleAuditStatusClick(false)}
+                  disabled={showAuditConfirm || isAuditLoading}
+                  className="accent-red-600"
+                />
+                <span className="text-red-700">No</span>
               </label>
             </div>
           )}
-
           <div className="mt-4 flex justify-end space-x-2">
             <button
               onClick={onClose}
@@ -72,7 +134,7 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
               Cancel
             </button>
             <button
-              onClick={handleSaveWithAudit}
+              onClick={() => onSave(tempData)}
               className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
             >
               Save Changes
@@ -80,6 +142,18 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
           </div>
         </div>
       </div>
+      {/* Audit Status Confirmation Modal */}
+      {showAuditConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white p-6 rounded shadow-lg">
+            <p className="mb-4">Are you sure you want to set audit status to <b>{pendingAuditStatus ? 'Yes' : 'No'}</b>?</p>
+            <div className="flex gap-4">
+              <button onClick={handleAuditConfirm} disabled={isAuditLoading} className="px-4 py-2 bg-blue-600 text-white rounded">{isAuditLoading ? 'Updating...' : 'Confirm'}</button>
+              <button onClick={() => setShowAuditConfirm(false)} disabled={isAuditLoading} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -102,8 +176,27 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
   const [updateSubjectiveAnswer, { isLoading: isSubjectiveLoading }] = useUpdateSubjectiveAnswerMutation();
   const [updateAuditStatus] = useUpdateAuditStatusMutation();
 
+  // Fetch audit status for this question/plant/year
+  const {
+    data: auditStatusData,
+    error: auditStatusError,
+    refetch: refetchAuditStatus,
+    isFetching: isAuditStatusFetching
+  } = useGetAuditStatusQuery(
+    { financialYear, questionId: question.id, plantId },
+    { skip: !question.id || !plantId || !financialYear }
+  );
+  // If 404, treat as unset
+  const auditStatus = auditStatusError && auditStatusError.status === 404
+    ? undefined
+    : (typeof auditStatusData?.audit_status !== 'undefined'
+      ? auditStatusData.audit_status
+      : question.auditStatus);
+
   // Add these new states for ChatbotWindow
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [showAuditConfirm, setShowAuditConfirm] = useState(false);
+  const [pendingAuditStatus, setPendingAuditStatus] = useState(null);
 
   // Create an activeQuestion object for the chatbot
   const activeQuestion = {
@@ -143,23 +236,25 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
   }, [question.answer, metadata?.type]);
 
   const handleSave = async (data) => {
+    // Prevent accidental passing of event or button objects
+    if (data && (typeof data === 'object') && (data instanceof Event || data.nativeEvent || data.tagName === 'BUTTON')) {
+      toast.error('Invalid data passed to save.');
+      return;
+    }
     try {
       if (!question.id || !title) {
         console.error('Missing required data:', { questionId: question.id, questionTitle: title });
         toast.error('Missing required question information');
         return;
       }
-
       if (!plantId) {
         console.error('Missing required plantId');
         toast.error('Plant ID is required');
         return;
       }
-
       if (metadata?.type === 'subjective') {
         // Handle subjective questions
         const textValue = typeof data === 'string' ? data : data?.data?.text || data?.text || '';
-        
         const payload = {
           questionId: question.id,
           questionTitle: title,
@@ -170,26 +265,27 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
           plantId,
           financialYear
         };
-
         console.log('Submitting subjective answer:', payload);
         await updateSubjectiveAnswer(payload).unwrap();
-        
-        setQuestionData(payload);
+        setQuestionData({ ...payload });
         setIsEditModalOpen(false);
         toast.success('Answer saved successfully');
       } else if (metadata?.type === 'table' || metadata?.type === 'multi-table' || metadata?.type === 'dynamic-table') {
         // Handle table questions
         let formattedData;
-        
-        // Create a deep copy of the data to avoid modifying read-only properties
-        const dataCopy = JSON.parse(JSON.stringify(data?.data || data));
-        
+        // Only stringify the answer data, not the whole event or React object
+        const answerData = data?.data || data;
+        let dataCopy;
+        if (typeof answerData === 'object' && answerData !== null && !Array.isArray(answerData)) {
+          dataCopy = JSON.parse(JSON.stringify(answerData));
+        } else {
+          dataCopy = answerData;
+        }
         // Convert object format to array format for API
         formattedData = Object.entries(dataCopy).map(([rowIndex, rowData]) => ({
           row_index: parseInt(rowIndex),
           ...rowData
         }));
-
         console.log('Submitting table answer:', formattedData);
         await updateTableAnswer({
           financialYear,
@@ -198,8 +294,6 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
           updatedData: formattedData,
           plantId
         }).unwrap();
-
-        // Update local state with the new data
         const newData = {
           questionId: question.id,
           questionTitle: title,
@@ -328,7 +422,13 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
           </div>
           <div className="flex items-center space-x-3 ml-4">
             <AuditBadge isAuditRequired={isAuditRequired} />
-
+            {/* Audit Status Dot */}
+            {isAuditRequired && (
+              <div className="flex items-center gap-1">
+                <AuditStatusDot status={auditStatus} />
+                {isAuditStatusFetching && <span className="text-xs text-gray-400 ml-1">...</span>}
+              </div>
+            )}
             <button
               onClick={() => setAiChatOpen(true)}
               className="px-3 py-1 bg-[#4F46E5] text-white text-sm rounded hover:bg-[#4338CA] transition-colors flex items-center gap-1"
@@ -339,7 +439,6 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
               </svg>
               <span>AI</span>
             </button>
-            
             <button
               onClick={() => {
                 setTempData(JSON.parse(JSON.stringify(questionData)));
@@ -374,6 +473,10 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
             onSave={handleSave}
             tempData={tempData}
             question={question}
+            plantId={plantId}
+            financialYear={financialYear}
+            updateAuditStatus={updateAuditStatus}
+            refetchAuditStatus={refetchAuditStatus}
           >
             {renderEditableContent()}
           </EditModal>

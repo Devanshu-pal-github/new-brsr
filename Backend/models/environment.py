@@ -22,7 +22,6 @@ class QuestionAnswer(BaseModel):
     lastUpdated: datetime = Field(default_factory=datetime.utcnow)
     comments: List[Dict[str, Any]] = Field(default_factory=list)
     attachments: List[str] = Field(default_factory=list)
-    auditStatus: Optional[bool] = None
 
 class EnvironmentReport(BaseModel):
     """Stores only the answer data and metadata for an environment report"""
@@ -32,6 +31,7 @@ class EnvironmentReport(BaseModel):
     plant_type: PlantType = PlantType.REGULAR  # Default to regular plant type
     financialYear: str
     answers: Dict[str, QuestionAnswer] = Field(default_factory=dict)  # Initialize as empty dict
+    audit_statuses: Dict[str, Optional[bool]] = Field(default_factory=dict)  # questionId -> audit status
     status: str = "draft"
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)

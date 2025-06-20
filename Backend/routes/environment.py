@@ -392,6 +392,7 @@ async def update_subjective_answer(
 
 class AuditStatusUpdate(BaseModel):
     audit_status: bool = Field(description="Boolean flag indicating if the question has been audited")
+    plant_id: str = Field(..., description="Plant ID")
 
 @router.put("/reports/{financial_year}/audit-status/{question_id}")
 async def update_audit_status(
@@ -408,9 +409,9 @@ async def update_audit_status(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not have company access"
         )
-        
     success = await service.update_audit_status(
         company_id=user["company_id"],
+        plant_id=update.plant_id,
         financial_year=financial_year,
         question_id=question_id,
         audit_status=update.audit_status
@@ -418,3 +419,30 @@ async def update_audit_status(
     if not success:
         raise HTTPException(status_code=404, detail="Question not found or update failed")
     return {"message": "Audit status updated successfully"}
+
+class AuditStatusQuery(BaseModel):
+    plant_id: str = Field(..., description="Plant ID")
+
+@router.get("/reports/{financial_year}/audit-status/{question_id}")
+async def get_audit_status(
+    financial_year: str,
+    question_id: str,
+    plant_id: str = Query(..., description="Plant ID"),
+    service: EnvironmentService = Depends(get_environment_service),
+    user: Dict = Depends(get_current_active_user)
+):
+    """Get audit status for a specific question, plant, and year"""
+    if not user.get("company_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have company access"
+        )
+    audit_status = await service.get_audit_status(
+        company_id=user["company_id"],
+        plant_id=plant_id,
+        financial_year=financial_year,
+        question_id=question_id
+    )
+    if audit_status is None:
+        raise HTTPException(status_code=404, detail="No audit status available")
+    return {"audit_status": audit_status}
