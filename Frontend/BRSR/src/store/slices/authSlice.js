@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { store } from '../store';
 
 // Get user data from localStorage if available
 const getUserFromStorage = () => {
@@ -40,7 +41,8 @@ const initialState = {
   refreshToken: null,
   tokenType: 'bearer',
   expiresIn: null,
-  companyDetails: getCompanyDetailsFromStorage()
+  companyDetails: getCompanyDetailsFromStorage(),
+  tokenExpirationTimer: null
 };
 
 const authSlice = createSlice({
@@ -80,8 +82,16 @@ const authSlice = createSlice({
       localStorage.setItem('token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('user_name', user_name);
+
+      // Set a timer for token expiration
+      if (expires_in) {
+        const expirationTime = Date.now() + (expires_in * 1000); // expires_in is in seconds
+        state.tokenExpirationTimer = setTimeout(() => {
+          store.dispatch(tokenExpired());
+        }, expires_in * 1000);
+      }
     },
-    logout: (state) => {
+    clearAuthData: (state) => {
       state.user = null;
       state.token = null;
       state.refreshToken = null;
@@ -89,13 +99,48 @@ const authSlice = createSlice({
       state.expiresIn = null;
       state.isAuthenticated = false;
       state.companyDetails = null;
-      
+      if (state.tokenExpirationTimer) {
+        clearTimeout(state.tokenExpirationTimer);
+        state.tokenExpirationTimer = null;
+      }
       // Remove from localStorage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_name');
+      localStorage.removeItem('company_id');
+      localStorage.removeItem('plant_id');
       localStorage.removeItem('companyDetails');
+    },
+    logout: (state) => {
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.refreshToken = null;
+      state.tokenType = 'bearer';
+      state.expiresIn = null;
+      state.companyDetails = null;
+      if (state.tokenExpirationTimer) {
+        clearTimeout(state.tokenExpirationTimer);
+        state.tokenExpirationTimer = null;
+      }
+      localStorage.clear(); // Clear all local storage for a clean logout
+    },
+    tokenExpired: (state) => {
+      // This action will be dispatched when the token expires
+      // It will clear all auth data and trigger a redirect to login
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.refreshToken = null;
+      state.tokenType = 'bearer';
+      state.expiresIn = null;
+      state.companyDetails = null;
+      if (state.tokenExpirationTimer) {
+        clearTimeout(state.tokenExpirationTimer);
+        state.tokenExpirationTimer = null;
+      }
+      localStorage.clear(); // Clear all local storage for a clean logout
     },
     setCompanyDetails: (state, action) => {
       state.companyDetails = action.payload;
@@ -134,6 +179,14 @@ const authSlice = createSlice({
         localStorage.setItem('token', payload.access_token);
         localStorage.setItem('refresh_token', payload.refresh_token);
         localStorage.setItem('user_name', payload.user_name);
+
+        // Set a timer for token expiration
+        if (payload.expires_in) {
+          const expirationTime = Date.now() + (payload.expires_in * 1000); // expires_in is in seconds
+          state.tokenExpirationTimer = setTimeout(() => {
+            store.dispatch(tokenExpired());
+          }, payload.expires_in * 1000);
+        }
       } catch (error) {
         console.error('Error storing authentication data in localStorage:', error);
       }
@@ -146,14 +199,16 @@ const authSlice = createSlice({
 });
 
 export const { 
-  setCredentials, 
-  logout, 
-  setError, 
-  clearError, 
+  setCredentials,
+  logout,
+  setError,
+  clearError,
   setCompanyDetails,
   loginPending,
   loginFulfilled,
-  loginRejected
+  loginRejected,
+  clearAuthData,
+  tokenExpired
 } = authSlice.actions;
 
 export default authSlice.reducer;

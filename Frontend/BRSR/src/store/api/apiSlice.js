@@ -1,30 +1,76 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { loginPending, loginFulfilled, loginRejected } from '../slices/authSlice';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { loginPending, loginFulfilled, loginRejected, logout, tokenExpired } from '../slices/authSlice';
+import { store } from '../store'; // Import the store
 
 const baseUrl = 'http://localhost:8000'; // Adjust based on your backend URL
 
+const baseQuery = fetchBaseQuery({
+  baseUrl,
+  prepareHeaders: (headers, { getState }) => {
+    const token = getState().auth.token;
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    if (headers.get('Content-Type') === 'multipart/form-data') {
+      headers.delete('Content-Type');
+    }
+    return headers;
+  }
+});
+
+const refreshAccessToken = async (refreshToken) => {
+  try {
+    const response = await fetch(`${baseUrl}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      return data;
+    } else {
+      throw new Error(data.detail || 'Failed to refresh token');
+    }
+  } catch (error) {
+    console.error('Refresh token failed:', error);
+    throw error;
+  }
+};
+
+const customBaseQuery = async (args, api, extraOptions) => {
+  let result = await baseQuery(args, api, extraOptions);
+
+  if (result.error && result.error.status === 401) {
+    // Token expired or unauthorized
+    const state = api.getState();
+    const refreshToken = state.auth.refreshToken;
+
+    if (refreshToken) {
+      try {
+        const refreshResult = await refreshAccessToken(refreshToken);
+        if (refreshResult && refreshResult.access_token) {
+          api.dispatch(loginFulfilled(refreshResult)); // Update tokens in store
+          // Retry the original query with the new token
+          result = await baseQuery(args, api, extraOptions);
+        } else {
+          api.dispatch(tokenExpired()); // Refresh token failed, log out
+        }
+      } catch (refreshError) {
+        api.dispatch(tokenExpired()); // Refresh token failed, log out
+      }
+    } else {
+      api.dispatch(tokenExpired()); // No refresh token, log out
+    }
+  }
+  return result;
+};
+
 export const apiSlice = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl,
-    prepareHeaders: (headers, { getState }) => {
-      // Get token from auth state
-      const token = getState().auth.token;
-
-      // If token exists, add authorization header
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-
-      // For login requests, ensure content type is properly set
-      if (headers.get('Content-Type') === 'multipart/form-data') {
-        // Remove content-type header for FormData to let the browser set it with the boundary
-        headers.delete('Content-Type');
-      }
-
-      return headers;
-    }
-  }),
+  baseQuery: customBaseQuery,
   endpoints: (builder) => ({
     login: builder.mutation({
       query: (credentials) => {

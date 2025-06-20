@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Provider, useSelector } from 'react-redux';
 import { store } from './store/store';
+import { useEffect } from 'react';
 
 // Pages
 import Login from './pages/Login';
@@ -14,14 +15,22 @@ import PlantDetails from '../Environment/components/PlantDetails';
 import DynamicPageRenderer from './dynamic-pages';
 import Plants from '../Environment/Pages/Plants';
 import EnvironmentContent from '../Environment/components/EnvironmentContent';
+import { selectIsAuthenticated } from './store/slices/authSlice';
 
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('token') !== null;
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return null; // Or a loading spinner, or a message
   }
   
   return children;
