@@ -2,6 +2,12 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 
+// Export a hook to get the current financial year
+export function useCurrentFinancialYear() {
+  const [searchParams] = useSearchParams();
+  return searchParams.get("financialYear") || "";
+}
+
 // Accept company as a prop
 const FinancialYearDropdown = ({ company }) => {
   const [searchParams, setSearchParams] = useSearchParams();

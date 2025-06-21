@@ -130,7 +130,7 @@ const GHGMainPage = () => {
             {activeScope}
             {reportMeta[activeScope]?.total_scope_emissions_co2e !== undefined && (
               <span className="ml-4 text-base   font-semibold text-[#1A2341]">
-                (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()})
+                (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()} tCO₂e)
               </span>
             )}
           </div>

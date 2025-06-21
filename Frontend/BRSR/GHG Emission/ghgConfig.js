@@ -29,7 +29,7 @@ export const GHG_CATEGORIES = {
         },
         { 
           subcategory_name: "Natural gas", 
-          unit: "cubic meters",
+          unit: "cubic meters(m³)",
           emission_factors: [
             { value: 1.89, unit: "kg CO2e/m³", source: "GHG Platform India", notes: "India-specific" },
             { value: 1.85, unit: "kg CO2e/m³", source: "Defra", notes: "UK-based fallback" },
@@ -269,7 +269,7 @@ export const GHG_CATEGORIES = {
 
 export const GHG_UNITS = [
   "liters",
-  "cubic meters",
+  "cubic meters(m³)",
   "kg",
   "tonnes",
   "kWh",

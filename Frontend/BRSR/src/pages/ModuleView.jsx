@@ -8,7 +8,7 @@ import {
 } from "../store/slices/authSlice";
 import Navbar from "../components/layout/ReportNavbar";
 import { useGetReportModulesQuery } from "../store/api/apiSlice";
-import { Loader2 } from "lucide-react";
+import { Loader2,Factory } from "lucide-react";
 import DynamicPageRenderer from "../dynamic-pages";
 import Plants from "../../../BRSR/Environment/Pages/Plants";
 import EnvironmentContent from "../../../BRSR/Environment/components/EnvironmentContent";
@@ -217,7 +217,7 @@ const ModuleView = () => {
                           : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
                         }`}
                     >
-                      <Leaf className="w-4 h-4 flex-shrink-0" />
+                      <Factory className="w-4 h-4 flex-shrink-0" />
                       <span className="text-left">GHG Emissions</span>
                     </button>
                   </li>

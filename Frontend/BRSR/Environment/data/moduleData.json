@@ -121,7 +121,7 @@
               "type": "Essential",
               "title": "Zero Liquid Discharge Mechanism",
               "description": "Has the entity implemented a mechanism for Zero Liquid Discharge? If yes, provide details of its coverage and implementation.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }
@@ -150,22 +150,22 @@
                 ],
                 "rows": [
                   { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
-                  { "parameter": "(i) To Surface water" },
-                  { "parameter": "- No treatment" },
-                  { "parameter": "- With treatment – please specify level of treatment" },
-                  { "parameter": "(ii) To Groundwater" },
-                  { "parameter": "- No treatment" },
-                  { "parameter": "- With treatment – please specify level of treatment" },
-                  { "parameter": "(iii) To Seawater" },
-                  { "parameter": "- No treatment" },
-                  { "parameter": "- With treatment – please specify level of treatment" },
-                  { "parameter": "(iv) Sent to third-parties" },
-                  { "parameter": "- No treatment" },
-                  { "parameter": "- With treatment – please specify level of treatment" },
-                  { "parameter": "(v) Others" },
-                  { "parameter": "- No treatment" },
-                  { "parameter": "- With treatment – please specify level of treatment" },
-                  { "parameter": "<b>Total water discharged (in kilolitres)</b>" }
+                  { "parameter": "(i) To Surface water" , "unit": "KL (Kilolitres)" },
+                  { "parameter": "- No treatment" , "unit": "KL (Kilolitres)" },
+                  { "parameter": "- With treatment – please specify level of treatment", "unit": "KL (Kilolitres)" },
+                  { "parameter": "(ii) To Groundwater","unit": "KL (Kilolitres)" },
+                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "(iii) To Seawater","unit": "KL (Kilolitres)" },
+                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "(iv) Sent to third-parties","unit": "KL (Kilolitres)" },
+                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "(v) Others","unit": "KL (Kilolitres)" },
+                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
+                  { "parameter": "<b>Total water discharged (in kilolitres)</b>","unit": "KL (Kilolitres)" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
@@ -399,7 +399,7 @@
               "type": "Leadership",
               "title": "Assessment of Value Chain Partners",
               "description": "Percentage of value chain partners (by value of business done) assessed for environmental impacts.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }
@@ -415,7 +415,7 @@
               "type": "Leadership",
               "title": "Business Continuity and Disaster Management Plan",
               "description": "Does the entity have a business continuity and disaster management plan? Provide details in 100 words or a web link.",
-              "isAuditRequired": true,
+              "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
               }

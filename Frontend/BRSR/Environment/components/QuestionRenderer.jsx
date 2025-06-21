@@ -9,9 +9,8 @@ import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
 import { AppProvider } from '../../src/AICHATBOT/AppProvider';
 
 const AuditBadge = ({ isAuditRequired }) => (
-  <div className={`inline-block px-3 py-1 rounded text-xs ${
-    isAuditRequired ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-  }`}>
+  <div className={`inline-block px-3 py-1 rounded text-xs ${isAuditRequired ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+    }`}>
     {isAuditRequired ? 'Audit Required' : 'No Audit Required'}
   </div>
 );
@@ -96,60 +95,84 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
-          {question?.isAuditRequired && (
-            <div className="mt-4 flex items-center space-x-4 border-t pt-4">
-              <span className="text-sm text-gray-600">Audit Done :</span>
-              <label className="flex items-center gap-1 cursor-pointer">
-                <input
-                  type="radio"
-                  name={`audit-status-${question.id}`}
-                  checked={localAuditStatus === true}
-                  onChange={() => handleAuditStatusClick(true)}
-                  disabled={showAuditConfirm || isAuditLoading}
-                  className="accent-green-600"
-                />
-                <span className="text-green-700">Yes</span>
-              </label>
-              <label className="flex items-center gap-1 cursor-pointer">
-                <input
-                  type="radio"
-                  name={`audit-status-${question.id}`}
-                  checked={localAuditStatus === false}
-                  onChange={() => handleAuditStatusClick(false)}
-                  disabled={showAuditConfirm || isAuditLoading}
-                  className="accent-red-600"
-                />
-                <span className="text-red-700">No</span>
-              </label>
+          <div className="flex flex-col">
+            <div className="flex justify-end">
+              {question?.isAuditRequired && (
+                <div className="mt-4 flex items-center space-x-4 pt-4">
+                  <span className="text-sm text-gray-600">Audit Done :</span>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`audit-status-${question.id}`}
+                      checked={localAuditStatus === true}
+                      onChange={() => handleAuditStatusClick(true)}
+                      disabled={showAuditConfirm || isAuditLoading}
+                      className="accent-green-600"
+                    />
+                    <span className="text-green-700">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`audit-status-${question.id}`}
+                      checked={localAuditStatus === false}
+                      onChange={() => handleAuditStatusClick(false)}
+                      disabled={showAuditConfirm || isAuditLoading}
+                      className="accent-red-600"
+                    />
+                    <span className="text-red-700">No</span>
+                  </label>
+                </div>
+              )}
             </div>
-          )}
-          <div className="mt-4 flex justify-end space-x-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onSave(tempData)}
-              className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
-            >
-              Save Changes
-            </button>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => onSave(tempData)}
+                className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       </div>
       {/* Audit Status Confirmation Modal */}
       {showAuditConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
+          onClick={e => {
+            if (e.target === e.currentTarget) setShowAuditConfirm(false);
+          }}
+        >
           <div className="bg-white p-6 rounded shadow-lg">
-            <p className="mb-4">Are you sure you want to set audit status to <b>{pendingAuditStatus ? 'Yes' : 'No'}</b>?</p>
-            <div className="flex gap-4">
-              <button onClick={handleAuditConfirm} disabled={isAuditLoading} className="px-4 py-2 bg-blue-600 text-white rounded">{isAuditLoading ? 'Updating...' : 'Confirm'}</button>
-              <button onClick={() => setShowAuditConfirm(false)} disabled={isAuditLoading} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+            <p className="mb-4">
+              Are you sure you want to set audit status to <b>{pendingAuditStatus ? 'Yes' : 'No'}</b>?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowAuditConfirm(false)}
+                disabled={isAuditLoading}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAuditConfirm}
+                disabled={isAuditLoading}
+                className="px-4 py-2 bg-[#20305D] hover:bg-[#162442] text-white rounded"
+              >
+                {isAuditLoading ? 'Updating...' : 'Confirm'}
+              </button>
             </div>
           </div>
         </div>
+
       )}
     </div>
   );
@@ -316,29 +339,29 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
     switch (metadata?.type) {
       case 'table':
         return (
-          <TableRenderer 
-            metadata={metadata} 
-            data={tempData?.data || {}} 
-            isEditing={true} 
-            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
+          <TableRenderer
+            metadata={metadata}
+            data={tempData?.data || {}}
+            isEditing={true}
+            onSave={(newData) => setTempData({ ...tempData, data: newData })}
           />
         );
       case 'multi-table':
         return (
-          <MultiTableRenderer 
-            metadata={metadata} 
-            data={tempData?.data || {}} 
-            isEditing={true} 
-            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
+          <MultiTableRenderer
+            metadata={metadata}
+            data={tempData?.data || {}}
+            isEditing={true}
+            onSave={(newData) => setTempData({ ...tempData, data: newData })}
           />
         );
       case 'dynamic-table':
         return (
-          <DynamicTableRenderer 
-            metadata={metadata} 
-            data={tempData?.data || {}} 
-            isEditing={true} 
-            onSave={(newData) => setTempData({ ...tempData, data: newData })} 
+          <DynamicTableRenderer
+            metadata={metadata}
+            data={tempData?.data || {}}
+            isEditing={true}
+            onSave={(newData) => setTempData({ ...tempData, data: newData })}
           />
         );
       case 'subjective':
@@ -362,7 +385,7 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
 
   const renderQuestion = () => {
     console.log('Rendering Question:', question);
-    
+
     switch (metadata?.type) {
       case 'subjective':
         return (
@@ -377,24 +400,24 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
         );
       case 'table':
         return (
-          <TableRenderer 
-            metadata={metadata} 
+          <TableRenderer
+            metadata={metadata}
             data={questionData?.data || {}}
             isEditing={false}
           />
         );
       case 'multi-table':
         return (
-          <MultiTableRenderer 
-            metadata={metadata} 
+          <MultiTableRenderer
+            metadata={metadata}
             data={questionData?.data || {}}
             isEditing={false}
           />
         );
       case 'dynamic-table':
         return (
-          <DynamicTableRenderer 
-            metadata={metadata} 
+          <DynamicTableRenderer
+            metadata={metadata}
             data={questionData?.data || {}}
             isEditing={false}
           />
@@ -411,8 +434,8 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
           <div className="flex-1">
             {/* <div className="font-semibold text-base text-[#20305D]">{title}</div> */}
             {description && (
-              <div 
-                className="text-sm font-semibold text-gray-700 mb-2" 
+              <div
+                className="text-sm font-semibold text-gray-700 mb-2"
                 dangerouslySetInnerHTML={{ __html: description }}
               />
             )}
@@ -482,12 +505,12 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
         {/* AI Chat Window */}
         {aiChatOpen && (
           <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
-            <div 
-              className="w-full h-full absolute top-0 left-0 bg-black/30" 
+            <div
+              className="w-full h-full absolute top-0 left-0 bg-black/30"
               onClick={(e) => {
                 e.stopPropagation();
                 setAiChatOpen(false);
-              }} 
+              }}
             />
             <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up" onClick={(e) => e.stopPropagation()}>
               <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">

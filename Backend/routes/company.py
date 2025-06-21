@@ -373,3 +373,8 @@ async def assign_user_to_company(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+        
+        
+        
+
+

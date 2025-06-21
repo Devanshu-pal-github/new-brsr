@@ -71,7 +71,10 @@ const GHGTable = ({ scope, rows }) => {
                     </select>
                 </div>
             </div>
-            <div style={{ height: 400, width: '100%' }}>
+            <div
+                className="w-full"
+                style={{ minHeight: 350, maxHeight: '75vh', height: '60vh' }}
+            >
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
