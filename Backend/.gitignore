@@ -1,0 +1,74 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cython debug symbols
+cython_debug/
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Python dotenv environment files
+.env
+.env.*
+
+# Mypy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# FastAPI specific (if any generated folders)
+instance/
+*.db
+
+# Logs
+*.log
+logs/
+
+# Gunicorn/PID files
+*.pid
+
+# Build and dist folders
+build/
+dist/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.swp
+*.bak
+*.tmp
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# SQLite DBs (optional)
+*.sqlite3
