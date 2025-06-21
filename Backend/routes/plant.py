@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, B
 from typing import List, Optional,Dict
 from dependencies import get_database, get_current_active_user ,get_current_user
 from models.plant import PlantCreate, Plant, PlantUpdate, PlantWithCompany, PlantWithAnswers
-from models.auth import User
+from models.auth import User, DeleteEmployeeRequest
 from services.plant import PlantService
 import uuid
 from datetime import datetime
@@ -244,4 +244,26 @@ async def get_plant_employees(
         employees = await plant_service.get_company_employees_service(company_id)
     
     return employees
+
+@router.delete("/employee/delete", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_employee_from_plant(
+    payload: DeleteEmployeeRequest = Body(...),
+    user: Dict = Depends(get_current_active_user),
+    plant_service = Depends(get_plant_service)
+):
+    """
+    Delete an employee from a specific plant. The company_id is taken from the current user.
+    The plant_id and employee_id are provided in the request body.
+    """
+    company_id = user["company_id"]
+    plant_id = payload.plant_id
+    employee_id = payload.employee_id
+    deleted = await plant_service.delete_employee_from_plant(company_id, plant_id, employee_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Employee with ID {employee_id} not found in plant {plant_id}"
+        )
+    return None
+
 

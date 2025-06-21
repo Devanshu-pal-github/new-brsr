@@ -15,6 +15,7 @@ import EnvironmentContent from "../../../BRSR/Environment/components/Environment
 import ChatbotWindow from "../AICHATBOT/ChatbotWindow";
 import { AppProvider } from "../AICHATBOT/AppProvider";
 import Dashboard from "../components/dashboard/Dashboard";
+import GHGMainPage from "../../../BRSR/GHG Emission/Pages/GHGMainPage";
 
 // Import icons for modules
 import {
@@ -206,6 +207,21 @@ const ModuleView = () => {
                     </button>
                   </li>
 
+                  {/* Greenhouse Gases Emission Module */}
+                  <li className="w-full">
+                    <button
+                      onClick={() => handleModuleClick("ghg")}
+                      className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
+                        ${selectedModuleId === "ghg"
+                          ? "bg-[#20305D] text-white"
+                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
+                        }`}
+                    >
+                      <Leaf className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-left">GHG Emissions</span>
+                    </button>
+                  </li>
+
                   {/* Module List */}
                   {isLoading ? (
                     <li className="w-full flex justify-center py-4">
@@ -237,9 +253,8 @@ const ModuleView = () => {
                     ))
                   )}
                 </ul>
-              </nav>
-
               {/* Logout Button */}
+              </nav>
               <div className="p-5 border-t border-gray-700">
                 <button
                   onClick={handleLogout}
@@ -247,8 +262,7 @@ const ModuleView = () => {
                 >
                   <X className="w-4 h-4" />
                   <span
-                    className={`${isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"
-                      }`}
+                    className={`${isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"}`}
                   >
                     Logout
                   </span>
@@ -283,6 +297,11 @@ const ModuleView = () => {
                   />
                 </div>
               )
+            ) : selectedModuleId === "ghg" ? (
+              <div className="h-[calc(100vh-48px)] overflow-y-auto">
+                {/* GHG Main Page with SubHeader */}
+                <GHGMainPage />
+              </div>
             ) : selectedModuleId ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
                 <div className="container mx-auto px-2">

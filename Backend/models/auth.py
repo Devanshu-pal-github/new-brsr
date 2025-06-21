@@ -100,4 +100,8 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+class DeleteEmployeeRequest(BaseModel):
+    employee_id: str
+    plant_id: str
+
 # This file can be left minimal or empty if not required by the checklist. If needed, only basic user fields should be kept for authentication.

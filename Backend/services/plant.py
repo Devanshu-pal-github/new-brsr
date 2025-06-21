@@ -339,3 +339,24 @@ class PlantService:
             return employees
         except Exception as e:
             raise Exception(f"Error fetching company employees: {str(e)}")
+    
+    async def delete_employee_from_plant(self, company_id: str, plant_id: str, employee_id: str) -> bool:
+        """Delete an employee from a specific plant (and company)."""
+        # Find the user by id, company, and plant
+        user = await self.db["users"].find_one({
+            "id": employee_id,
+            "company_id": company_id,
+            "plant_id": plant_id
+        })
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found for this plant and company"
+            )
+        # Delete the user
+        result = await self.db["users"].delete_one({
+            "id": employee_id,
+            "company_id": company_id,
+            "plant_id": plant_id
+        })
+        return result.deleted_count > 0

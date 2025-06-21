@@ -537,6 +537,14 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['PlantEmployees']
     }),
+    deleteEmployee: builder.mutation({
+      query: ({ employee_id, plant_id }) => ({
+        url: '/plants/employee/delete',
+        method: 'DELETE',
+        body: { employee_id, plant_id },
+      }),
+      invalidatesTags: ['PlantEmployees'],
+    }),
     generateText: builder.mutation({
       query: ({ message, context }) => ({
         url: '/api/generate',
@@ -810,6 +818,55 @@ export const apiSlice = createApi({
         { type: 'AuditStatus', id: `${arg.questionId}-${arg.plantId}-${arg.financialYear}` }
       ]
     }),
+    getGHGReport: builder.query({
+      query: ({ financial_year, plant_id, scope }) => {
+        // Ensure financial_year is always a valid string
+        let fy = financial_year;
+        if (!fy) {
+          fy = localStorage.getItem('financial_year') || '2024-2025';
+        }
+        if (typeof fy !== 'string') fy = String(fy);
+        console.log('[getGHGReport] Sending financial_year:', fy, 'plant_id:', plant_id, 'scope:', scope);
+        return {
+          url: '/ghg/report/get',
+          method: 'POST',
+          body: {
+            financial_year: fy,
+            plant_id,
+            scope
+          }
+        };
+      },
+      transformResponse: (response) => response,
+      providesTags: ['GHGReport']
+    }),
+    
+    upsertGHGReport: builder.mutation({
+      query: (report) => {
+        // Ensure financial_year is always a valid string
+        let fy = report?.financial_year;
+        if (!fy) {
+          fy = localStorage.getItem('financial_year') || '2024-2025';
+        }
+        if (typeof fy !== 'string') fy = String(fy);
+        // Ensure company_id is present
+        let companyId = report?.company_id;
+        if (!companyId) {
+          companyId = localStorage.getItem('company_id');
+        }
+        if (!companyId) {
+          throw new Error('[upsertGHGReport] company_id is required but missing');
+        }
+        const payload = { ...report, financial_year: fy, company_id: companyId };
+        console.log('[upsertGHGReport] Sending payload:', payload);
+        return {
+          url: '/ghg/report/upsert',
+          method: 'POST',
+          body: payload
+        };
+      },
+      invalidatesTags: ['GHGReport']
+    }),
   }),
 });
 
@@ -834,6 +891,7 @@ export const {
   useLazyGetModuleAnswerQuery,
   useGetPlantEmployeesQuery,
   useCreateEmployeeMutation,
+  useDeleteEmployeeMutation,
   useGenerateTextMutation,
   useStoreQuestionDataMutation,
   useSubmitQuestionAnswerMutation,
@@ -841,5 +899,8 @@ export const {
   useUpdateAuditStatusMutation,
   useUpdateTableAnswerEnvironmentMutation,
   useGetAuditStatusQuery, // <-- add this
+  useGetGHGReportQuery,
+  useLazyGetGHGReportQuery,
+  useUpsertGHGReportMutation,
 } = apiSlice;
 export default apiSlice;

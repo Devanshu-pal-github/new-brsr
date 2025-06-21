@@ -3,17 +3,19 @@ import { useSelector } from 'react-redux';
 import { X, Search, Plus } from 'lucide-react';
 import { DataGrid } from '@mui/x-data-grid';
 import toast, { Toaster } from 'react-hot-toast';
-import { useGetPlantEmployeesQuery } from '../../store/api/apiSlice';
+import { useGetPlantEmployeesQuery, useDeleteEmployeeMutation } from '../../store/api/apiSlice';
 import CreateEmployeeModal from './CreateEmployeeModal';
 
 const EmployeeManagementModal = ({ onClose, plantId }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({ role: "" });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, employee: null });
   const popupRef = useRef(null);
   
-  // Add click outside handler
+  // Add click outside handler (disable when delete dialog is open)
   useEffect(() => {
+    if (deleteDialog.open) return; // Don't attach handler if delete dialog is open
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target) && !isCreateModalOpen) {
         onClose();
@@ -24,7 +26,7 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose, isCreateModalOpen]);
+  }, [onClose, isCreateModalOpen, deleteDialog.open]);
 
   // Get user from Redux store for company_id
   const user = useSelector((state) => state.auth.user);
@@ -39,6 +41,42 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
   }, {
     skip: !plantId,
   });
+
+  // Delete employee mutation
+  const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation();
+
+  // Handler for deleting an employee
+  const handleDeleteEmployee = async (employee_id) => {
+    if (!plantId || !employee_id) return;
+    try {
+      await deleteEmployee({ employee_id, plant_id: plantId }).unwrap();
+      toast.success('Employee deleted successfully');
+    } catch (err) {
+      toast.error(err?.data?.detail || 'Failed to delete employee');
+    }
+  };
+
+  // Handler for delete button click (opens dialog)
+  const handleDeleteClick = (employee) => {
+    setDeleteDialog({ open: true, employee });
+  };
+
+  // Handler for confirming deletion
+  const handleConfirmDelete = async () => {
+    if (!plantId || !deleteDialog.employee) return;
+    try {
+      await deleteEmployee({ employee_id: deleteDialog.employee.id, plant_id: plantId }).unwrap();
+      toast.success('Employee deleted successfully');
+      setDeleteDialog({ open: false, employee: null });
+    } catch (err) {
+      toast.error(err?.data?.detail || 'Failed to delete employee');
+    }
+  };
+
+  // Handler for canceling deletion
+  const handleCancelDelete = () => {
+    setDeleteDialog({ open: false, employee: null });
+  };
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -102,7 +140,22 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
           {params.value ? 'Active' : 'Inactive'}
         </span>
       )
-    }
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => (
+        <span
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-200 to-red-400 text-[#1A2341] cursor-pointer hover:from-red-300 hover:to-red-500 transition-all"
+          onClick={() => handleDeleteClick(params.row)}
+          style={{ userSelect: 'none' }}
+        >
+          Delete
+        </span>
+      ),
+    },
   ];
 
   if (employeesLoading) {
@@ -218,8 +271,37 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
         onClose={() => setIsCreateModalOpen(false)}
         plantId={plantId}
       />
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialog.open && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-lg p-6 min-w-[320px] max-w-[90vw] border-2 border-[#1A2341] flex flex-col items-center">
+            <div className="text-lg font-semibold text-[#1A2341] mb-2">Confirm Deletion</div>
+            <div className="text-gray-700 mb-4 text-center">
+              Are you sure you want to delete <span className="font-bold text-[#1A2341]">{deleteDialog.employee?.full_name}</span>?
+              <br />This action cannot be undone.
+            </div>
+            <div className="flex gap-4 mt-2">
+              <button
+                className="px-4 py-2 rounded bg-gradient-to-r from-[#1A2341] to-[#2c3e50] text-white font-semibold hover:from-[#2c3e50] hover:to-[#1A2341] transition-all"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-gray-200 text-[#1A2341] font-semibold hover:bg-gray-300 transition-all"
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default EmployeeManagementModal; 
+export default EmployeeManagementModal;
