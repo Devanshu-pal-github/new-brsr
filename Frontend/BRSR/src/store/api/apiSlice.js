@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { loginPending, loginFulfilled, loginRejected, logout, tokenExpired } from '../slices/authSlice';
 import { store } from '../store'; // Import the store
 
