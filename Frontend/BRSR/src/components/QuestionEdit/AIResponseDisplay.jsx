@@ -68,76 +68,33 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
         );
     };
 
-    // Format AI response into professional, grouped markdown
-    const formatResponseToMarkdown = (text) => {
-        if (!text) return '';
-
-        // First, look for explicit tagged lines like [Strength]: ...
-        const tagRegex = /\[(Strength|Issue|Recommendation)\]:\s*([^\[]+)/gi;
+    // Helper: Parse compliance check output into grouped arrays
+    function parseComplianceCheck(text) {
+        const lines = text.split(/\n|(?=\[Strength\])|(?=\[Issue\])|(?=\[Recommendation\])/g).map(l => l.trim()).filter(Boolean);
         const groups = { Strength: [], Issue: [], Recommendation: [] };
-        let match;
-        while ((match = tagRegex.exec(text)) !== null) {
-            const tag = match[1];
-            const content = match[2].trim();
-            groups[tag].push(content);
-        }
-
-        const anyTagged = groups.Strength.length + groups.Issue.length + groups.Recommendation.length > 0;
-
-        const buildMarkdown = (obj) => {
-            let md = '### Compliance Review\n';
-            const append = (title, arr) => {
-                if (!arr.length) return;
-                md += `\n**${title}**\n`;
-                arr.forEach(pt => {
-                    md += `- ${pt}\n`;
-                });
-            };
-            append('Strengths', obj.Strength);
-            append('Issues', obj.Issue);
-            append('Recommendations', obj.Recommendation);
-            return md.trim();
-        };
-
-        if (anyTagged) {
-            return buildMarkdown(groups);
-        }
-
-        // -------- Fallback heuristic grouping (no tags) -------- //
-        const strengths = [];
-        const issues = [];
-        const recommendations = [];
-        const others = [];
-
-        text.split(/[\.\n]/).forEach(rawSegment => {
-            const segment = rawSegment.trim();
-            if (!segment) return;
-            if (/^strengths?:/i.test(segment)) {
-                strengths.push(segment.replace(/^strengths?:/i, '').trim());
-            } else if (/^(issues?|concerns?):/i.test(segment)) {
-                issues.push(segment.replace(/^(issues?|concerns?):/i, '').trim());
-            } else if (/^recommendations?:/i.test(segment)) {
-                recommendations.push(segment.replace(/^recommendations?:/i, '').trim());
-            } else {
-                others.push(segment);
+        lines.forEach(line => {
+            if (/^\[Strength\]:/i.test(line)) {
+                groups.Strength.push(line.replace(/^\[Strength\]:/i, '').trim());
+            } else if (/^\[Issue\]:/i.test(line)) {
+                groups.Issue.push(line.replace(/^\[Issue\]:/i, '').trim());
+            } else if (/^\[Recommendation\]:/i.test(line)) {
+                groups.Recommendation.push(line.replace(/^\[Recommendation\]:/i, '').trim());
             }
         });
-
-        const mdObj = { Strength: strengths, Issue: issues, Recommendation: recommendations };
-        let md = buildMarkdown(mdObj);
-        if (others.length) {
-            md += '\n\n**Observations**\n';
-            others.forEach(pt => { md += `- ${pt}\n`; });
-        }
-        return md.trim();
-    };
-
-    const formattedText = formatResponseToMarkdown(aiMessage.text);
+        return groups;
+    }
 
     // Capitalize the confidence level for display
     const confidenceLevel = aiMessage.confidence
         ? aiMessage.confidence.charAt(0).toUpperCase() + aiMessage.confidence.slice(1)
         : 'Unknown';
+
+    // --- NEW: Render compliance check as real bullet lists ---
+    const isComplianceCheck = aiMessage?.action === 'QUICK_COMPLIANCE_CHECK' || aiMessage?.type === 'QUICK_COMPLIANCE_CHECK';
+    let complianceGroups = null;
+    if (isComplianceCheck) {
+        complianceGroups = parseComplianceCheck(aiMessage.text);
+    }
 
     return (
         <div className="mt-2 relative">
@@ -162,52 +119,85 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
                 </div>
             )}
 
-            {/* AI Response with Classy Markdown */}
-            <div className="prose prose-sm max-w-none text-gray-300 pt-6">
-                <ReactMarkdown 
-                    rehypePlugins={[rehypeSanitize]}
-                    components={{
-                        h3: ({ node, ...props }) => (
-                            <h3 
-                                className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1" 
-                                {...props} 
-                            />
-                        ),
-                        ul: ({ node, ...props }) => (
-                            <ul 
-                                className="list-disc pl-5 my-2 space-y-1" 
-                                {...props} 
-                            />
-                        ),
-                        li: ({ node, ...props }) => (
-                            <li 
-                                className="text-sm text-gray-700 leading-relaxed" 
-                                {...props} 
-                            />
-                        ),
-                        strong: ({ node, ...props }) => (
-                            <strong 
-                                className="font-semibold text-gray-800" 
-                                {...props} 
-                            />
-                        ),
-                        p: ({ node, ...props }) => (
-                            <p 
-                                className="text-sm text-gray-700 mb-2 leading-relaxed" 
-                                {...props} 
-                            />
-                        ),
-                        code: ({ node, ...props }) => (
-                            <code 
-                                className="bg-slate-100 px-1 py-0.5 rounded text-xs text-gray-800 font-mono" 
-                                {...props} 
-                            />
-                        ),
-                    }}
-                >
-                    {formattedText}
-                </ReactMarkdown>
-            </div>
+            {/* AI Response: Compliance Check as Bullet Lists */}
+            {isComplianceCheck && (
+                <div className="prose prose-sm max-w-none text-gray-300 pt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">Compliance Review</h3>
+                    {complianceGroups.Strength.length > 0 && (
+                        <>
+                            <strong className="font-semibold text-gray-800">Strengths</strong>
+                            <ul className="list-disc pl-5 my-2 space-y-1">
+                                {complianceGroups.Strength.map((pt, i) => <li key={i} className="text-sm text-gray-700 leading-relaxed">{pt}</li>)}
+                            </ul>
+                        </>
+                    )}
+                    {complianceGroups.Issue.length > 0 && (
+                        <>
+                            <strong className="font-semibold text-gray-800">Issues</strong>
+                            <ul className="list-disc pl-5 my-2 space-y-1">
+                                {complianceGroups.Issue.map((pt, i) => <li key={i} className="text-sm text-gray-700 leading-relaxed">{pt}</li>)}
+                            </ul>
+                        </>
+                    )}
+                    {complianceGroups.Recommendation.length > 0 && (
+                        <>
+                            <strong className="font-semibold text-gray-800">Recommendations</strong>
+                            <ul className="list-disc pl-5 my-2 space-y-1">
+                                {complianceGroups.Recommendation.map((pt, i) => <li key={i} className="text-sm text-gray-700 leading-relaxed">{pt}</li>)}
+                            </ul>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* AI Response with Classy Markdown (for non-compliance) */}
+            {!isComplianceCheck && (
+                <div className="prose prose-sm max-w-none text-gray-300 pt-6">
+                    <ReactMarkdown 
+                        rehypePlugins={[rehypeSanitize]}
+                        components={{
+                            h3: ({ node, ...props }) => (
+                                <h3 
+                                    className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1" 
+                                    {...props} 
+                                />
+                            ),
+                            ul: ({ node, ...props }) => (
+                                <ul 
+                                    className="list-disc pl-5 my-2 space-y-1" 
+                                    {...props} 
+                                />
+                            ),
+                            li: ({ node, ...props }) => (
+                                <li 
+                                    className="text-sm text-gray-700 leading-relaxed" 
+                                    {...props} 
+                                />
+                            ),
+                            strong: ({ node, ...props }) => (
+                                <strong 
+                                    className="font-semibold text-gray-800" 
+                                    {...props} 
+                                />
+                            ),
+                            p: ({ node, ...props }) => (
+                                <p 
+                                    className="text-sm text-gray-700 mb-2 leading-relaxed" 
+                                    {...props} 
+                                />
+                            ),
+                            code: ({ node, ...props }) => (
+                                <code 
+                                    className="bg-slate-100 px-1 py-0.5 rounded text-xs text-gray-800 font-mono" 
+                                    {...props} 
+                                />
+                            ),
+                        }}
+                    >
+                        {formattedText}
+                    </ReactMarkdown>
+                </div>
+            )}
 
             {/* Suggestion Button */}
             {aiMessage.suggestion && (

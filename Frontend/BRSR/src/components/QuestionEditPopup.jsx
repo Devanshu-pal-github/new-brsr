@@ -29,6 +29,7 @@ const QuestionEditPopup = ({
     onClose,
     onSuccess,
     moduleId,
+    isOpen, // <-- Add this prop if not already present
 }) => {
     const [formData, setFormData] = useState({
         string_value: initialAnswer?.string_value || "",
@@ -110,6 +111,50 @@ const QuestionEditPopup = ({
         setCurrentValue(initialAnswer);
     }, [initialAnswer, question]);
 
+    // Always reset formData from initialAnswer when popup is opened
+    useEffect(() => {
+        if (!isOpen) return;
+        let mappedFormData = {
+            ...initialAnswer,
+            string_value: initialAnswer?.string_value || initialAnswer?.text || initialAnswer?.value || "",
+            decimal_value: initialAnswer?.decimal_value ?? "",
+            boolean_value: initialAnswer?.boolean_value ?? false,
+            link: initialAnswer?.link || "",
+            note: initialAnswer?.note || "",
+        };
+        if (question?.metadata?.fields?.length) {
+            question.metadata.fields.forEach((field) => {
+                const key = field.key;
+                if (mappedFormData[key] === undefined || mappedFormData[key] === "") {
+                    switch (field.type) {
+                        case "text":
+                            mappedFormData[key] = initialAnswer?.string_value || initialAnswer?.text || initialAnswer?.value || "";
+                            break;
+                        case "boolean":
+                            mappedFormData[key] = initialAnswer?.boolean_value ?? false;
+                            break;
+                        case "number":
+                        case "decimal":
+                        case "integer":
+                        case "percentage":
+                            mappedFormData[key] = initialAnswer?.decimal_value ?? "";
+                            break;
+                        case "link":
+                            mappedFormData[key] = initialAnswer?.link || "";
+                            break;
+                        default:
+                            mappedFormData[key] = initialAnswer[key] ?? "";
+                    }
+                }
+            });
+        }
+        setFormData((prev) => ({
+            ...prev,
+            ...mappedFormData,
+        }));
+        setCurrentValue(initialAnswer);
+    }, [isOpen, initialAnswer, question]);
+
     useInactivityDetector({
         timeouts: [300000],
         onTimeout: () => {
@@ -142,9 +187,12 @@ const QuestionEditPopup = ({
             }
         }
 
+        // --- Ensure both string_value and response are cleared if the user clears the field ---
         setFormData((prev) => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value,
+            ...(name === "string_value" && value.trim() === "" ? { response: "" } : {}),
+            ...(name === "response" && value.trim() === "" ? { string_value: "" } : {}),
         }));
         setErrors((prev) => ({ ...prev, [name]: isValid ? "" : errorMessage }));
     };
@@ -209,13 +257,13 @@ interface StructuredAISuggestion {
                     prompt = `Draft: "${currentValue}". Suggest 3-5 alternative professional phrasings as points while maintaining accuracy, in not more than 100 words total. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.SUMMARIZE_ANSWER:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Provide a concise summary highlighting key points in 2-3 sentences, not more than 50 words. Return the summary in mainContent. ${jsonInstruction}`;
+                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Provide a concise summary highlighting key points in 2-3 sentences, not more than 50 words. Vary your summary style and avoid repeating previous summaries. Return the summary in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.REFINE_ANSWER:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Refine and enhance this draft to be more ${refineTone} and comprehensive in not more than 150 words. Return the full refined answer in mainContent. ${jsonInstruction}`;
+                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Refine and enhance this draft to be more ${refineTone} and comprehensive in not more than 150 words. Use a different structure or phrasing from previous responses. Return the full refined answer in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK:
-                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Perform a quick compliance check, highlighting 2-3 strengths and 2-3 potential issues as points in not more than 100 words total. Indicate if the question seems addressed in mainContent. ${jsonInstruction}`;
+                    prompt = `Question: "${question.question}". Guidance: "${question.guidance || 'None'}". Draft: "${currentValue}". Perform a quick compliance check, highlighting 2-3 strengths and 2-3 potential issues as points in not more than 100 words total. Vary your points and recommendations from previous responses. Indicate if the question seems addressed in mainContent. ${jsonInstruction}`;
                     break;
                 case MiniAIAssistantAction.IMPROVE_CLARITY:
                     prompt = `Draft: "${currentValue}". Improve the clarity and readability of this answer while maintaining its meaning in not more than 150 words. Return the improved version in mainContent. ${jsonInstruction}`;
@@ -345,6 +393,16 @@ interface StructuredAISuggestion {
                     const provisionText = updatedFormData.has_provisions ? "Yes" : "No";
                     const explanationText = updatedFormData.explanation ? ` - ${updatedFormData.explanation}` : "";
                     updatedFormData.string_value = `${provisionText}${explanationText}`;
+                }
+            }
+
+            // --- Ensure empty responses are sent as empty strings ---
+            if (question.question_type === "subjective") {
+                if (!updatedFormData.string_value || updatedFormData.string_value.trim() === "") {
+                    updatedFormData.string_value = "";
+                }
+                if (updatedFormData.response !== undefined && (updatedFormData.response === null || updatedFormData.response.trim() === "")) {
+                    updatedFormData.response = "";
                 }
             }
 
