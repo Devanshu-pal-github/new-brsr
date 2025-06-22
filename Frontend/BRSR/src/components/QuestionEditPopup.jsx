@@ -380,19 +380,15 @@ interface StructuredAISuggestion {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Save Answer button clicked, handleSubmit triggered");
         setIsSaveLoading(true);
         setError(null);
 
         try {
-            // ----------------------------------------------------------------
-            // Build a mutable copy of formData so we can transform values
-            // without relying on asynchronous state updates.
-            // ----------------------------------------------------------------
             let updatedFormData = { ...formData };
-            console.log("📝 [QuestionEditPopup] Form data before validation:", updatedFormData);
-            console.log("📝 [QuestionEditPopup] Question type:", question.question_type);
-            console.log("📝 [QuestionEditPopup] Question ID:", question.question_id);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] Form data before validation:", updatedFormData);
+            // console.log("📝 [QuestionEditPopup] Question type:", question.question_type);
+            // console.log("📝 [QuestionEditPopup] Question ID:", question.question_id);
 
             // Map additional fields to string_value for subjective questions
             if (question.question_type === "subjective") {
@@ -419,7 +415,8 @@ interface StructuredAISuggestion {
             // Run validation on the transformed data
             // ------------------------------------------------------------
             const validationErrors = validateForm(updatedFormData);
-            console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
 
             if (Object.keys(validationErrors).length > 0) {
                 setErrors(validationErrors);
@@ -428,12 +425,11 @@ interface StructuredAISuggestion {
                 return;
             }
 
-            // Persist the transformed data back to state so the UI is in sync
             setFormData(updatedFormData);
 
-            console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
-            console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
-            
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
+            // console.log("📝 [QuestionEditPopup] Validation errors:", validationErrors);
             if (Object.keys(validationErrors).length > 0) {
                 setErrors(validationErrors);
                 setIsSaveLoading(false);
@@ -441,44 +437,40 @@ interface StructuredAISuggestion {
                 return;
             }
 
-            console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
 
             let answerData;
-            
             if (question.question_type === "subjective") {
-                console.log("📝 [QuestionEditPopup] Preparing subjective answer");
-                
-                // Special handling for questions with has_provisions field
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("📝 [QuestionEditPopup] Preparing subjective answer");
                 if (updatedFormData.has_provisions !== undefined) {
-                    console.log("📝 [QuestionEditPopup] Special handling for has_provisions question", {
-                        has_provisions: updatedFormData.has_provisions,
-                        explanation: updatedFormData.explanation
-                    });
-                    
-                    // Make sure we're sending the correct fields
+                    // Remove or reduce noisy/unnecessary console logs
+                    // console.log("📝 [QuestionEditPopup] Special handling for has_provisions question", {
+                    //     has_provisions: updatedFormData.has_provisions,
+                    //     explanation: updatedFormData.explanation
+                    // });
                     answerData = {
                         has_provisions: updatedFormData.has_provisions,
                         explanation: updatedFormData.explanation || "",
-                        // Include other fields that might be required
                         link: updatedFormData.link || "",
                         note: updatedFormData.note || "",
-                        // Include string_value as empty to satisfy API requirements
                         string_value: "",
                         decimal_value: "",
                         boolean_value: false
                     };
-                    
-                    console.log("📝 [QuestionEditPopup] Prepared has_provisions answer data:", answerData);
+                    // Remove or reduce noisy/unnecessary console logs
+                    // console.log("📝 [QuestionEditPopup] Prepared has_provisions answer data:", answerData);
                 } else {
-                    // For regular subjective questions, use the formData directly
                     answerData = updatedFormData;
                 }
             } else if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
-                console.log("📝 [QuestionEditPopup] Preparing table answer");
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("📝 [QuestionEditPopup] Preparing table answer");
                 answerData = currentValue;
             } else {
-                // Legacy format for backward compatibility
-                console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
                 answerData = {
                     string_value: updatedFormData.string_value,
                     decimal_value: updatedFormData.decimal_value,
@@ -490,11 +482,13 @@ interface StructuredAISuggestion {
                 };
             }
 
-            console.log("📤 [QuestionEditPopup] Answer data prepared:", answerData);
-            console.log("📤 [QuestionEditPopup] Using moduleId:", moduleId);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📤 [QuestionEditPopup] Answer data prepared:", answerData);
+            // console.log("📤 [QuestionEditPopup] Using moduleId:", moduleId);
 
             if (!moduleId) {
-                console.error("❌ [QuestionEditPopup] Missing moduleId for question:", question.question_id);
+                // Remove or reduce noisy/unnecessary console logs
+                // console.error("❌ [QuestionEditPopup] Missing moduleId for question:", question.question_id);
                 throw new Error("Module ID is required but not provided");
             }
 
@@ -506,7 +500,8 @@ interface StructuredAISuggestion {
             let company_id = localStorage.getItem("company_id");
             if (!company_id) {
                 company_id = userData?.company_id;
-                console.log("📤 [QuestionEditPopup] Using company_id from userData:", company_id);
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("📤 [QuestionEditPopup] Using company_id from userData:", company_id);
                 if (company_id) {
                     localStorage.setItem("company_id", company_id);
                 } else {
@@ -518,7 +513,8 @@ interface StructuredAISuggestion {
             let financial_year = localStorage.getItem("financial_year");
             if (!financial_year) {
                 financial_year = selectedReport?.financial_year;
-                console.log("📤 [QuestionEditPopup] Using financial_year from selectedReport:", financial_year);
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("📤 [QuestionEditPopup] Using financial_year from selectedReport:", financial_year);
                 if (financial_year) {
                     localStorage.setItem("financial_year", financial_year);
                 } else {
@@ -527,26 +523,34 @@ interface StructuredAISuggestion {
                 }
             }
             
-            console.log("📤 [QuestionEditPopup] Context values:", {
-                questionId: question.question_id,
-                moduleId,
-                company_id,
-                financial_year
-            });
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📤 [QuestionEditPopup] Context values:", {
+            //     questionId: question.question_id,
+            //     moduleId,
+            //     company_id,
+            //     financial_year
+            // });
+            // console.log("📤 [QuestionEditPopup] Calling submitAnswer mutation with:", {
+            //     questionId: question.question_id,
+            //     answerData,
+            //     moduleId,
+            // });
+            // console.log("📝 [QuestionEditPopup] Calling submitAnswer mutation with params:", {
+            //     questionId: question.question_id,
+            //     answerData,
+            //     moduleId,
+            // });
+            // console.log("📝 [QuestionEditPopup] Final verification before API call:", {
+            //     moduleId,
+            //     questionId: question.question_id,
+            //     company_id: currentCompanyId,
+            //     financial_year: currentFinancialYear,
+            //     answerData
+            // });
+            // console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
+            // console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
 
-            // Make the API call with explicit error handling
-            console.log("📤 [QuestionEditPopup] Calling submitAnswer mutation with:", {
-                questionId: question.question_id,
-                answerData,
-                moduleId,
-            });
-            console.log("📝 [QuestionEditPopup] Calling submitAnswer mutation with params:", {
-                questionId: question.question_id,
-                answerData,
-                moduleId,
-            });
-            
-            // Force a small delay to ensure localStorage is updated
+            // Add a small delay to ensure localStorage is updated
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // Verify all required parameters are present
@@ -561,13 +565,14 @@ interface StructuredAISuggestion {
             const currentCompanyId = localStorage.getItem("company_id");
             const currentFinancialYear = localStorage.getItem("financial_year");
             
-            console.log("📝 [QuestionEditPopup] Final verification before API call:", {
-                moduleId,
-                questionId: question.question_id,
-                company_id: currentCompanyId,
-                financial_year: currentFinancialYear,
-                answerData
-            });
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] Final verification before API call:", {
+            //     moduleId,
+            //     questionId: question.question_id,
+            //     company_id: currentCompanyId,
+            //     financial_year: currentFinancialYear,
+            //     answerData
+            // });
             
             // Final validation check
             if (!moduleId) {
@@ -583,8 +588,9 @@ interface StructuredAISuggestion {
                 throw new Error("Missing financial_year in localStorage");
             }
             
-            console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
-            console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
+            // console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
             
             // Add a small delay before making the API call
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -594,43 +600,39 @@ interface StructuredAISuggestion {
                 answerData,
                 moduleId,
             }).unwrap();
-            console.log("📝 [QuestionEditPopup] submitAnswer mutation successful:", response);
-
-            console.log("✅ [QuestionEditPopup] API response received:", response);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("📝 [QuestionEditPopup] submitAnswer mutation successful:", response);
+            // console.log("✅ [QuestionEditPopup] API response received:", response);
 
             if (onSuccess) {
-                console.log("✅ [QuestionEditPopup] Calling onSuccess with data:", answerData);
+                // Remove or reduce noisy/unnecessary console logs
+                // console.log("✅ [QuestionEditPopup] Calling onSuccess with data:", answerData);
                 await onSuccess(answerData);
             }
-            
             toast.success("Answer submitted successfully");
-            console.log("✅ [QuestionEditPopup] Closing popup after successful submission");
-            
-            // Ensure the modal closes by using setTimeout
+            // Remove or reduce noisy/unnecessary console logs
+            // console.log("✅ [QuestionEditPopup] Closing popup after successful submission");
             setTimeout(() => {
                 onClose();
-            }, 800); // Increased timeout to ensure state updates complete
+            }, 800);
         } catch (err) {
-            console.error("❌ [QuestionEditPopup] Error submitting answer:", err);
-            console.error("❌ [QuestionEditPopup] Error details:", {
-                status: err?.status,
-                data: err?.data,
-                message: err?.message,
-                stack: err?.stack
-            });
-            
-            // Try to extract a meaningful error message
+            // Remove or reduce noisy/unnecessary console logs
+            // console.error("❌ [QuestionEditPopup] Error submitting answer:", err);
+            // console.error("❌ [QuestionEditPopup] Error details:", {
+            //     status: err?.status,
+            //     data: err?.data,
+            //     message: err?.message,
+            //     stack: err?.stack
+            // });
             const errorMessage = 
                 err?.data?.detail ||
                 err?.data?.message ||
                 err?.message ||
                 "Failed to submit answer. Please try again.";
-                
-            console.error("❌ [QuestionEditPopup] Error message:", errorMessage);
+            // Remove or reduce noisy/unnecessary console logs
+            // console.error("❌ [QuestionEditPopup] Error message:", errorMessage);
             setError(errorMessage);
             toast.error(`Failed to save answer: ${errorMessage}`);
-            
-            // Set form error for display in UI
             setErrors(prev => ({
                 ...prev,
                 form: errorMessage
@@ -711,6 +713,17 @@ interface StructuredAISuggestion {
         return errors;
     };
 
+    // Handler to accept AI suggestion and update the main response field
+    const handleAcceptAISuggestion = (suggestion) => {
+        setFormData(prev => {
+            const updated = { ...prev, string_value: suggestion };
+            setCurrentValue(updated);
+            return updated;
+        });
+        setTimeout(() => {
+            setCurrentValue(prev => ({ ...prev, string_value: suggestion }));
+        }, 0);
+    };
 
     const sharedAIActionsProps = {
         formData,
@@ -817,10 +830,11 @@ interface StructuredAISuggestion {
             role="dialog"
             aria-modal="true"
             aria-labelledby={`question-${question.question_id}-title`}
+            style={{ overflowY: 'auto' }} // Allow browser to scroll if needed
         >
             <div className="relative">
                 <motion.div
-                    className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-hidden ${isAIAssistantOpen ? "w-[90vw] max-w-6xl" : "w-[70vw] max-w-4xl"} h-[75vh]`}
+                    className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-visible ${isAIAssistantOpen ? "w-[90vw] max-w-6xl" : "w-[70vw] max-w-4xl"}`} // Remove h-[75vh], overflow-hidden
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: isVisible ? 1 : 0.95, opacity: isVisible ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -830,10 +844,10 @@ interface StructuredAISuggestion {
                         questionText={question.question}
                         closeModal={onClose}
                     />
-                    <div className="flex flex-1 overflow-hidden">
+                    <div className="flex flex-1 overflow-visible"> {/* Remove overflow-hidden */}
                         <div
                             ref={leftPanelRef}
-                            className="flex-1 flex flex-col overflow-y-auto px-6 py-4 border-r border-gray-200 bg-gray-50 scrollbar-none"
+                            className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 scrollbar-none overflow-visible" // Remove overflow-y-auto
                         >
                             <div className="flex-1">
                                 <div className="mb-4">
@@ -874,7 +888,7 @@ interface StructuredAISuggestion {
                             </div>
                         </div>
                         <motion.div
-                            className="overflow-hidden"
+                            className="overflow-visible" // Remove overflow-hidden
                             initial={{ width: 0, opacity: 0 }}
                             animate={{
                                 width: isAIAssistantOpen ? "40%" : 0,
@@ -884,7 +898,7 @@ interface StructuredAISuggestion {
                             transition={{ duration: 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
                         >
                             {isAIAssistantOpen && (
-                                <div className="flex-1 flex flex-col overflow-y-auto px-6 py-4 bg-white h-full">
+                                <div className="flex-1 flex flex-col px-6 py-4 bg-white h-full overflow-visible"> {/* Remove overflow-y-auto */}
                                     <ToneSelector
                                         refineTone={refineTone}
                                         setRefineTone={setRefineTone}
@@ -904,7 +918,7 @@ interface StructuredAISuggestion {
                                         actions={actions}
                                         currentValue={formData.string_value}
                                     />
-                                    <div className="flex-1 bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl shadow-inner border border-slate-200/60 overflow-y-auto mt-3.5 backdrop-blur-sm scrollbar-none">
+                                    <div className="flex-1 bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl shadow-inner border border-slate-200/60 mt-3.5 backdrop-blur-sm scrollbar-none overflow-visible"> {/* Remove overflow-y-auto */}
                                         <div className="p-4">
                                             <AIResponseDisplay
                                                 aiMessage={aiMessage}
@@ -914,6 +928,16 @@ interface StructuredAISuggestion {
                                             />
                                         </div>
                                     </div>
+                                    {/* Add AIAssistant with onAcceptSuggestion prop */}
+                                    <AIAssistant
+                                        question={question}
+                                        currentValue={formData.string_value}
+                                        selectedTextInTextarea={selectedTextInTextarea}
+                                        handleQuickAIAction={handleQuickAIAction}
+                                        refineTone={refineTone}
+                                        setRefineTone={setRefineTone}
+                                        onAcceptSuggestion={handleAcceptAISuggestion}
+                                    />
                                 </div>
                             )}
                         </motion.div>

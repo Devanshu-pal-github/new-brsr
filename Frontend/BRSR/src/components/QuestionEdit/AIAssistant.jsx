@@ -1,4 +1,4 @@
-const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQuickAIAction, refineTone, setRefineTone }) => {
+const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQuickAIAction, refineTone, setRefineTone, onAcceptSuggestion }) => {
     const messagesContainerRef = useRef(null);
     const [assistantResponse, setAssistantResponse] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +86,9 @@ const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQui
 
     const handlePostResponseAction = (actionId) => {
         if (actionId === 'USE_THIS') {
+            if (onAcceptSuggestion && assistantResponse?.text) {
+                onAcceptSuggestion(assistantResponse.text);
+            }
             handleQuickAIAction(actionId, assistantResponse.text);
             setAssistantResponse(null);
             return;

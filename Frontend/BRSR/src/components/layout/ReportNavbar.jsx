@@ -13,22 +13,22 @@ const ReportNavbar = () => {
 
   return (
     <nav className="bg-[#000D30] text-white w-full shadow-md z-50">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between min-h-[6vh] h-[6vh]">
           <div className="flex items-center">
             <Link
               to="/"
-              className="flex items-center gap-3 mr-8 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 mr-6 hover:opacity-90 transition-opacity"
             >
-              <Webhook className="w-8 h-8 text-[#E0F2FE] stroke-[1.5]" />
-              <span className="font-semibold text-2xl bg-gradient-to-r from-[#E0F2FE] to-white bg-clip-text text-transparent">
+              <Webhook className="w-7 h-7 text-[#E0F2FE] stroke-[1.25]" />
+              <span className="font-semibold text-xl bg-gradient-to-r from-[#E0F2FE] to-white bg-clip-text text-transparent">
                 Serenity
               </span>
             </Link>
             {/* Pass companyDetails as a prop */}
             <FinancialYearDropdown company={companyDetails} />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <ManagePlantsControl />
             <NotificationControl />
             <UserMenu />

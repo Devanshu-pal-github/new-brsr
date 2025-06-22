@@ -2,22 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../store/slices/authSlice';
-import { useGetReportModulesQuery } from '../store/api/apiSlice';
+import { useGetReportModulesQuery, useLazyGetModuleAnswerQuery } from '../store/api/apiSlice';
 import ModuleRenderer from './components/ModuleRenderer';
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
 import DynamicProgressSidebar from './components/DynamicProgressSidebar';
 
 const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
-  // If module is provided directly, use it; otherwise, fetch it
   const user = useSelector(selectCurrentUser);
   const params = useParams();
   
-  // Use props if provided, otherwise use params from URL
   const actualReportId = reportId || params.reportId;
   const actualModuleId = moduleId || params.moduleId;
   
-  // Fetch modules data for the selected report if module is not provided directly
   const { 
     data: modules = [], 
     isLoading, 
@@ -33,11 +30,24 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
     }
   );
 
-  // Find the selected module if not provided directly
   const selectedModule = module || modules.find(m => m.id === actualModuleId);
-
-  // Get current submodule for progress tracking
   const currentSubmodule = selectedModule?.submodules?.[0] || null;
+
+  // Fetch module answers ONCE for this module/company/financialYear
+  // Assume financialYear is in the URL or default to '2024-2025'
+  const searchParams = new URLSearchParams(window.location.search);
+  const financialYear = searchParams.get('financialYear') || '2024-2025';
+  const companyId = user?.company_id;
+  const moduleIdForQuery = selectedModule?.id;
+  const [fetchModuleAnswers, { data: moduleAnswerData, isLoading: isAnswersLoading }] = useLazyGetModuleAnswerQuery();
+  
+  useEffect(() => {
+    if (moduleIdForQuery && companyId && financialYear) {
+      fetchModuleAnswers({ moduleId: moduleIdForQuery, companyId, financialYear });
+    }
+  }, [moduleIdForQuery, companyId, financialYear, fetchModuleAnswers]);
+
+  const answers = moduleAnswerData?.answers || {};
 
   return (
     <div className="relative flex">
@@ -56,7 +66,7 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
                 Module: {selectedModule.name}
               </div> */}
             </div>
-            <ModuleRenderer module={selectedModule} />
+            <ModuleRenderer module={selectedModule} answers={answers} financialYear={financialYear} />
           </>
         ) : (
           <div className="text-center text-gray-600 ">
@@ -69,6 +79,9 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
       <DynamicProgressSidebar 
         submodules={selectedModule?.submodules || []}
         currentSubmodule={currentSubmodule}
+        module={selectedModule}
+        answers={answers}
+        financialYear={financialYear}
       />
     </div>
   );

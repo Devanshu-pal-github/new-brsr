@@ -149,10 +149,10 @@ const ModuleView = () => {
           <Navbar />
         </div>
 
-        <div className="flex pt-[48px] h-full">
+        <div className="flex pt-[6vh] h-full">
           {/* Sidebar - Fixed */}
           <div
-            className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out overflow-hidden
+            className={`fixed left-0 top-[6vh] h-[calc(100vh-6vh)] bg-[#000D30] text-[#E5E7EB] transition-all duration-300 ease-in-out overflow-hidden
             ${isSidebarOpen
                 ? "w-50 translate-x-0"
                 : "w-0 -translate-x-full lg:w-16 lg:translate-x-0"

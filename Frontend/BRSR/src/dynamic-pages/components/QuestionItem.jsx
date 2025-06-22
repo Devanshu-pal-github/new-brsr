@@ -2,14 +2,13 @@ import {PropTypes } from 'prop-types';
 import { useState, useEffect, useRef } from 'react';
 import DynamicQuestionRenderer from './DynamicQuestionRenderer';
 import * as apiSlice from '../../store/api/apiSlice';
-import { useUpdateTableAnswerMutation, useLazyGetModuleAnswerQuery, useSubmitQuestionAnswerMutation } from '../../store/api/apiSlice';
+import { useUpdateTableAnswerMutation, useSubmitQuestionAnswerMutation } from '../../store/api/apiSlice';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 
 // Debug imports and environment
 console.log('🔍 [QuestionItem] All exports from apiSlice:', Object.keys(apiSlice));
 console.log('🔍 [QuestionItem] Imported useUpdateTableAnswerMutation:', useUpdateTableAnswerMutation);
-console.log('🔍 [QuestionItem] Imported useLazyGetModuleAnswerQuery:', useLazyGetModuleAnswerQuery);
 console.log('🔍 [QuestionItem] Imported useSubmitQuestionAnswerMutation:', useSubmitQuestionAnswerMutation);
 console.log('🔍 [QuestionItem] Environment:', {
   nodeEnv: process.env.NODE_ENV,
@@ -22,7 +21,7 @@ const AuditBadge = ({ isAuditRequired }) => (
   </div>
 );
 
-const QuestionItem = ({ question, financialYear, moduleId }) => {
+const QuestionItem = ({ question, financialYear, moduleId, answers = {} }) => {
   console.log('🔍 [QuestionItem] Rendering question:', question);
   console.log('🔍 [QuestionItem] Financial year:', financialYear);
   console.log('🔍 [QuestionItem] Module ID:', moduleId);
@@ -63,35 +62,15 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
   const companyId = user?.company_id;
   const plantId = user?.plant_id || 'default';
   
-  // Fetch module answer data
-  const [fetchModuleAnswer, { data: moduleAnswerData, isLoading: isLoadingAnswer }] = useLazyGetModuleAnswerQuery();
-  
-  // Fetch the answer data when the component mounts
+  // Update the question data when the answers prop changes
   useEffect(() => {
-    if (moduleId && companyId && financialYear) {
-      console.log('🔍 [QuestionItem] Fetching module answer data for:', { moduleId, companyId, financialYear });
-      fetchModuleAnswer({ moduleId, companyId, financialYear }).catch(err => 
-        console.error('❌ [QuestionItem] Error fetching module answer:', err)
-      );
-    } else {
-      console.warn('⚠️ [QuestionItem] Missing required params for fetch:', { moduleId, companyId, financialYear });
-    }
-  }, [moduleId, companyId, financialYear, fetchModuleAnswer]);
-  
-  // Update the question data when the module answer data changes
-  useEffect(() => {
-    console.log('📥 [QuestionItem] Module answer data received:', moduleAnswerData);
-    if (moduleAnswerData && moduleAnswerData.answers && moduleAnswerData.answers[questionId]) {
-      console.log('📥 [QuestionItem] Received answer data for question:', questionId, moduleAnswerData.answers[questionId]);
-      const answerValue = moduleAnswerData.answers[questionId].value || {};
-      console.log('📥 [QuestionItem] Setting question data to:', answerValue);
-      console.log('📥 [QuestionItem] Answer value types:', Object.entries(answerValue).map(([key, value]) => `${key}: ${typeof value}`));
+    if (answers && answers[questionId]) {
+      const answerValue = answers[questionId].value || {};
       setQuestionData(answerValue);
     } else {
-      console.log('📥 [QuestionItem] No answer data found for question:', questionId);
       setQuestionData({});
     }
-  }, [moduleAnswerData, questionId]);
+  }, [answers, questionId]);
 
   // Determine the question title using priority: question_text > title > human_readable_id
   const questionTitle = question?.question_text || question?.title || question?.human_readable_id || 'Untitled Question';
@@ -220,19 +199,17 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-white shadow-sm hover:shadow-md transition-shadow relative">
-      <div className="flex items-start flex-wrap gap-2">
+    <div className="border border-gray-200 rounded-lg p-2 mb-2 bg-white shadow-sm hover:shadow-md transition-shadow relative text-[14px] leading-[1.45]">
+      <div className="flex items-start flex-wrap gap-1.5">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-medium text-[#20305D] break-words">
-            {questionTitle}
-          </h3>
+          <h3 className="text-[15px] font-medium text-[#20305D] break-words mb-0.5">{questionTitle}</h3>
           {question.description && (
-            <p className="text-sm text-gray-600 mt-1">{question.description}</p>
+            <p className="text-[12px] text-gray-600 mt-0.5 mb-0">{question.description}</p>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* AI Button (relocated) */}
           <button
             onClick={() => {
@@ -240,10 +217,10 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
                 rendererRef.current.openAIChat();
               }
             }}
-            className="bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
+            className="bg-[#4F46E5] text-white font-medium px-1.5 min-w-[26px] min-h-[18px] rounded text-[10px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-0.5"
             aria-label="AI Assist"
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             AI
@@ -252,10 +229,10 @@ const QuestionItem = ({ question, financialYear, moduleId }) => {
           {/* Edit Response Button */}
           <button
             onClick={() => setIsEditModalOpen(true)}
-            className="px-3 py-1 bg-[#20305D] text-white rounded hover:bg-[#162442] text-xs font-medium"
-            disabled={isSaving || isLoadingAnswer}
+            className="px-2 py-0.5 bg-[#20305D] text-white rounded hover:bg-[#162442] text-[11px] font-medium"
+            disabled={isSaving}
           >
-            {isSaving ? 'Saving...' : isLoadingAnswer ? 'Loading...' : 'Edit Response'}
+            {isSaving ? 'Saving...' : 'Edit Response'}
           </button>
 
           {question.is_audit && <AuditBadge isAuditRequired={question.is_audit} />}

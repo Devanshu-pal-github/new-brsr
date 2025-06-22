@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLazyGetQuestionsByIdsQuery } from '../../store/api/apiSlice';
 import QuestionList from './QuestionList';
 
-const CategoryContainer = ({ category, financialYear, moduleId }) => {
+const CategoryContainer = ({ category, financialYear, moduleId, answers }) => {
   const [isExpanded, setIsExpanded] = useState(true); // Start expanded since parent is already handling expansion
   const [categoryWithQuestions, setCategoryWithQuestions] = useState(category);
   
@@ -56,6 +56,7 @@ const CategoryContainer = ({ category, financialYear, moduleId }) => {
           category={categoryWithQuestions} 
           financialYear={financialYear}
           moduleId={moduleId}
+          answers={answers}
         />
       )}
     </div>

@@ -4,7 +4,7 @@ import SubmoduleContent from './SubmoduleContent';
 import DynamicBreadcrumb from './DynamicBreadcrumb';
 
 
-const ModuleRenderer = ({ module }) => {
+const ModuleRenderer = ({ module, answers, financialYear }) => {
   console.log('🧩 ModuleRenderer received module:', module);
   const [activeSubmodule, setActiveSubmodule] = useState(null);
   const [currentSubmodule, setCurrentSubmodule] = useState(null);
@@ -49,7 +49,7 @@ const ModuleRenderer = ({ module }) => {
           
           <div className="mt-4">
             {currentSubmodule ? (
-              <SubmoduleContent submodule={currentSubmodule} moduleId={module.id} />
+              <SubmoduleContent submodule={currentSubmodule} moduleId={module.id} answers={answers} financialYear={financialYear} />
             ) : (
               <p className="text-gray-500">Select a submodule to view its content.</p>
             )}

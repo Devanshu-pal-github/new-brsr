@@ -30,7 +30,7 @@ const Layout = ({ children, hideSidebar = false }) => {
             {!hideSidebar && (
                 <div
                     className={`fixed top-0 left-0 h-screen z-[20]
-                        ${isMobile ? 'w-[50%]' : 'w-[14%]'}
+                        ${isMobile ? 'w-[40%]' : 'w-[11%]'}
                         ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
                         transition-all duration-300 ease-in-out`}
                 >
@@ -40,10 +40,11 @@ const Layout = ({ children, hideSidebar = false }) => {
 
             {/* Main Content Area with dynamic margin based on sidebar state */}
             <div
-                className={`flex flex-col flex-1 min-h-screen
-                    ${hideSidebar ? 'ml-0' : (isMobile ? (isSidebarOpen ? 'ml-[40%]' : 'ml-0') : 'ml-52')}
-                    w-[${isMobile ? (isSidebarOpen ? '50%' : '100%') : '85%'}]
-                    transition-all duration-300 ease-in-out`}
+                className="flex flex-col flex-1 min-h-screen text-[15px] leading-[1.5] max-w-[1100px] mx-auto px-3 md:px-6 pt-4
+                    ${hideSidebar ? 'ml-0' : (isMobile ? (isSidebarOpen ? 'ml-[40%]' : 'ml-0') : 'ml-20')}
+                    w-[${isMobile ? (isSidebarOpen ? '60%' : '100%') : 'calc(100%-5rem)'}]
+                    transition-all duration-300 ease-in-out"
+                style={{ fontFamily: 'Inter, Arial, sans-serif' }}
             >
                 {/* Fixed Header */}
                 <div className="fixed top-0 right-0 z-[30] w-full">
@@ -69,4 +70,4 @@ const Layout = ({ children, hideSidebar = false }) => {
     );
 };
 
-export default Layout; 
+export default Layout;
