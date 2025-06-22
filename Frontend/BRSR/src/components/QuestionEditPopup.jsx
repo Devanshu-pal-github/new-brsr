@@ -199,7 +199,16 @@ const QuestionEditPopup = ({
 
     const handleQuickAIAction = async (action, suggestion = null) => {
         if (action === "USE_THIS") {
-            setFormData(prev => ({ ...prev, string_value: suggestion }));
+            // Synchronously update both formData and currentValue to the suggestion
+            setFormData(prev => {
+                const updated = { ...prev, string_value: suggestion };
+                setCurrentValue(updated);
+                return updated;
+            });
+            // Also force SubjectiveRenderer to update immediately
+            setTimeout(() => {
+                setCurrentValue(prev => ({ ...prev, string_value: suggestion }));
+            }, 0);
             setAiMessage(null);
             setLeftAiMessage(null);
             setSelectedTextInTextarea(null);
@@ -772,7 +781,10 @@ interface StructuredAISuggestion {
                             metadata={sanitizedMetadata}
                             data={formData}
                             isEditing={true}
-                            onSubmit={(data) => setFormData(data)}
+                            onSubmit={(data) => {
+                                setFormData(data);
+                                setCurrentValue(data);
+                            }}
                         />
                     );
                 }

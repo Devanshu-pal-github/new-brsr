@@ -96,6 +96,9 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
         complianceGroups = parseComplianceCheck(aiMessage.text);
     }
 
+    // Fix: Use aiMessage.text as the markdown content
+    const formattedText = aiMessage?.text || "";
+
     return (
         <div className="mt-2 relative">
             {/* Confidence Badge in Top Right */}

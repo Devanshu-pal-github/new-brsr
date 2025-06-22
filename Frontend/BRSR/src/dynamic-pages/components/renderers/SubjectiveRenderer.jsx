@@ -9,17 +9,8 @@ const SubjectiveRenderer = ({ metadata, data, isEditing = false, onSave, onSubmi
 
   // Update local data when the prop changes (skip while actively editing)
   useEffect(() => {
-    // Always sync in view mode
-    if (!isEditing) {
-      setLocalData(data || {});
-      return;
-    }
-
-    // In edit mode, update once when incoming data differs (typically right after it arrives)
-    if (data && JSON.stringify(data) !== JSON.stringify(localData)) {
-      setLocalData(data);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Always sync localData with data prop, even in edit mode, if data changes externally (e.g., after "Use This Suggestion")
+    setLocalData(data || {});
   }, [data]);
 
   // Debounced sync to parent to prevent rapid re-renders that disrupt typing

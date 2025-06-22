@@ -106,26 +106,67 @@ const AIActionButtons = ({ selectedTextInTextarea, handleQuickAIAction, actions,
         )
     };
 
-    // Determine relevant actions based on conditions
+    // Determine if the response is empty
+    const isResponseEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim().length === 0);
+
+    // Define action priorities for empty and filled states
+    const emptyResponsePriority = [
+        MiniAIAssistantAction.EXPLAIN_THIS_QUESTION,
+        MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right,
+        MiniAIAssistantAction.BREAK_DOWN_QUESTION,
+        MiniAIAssistantAction.SUGGEST_DATA_SOURCES,
+        MiniAIAssistantAction.GENERATE_FOLLOWUP_QUESTIONS_FOR_USER,
+        MiniAIAssistantAction.COMPARE_WITH_BEST_PRACTICE,
+        MiniAIAssistantAction.SUGGEST_TABLE_STRUCTURE,
+    ];
+    const filledResponsePriority = [
+        MiniAIAssistantAction.REFINE_ANSWER,
+        MiniAIAssistantAction.CHECK_TONE_CONSISTENCY,
+        MiniAIAssistantAction.SUGGEST_ALTERNATIVE_PHRASING,
+        MiniAIAssistantAction.IDENTIFY_KEY_TERMS,
+        MiniAIAssistantAction.EXPLAIN_ACRONYMS,
+        MiniAIAssistantAction.QUICK_COMPLIANCE_CHECK,
+        MiniAIAssistantAction.ELABORATE_DRAFT,
+        MiniAIAssistantAction.CONDENSE_DRAFT,
+        MiniAIAssistantAction.SUMMARIZE_ANSWER,
+        MiniAIAssistantAction.BREAK_DOWN_QUESTION,
+        MiniAIAssistantAction.COMPARE_WITH_BEST_PRACTICE,
+        MiniAIAssistantAction.GENERATE_FOLLOWUP_QUESTIONS_FOR_USER,
+    ];
+
+    // Filter relevant actions based on conditions
     const relevantActions = Object.keys(actions).filter(actionKey => {
         const actionMeta = allPanelActionsWithMetadata.find(meta => meta.action === actionKey);
         if (!actionMeta) return false;
-
-        const hasDraft = currentValue?.trim().length > 0;
+        const hasDraft = currentValue?.trim && currentValue.trim().length > 0;
         const hasSelection = selectedTextInTextarea?.length > 0;
-
         if (actionMeta.requiresDraft && !hasDraft) return false;
         if (actionMeta.requiresSelection && !hasSelection) return false;
-        if (actionMeta.requiresTableQuestion) return false; // Not implemented in your current setup
-
+        if (actionMeta.requiresTableQuestion) return false;
         return true;
     });
+
+    // Sort by priority depending on response state
+    let prioritizedActions = isResponseEmpty
+        ? emptyResponsePriority.filter(a => relevantActions.includes(a))
+        : filledResponsePriority.filter(a => relevantActions.includes(a));
+    // If less than 6, fill with any other relevant actions
+    if (prioritizedActions.length < 6) {
+        prioritizedActions = [
+            ...prioritizedActions,
+            ...relevantActions.filter(a => !prioritizedActions.includes(a)),
+        ];
+    }
+    const maxVisible = 6;
+    let visibleActions = prioritizedActions.slice(0, maxVisible);
+    // If more than 6, allow cycling (future: add UI for cycling)
+    // For now, just show the first 6 most relevant
 
     return (
         <div className=" mt-2">
             <h5 className="text-sm font-medium text-[#000D30] mb-2">Relevant AI Actions</h5>
             <div className="grid grid-cols-3 gap-2">
-                {relevantActions.map(actionKey => {
+                {visibleActions.map(actionKey => {
                     const actionMeta = allPanelActionsWithMetadata.find(meta => meta.action === actionKey);
                     if (!actionMeta) return null;
                     return (
