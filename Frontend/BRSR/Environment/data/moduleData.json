@@ -341,6 +341,45 @@
                 "type": "subjective",
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               }
+            },
+            {
+              "id": "WM-3",
+              "type": "Essential",
+              "title": "Waste Generation, Recovery, and Disposal Details",
+              "description": "Provide details related to waste management by the entity, in the following format:",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "table",
+                "columns": [
+                  { "label": "Parameter", "key": "parameter" },
+                  { "label": "Current Financial Year", "key": "current_year" },
+                  { "label": "Previous Financial Year", "key": "previous_year" },
+                  { "label": "Unit", "key": "unit" }
+                ],
+                "rows": [
+                  { "parameter": "Total Waste generated (in metric tonnes)", "isHeader": true },
+                  { "parameter": "Plastic waste (A)", "unit": "MT" },
+                  { "parameter": "E-waste (B)", "unit": "MT" },
+                  { "parameter": "Bio-medical waste (C)", "unit": "MT" },
+                  { "parameter": "Construction and demolition waste (D)", "unit": "MT" },
+                  { "parameter": "Battery waste (E)", "unit": "MT" },
+                  { "parameter": "Radioactive waste (F)", "unit": "MT" },
+                  { "parameter": "Other Hazardous waste. Please specify, if any. (G)", "unit": "MT" },
+                  { "parameter": "Other Non-hazardous waste generated (H). Please specify, if any.", "unit": "MT" },
+                  { "parameter": "Total (A+B+C+D+E+F+G+H)", "unit": "MT" },
+                  { "parameter": "For each category of waste generated, total waste recovered through recycling, re-using or other recovery operations (in metric tonnes)", "isHeader": true },
+                  { "parameter": "(i) Recycled", "unit": "MT" },
+                  { "parameter": "(ii) Re-used", "unit": "MT" },
+                  { "parameter": "(iii) Other recovery operations", "unit": "MT" },
+                  { "parameter": "Total", "unit": "MT" },
+                  { "parameter": "For each category of waste generated, total waste disposed by nature of disposal method (in metric tonnes)", "isHeader": true },
+                  { "parameter": "(i) Incineration", "unit": "MT" },
+                  { "parameter": "(ii) Landfilling", "unit": "MT" },
+                  { "parameter": "(iii) Other disposal operations", "unit": "MT" },
+                  { "parameter": "Total", "unit": "MT" }
+                ],
+                "note": "Note: Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              }
             }
           ]
         }

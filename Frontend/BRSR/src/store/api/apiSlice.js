@@ -867,6 +867,22 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ['GHGReport']
     }),
+    getTotalCO2ByScope: builder.mutation({
+      query: ({ financial_year, scopes }) => ({
+        url: '/ghg/report/total-co2-by-scope',
+        method: 'POST',
+        body: { financial_year, scopes },
+      }),
+      transformResponse: (response) => {
+        console.log('🌫️ GHG Total CO2 By Scope Response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 GHG Total CO2 By Scope Error:', response);
+        return response;
+      },
+      providesTags: ['GHGReport'],
+    }),
   }),
 });
 
@@ -902,5 +918,6 @@ export const {
   useGetGHGReportQuery,
   useLazyGetGHGReportQuery,
   useUpsertGHGReportMutation,
+  useGetTotalCO2ByScopeMutation,
 } = apiSlice;
 export default apiSlice;

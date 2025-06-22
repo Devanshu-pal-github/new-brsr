@@ -69,3 +69,27 @@ class GHGService:
             upsert=True
         )
         return report
+
+    async def get_total_co2_emissions(self, company_id: str, financial_year: Optional[str] = None, scope: Optional[str] = None) -> float:
+        query = {"company_id": company_id}
+        if financial_year:
+            query["financial_year"] = financial_year
+        if scope:
+            query["scope"] = scope
+        cursor = self.collection.find(query)
+        total = 0.0
+        async for doc in cursor:
+            total += float(doc.get("total_scope_emissions_co2e", 0))
+        return total
+
+    async def get_total_co2_emissions_by_scope(self, company_id: str, financial_year: str, scopes: Optional[list] = None):
+        query = {"company_id": company_id, "financial_year": financial_year}
+        if scopes:
+            query["scope"] = {"$in": list(scopes)}
+        cursor = self.collection.find(query)
+        result = {}
+        async for doc in cursor:
+            scope = doc.get("scope", "Unknown")
+            total = float(doc.get("total_scope_emissions_co2e", 0))
+            result[scope] = total
+        return result

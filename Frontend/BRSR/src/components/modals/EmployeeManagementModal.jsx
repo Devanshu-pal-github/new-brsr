@@ -274,27 +274,35 @@ const EmployeeManagementModal = ({ onClose, plantId }) => {
 
       {/* Delete Confirmation Dialog */}
       {deleteDialog.open && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-lg p-6 min-w-[320px] max-w-[90vw] border-2 border-[#1A2341] flex flex-col items-center">
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+          onClick={e => {
+            if (e.target === e.currentTarget) handleCancelDelete();
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-lg p-6 min-w-[320px] max-w-[90vw] border-1 border-[#1A2341] flex flex-col items-center"
+            style={{ position: 'relative' }}
+          >
             <div className="text-lg font-semibold text-[#1A2341] mb-2">Confirm Deletion</div>
             <div className="text-gray-700 mb-4 text-center">
               Are you sure you want to delete <span className="font-bold text-[#1A2341]">{deleteDialog.employee?.full_name}</span>?
               <br />This action cannot be undone.
             </div>
-            <div className="flex gap-4 mt-2">
-              <button
-                className="px-4 py-2 rounded bg-gradient-to-r from-[#1A2341] to-[#2c3e50] text-white font-semibold hover:from-[#2c3e50] hover:to-[#1A2341] transition-all"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
-              </button>
+            <div className="flex gap-4 mt-2 w-full justify-between">
               <button
                 className="px-4 py-2 rounded bg-gray-200 text-[#1A2341] font-semibold hover:bg-gray-300 transition-all"
                 onClick={handleCancelDelete}
                 disabled={isDeleting}
               >
                 Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-gradient-to-r from-[#1A2341] to-[#2c3e50] text-white font-semibold hover:from-[#2c3e50] hover:to-[#1A2341] transition-all"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>

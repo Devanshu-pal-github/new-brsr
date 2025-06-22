@@ -74,6 +74,42 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   const isDischargeTable = metadata.rows.some(row => row.parameter && row.parameter.match(/^\(i\) To Surface water/));
   // Water Withdrawal: has header 'Water withdrawal by source' and total row with 'total volume of water withdrawal'
   const isWithdrawalTable = metadata.rows.some(row => row.parameter && row.parameter.toLowerCase().includes('water withdrawal by source'));
+  // --- Waste Management Table logic ---
+  // Detect if this is the new waste management table by looking for the total row
+  const isWasteManagementTable = metadata.rows.some(row => row.parameter && row.parameter.includes('Total (A+B+C+D+E+F+G+H)'));
+  // Indices for A-H rows
+  let wasteSumRowIdx = -1;
+  let wasteComponentIndices = [];
+  // Indices for recovery and disposal totals
+  let recoveryTotalIdx = -1, recoverySumIndices = [];
+  let disposalTotalIdx = -1, disposalSumIndices = [];
+  if (isWasteManagementTable) {
+    metadata.rows.forEach((row, idx) => {
+      // A-H
+      if (row.parameter === 'Plastic waste (A)' ||
+          row.parameter === 'E-waste (B)' ||
+          row.parameter === 'Bio-medical waste (C)' ||
+          row.parameter === 'Construction and demolition waste (D)' ||
+          row.parameter === 'Battery waste (E)' ||
+          row.parameter === 'Radioactive waste (F)' ||
+          row.parameter === 'Other Hazardous waste. Please specify, if any. (G)' ||
+          row.parameter === 'Other Non-hazardous waste generated (H). Please specify, if any.') {
+        wasteComponentIndices.push(idx);
+      }
+      // Recovery section
+      if (row.parameter === '(i) Recycled') recoverySumIndices[0] = idx;
+      if (row.parameter === '(ii) Re-used') recoverySumIndices[1] = idx;
+      if (row.parameter === '(iii) Other recovery operations') recoverySumIndices[2] = idx;
+      if (row.parameter === 'Total' && recoveryTotalIdx === -1 && idx > wasteComponentIndices[wasteComponentIndices.length-1]) recoveryTotalIdx = idx;
+      // Disposal section
+      if (row.parameter === '(i) Incineration') disposalSumIndices[0] = idx;
+      if (row.parameter === '(ii) Landfilling') disposalSumIndices[1] = idx;
+      if (row.parameter === '(iii) Other disposal operations') disposalSumIndices[2] = idx;
+      if (row.parameter === 'Total' && recoveryTotalIdx !== -1 && disposalTotalIdx === -1 && idx > recoveryTotalIdx) disposalTotalIdx = idx;
+      // Main total
+      if (row.parameter && row.parameter.includes('Total (A+B+C+D+E+F+G+H)')) wasteSumRowIdx = idx;
+    });
+  }
 
   // --- Water Discharge Details logic ---
   let mainRowIndices = [], subRowMap = {}, totalRowIdx = -1;
@@ -335,6 +371,99 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
                           <div>{cellValue}</div>
                         )}
                       </td>
+                    );
+                  })}
+                </tr>
+              );
+            }
+            // --- Waste Management Table ---
+            if (isWasteManagementTable && rowIdx === wasteSumRowIdx) {
+              // Render the total row as sum of A-H rows
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                      );
+                    }
+                    // Sum A-H rows for this column
+                    let sum = 0;
+                    wasteComponentIndices.forEach(idx => {
+                      const val = localData[idx]?.[columnKey];
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) sum += num;
+                    });
+                    return (
+                      <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100">{sum !== 0 ? sum : ''}</td>
+                    );
+                  })}
+                </tr>
+              );
+            }
+            // --- Waste Management Recovery Total ---
+            if (isWasteManagementTable && rowIdx === recoveryTotalIdx) {
+              // Render the total row as sum of recovery rows
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                      );
+                    }
+                    // Sum recovery rows for this column
+                    let sum = 0;
+                    recoverySumIndices.forEach(idx => {
+                      const val = localData[idx]?.[columnKey];
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) sum += num;
+                    });
+                    return (
+                      <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100">{sum !== 0 ? sum : ''}</td>
+                    );
+                  })}
+                </tr>
+              );
+            }
+            // --- Waste Management Disposal Total ---
+            if (isWasteManagementTable && rowIdx === disposalTotalIdx) {
+              // Render the total row as sum of disposal rows
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                      );
+                    }
+                    // Sum disposal rows for this column
+                    let sum = 0;
+                    disposalSumIndices.forEach(idx => {
+                      const val = localData[idx]?.[columnKey];
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) sum += num;
+                    });
+                    return (
+                      <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100">{sum !== 0 ? sum : ''}</td>
                     );
                   })}
                 </tr>

@@ -24,7 +24,8 @@ import {
   useGetReportModulesQuery,
   useGetCompanyPlantsQuery,
   useGetPlantEmployeesQuery,
-  useGetAuditLogQuery
+  useGetAuditLogQuery,
+  useGetTotalCO2ByScopeMutation
 } from '../../store/api/apiSlice';
 import DashboardCard from './DashboardCard';
 import CircularProgress from './charts/CircularProgress';
@@ -54,12 +55,55 @@ const Dashboard = ({ dynamicModules = [] }) => {
     companyId 
   }, { skip: !reports.length || !companyId });
   const { data: auditData, isLoading: isLoadingAudit } = useGetAuditLogQuery();
+  const [getTotalCO2ByScope, { data: co2Data, isLoading: isLoadingCO2 }] = useGetTotalCO2ByScopeMutation();
 
-  console.log(reports);
-  console.log(plants);
-  console.log(employees);
-  console.log(modules);
-  
+  console.log("co2Data:", co2Data);
+
+  React.useEffect(() => {
+    // Only fetch if financialYear is available
+    if (financialYear) {
+      getTotalCO2ByScope({
+        financial_year: financialYear,
+        // No plantId or companyId needed
+      });
+    }
+  }, [financialYear, getTotalCO2ByScope]);
+
+  // Robustly extract Scope 1 and Scope 2 keys (case/whitespace insensitive)
+  let scope1CO2 = 0;
+  let scope2CO2 = 0;
+  if (co2Data) {
+    if (Array.isArray(co2Data)) {
+      const scope1 = co2Data.find(item => String(item.scope) === '1');
+      const scope2 = co2Data.find(item => String(item.scope) === '2');
+      scope1CO2 = scope1 ? scope1.total_co2 || 0 : 0;
+      scope2CO2 = scope2 ? scope2.total_co2 || 0 : 0;
+    } else if (typeof co2Data === 'object') {
+      // Prefer exact key match first
+      if (Object.prototype.hasOwnProperty.call(co2Data, 'Scope 1')) {
+        scope1CO2 = Number(co2Data['Scope 1']) || 0;
+      }
+      if (Object.prototype.hasOwnProperty.call(co2Data, 'Scope 2')) {
+        scope2CO2 = Number(co2Data['Scope 2']) || 0;
+      }
+      // Fallback to robust search if not found
+      if (!scope1CO2) {
+        const keys = Object.keys(co2Data);
+        const scope1Key = keys.find(k => k.replace(/\s+/g, '').toLowerCase() === 'scope1');
+        if (scope1Key) scope1CO2 = Number(co2Data[scope1Key]) || 0;
+      }
+      if (!scope2CO2) {
+        const keys = Object.keys(co2Data);
+        const scope2Key = keys.find(k => k.replace(/\s+/g, '').toLowerCase() === 'scope2');
+        if (scope2Key) scope2CO2 = Number(co2Data[scope2Key]) || 0;
+      }
+    }
+  }
+  const combinedCO2 = scope1CO2 + scope2CO2;
+  const combinedTarget = 10000; // Example target for combined
+  const percent = (val) => Math.min(100, Math.round((val / combinedTarget) * 100));
+  const noCO2Data = (!co2Data || (scope1CO2 === 0 && scope2CO2 === 0));
+
   // Helper function to check if a question is answered
   const isQuestionAnswered = (answer) => {
     if (!answer) return false;
@@ -290,6 +334,75 @@ const Dashboard = ({ dynamicModules = [] }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Scope 1 CO2 Card */}
+          <DashboardCard
+            title="Scope 1 CO₂ Emissions"
+            icon={Leaf}
+            className="lg:col-span-1"
+          >
+            <div className="flex flex-col items-center justify-center p-3">
+              {isLoadingCO2 ? (
+                <div className="flex items-center justify-center h-24">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]" />
+                </div>
+              ) : noCO2Data ? (
+                <div className="text-gray-400 text-sm">No data</div>
+              ) : (
+                <CircularProgress
+                  percentage={percent(scope1CO2)}
+                  label={`${scope1CO2.toLocaleString()} tons`}
+                  sublabel="Scope 1"
+                  size={90}
+                />
+              )}
+            </div>
+          </DashboardCard>
+          {/* Scope 2 CO2 Card */}
+          <DashboardCard
+            title="Scope 2 CO₂ Emissions"
+            icon={Leaf}
+            className="lg:col-span-1"
+          >
+            <div className="flex flex-col items-center justify-center p-3">
+              {isLoadingCO2 ? (
+                <div className="flex items-center justify-center h-24">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]" />
+                </div>
+              ) : noCO2Data ? (
+                <div className="text-gray-400 text-sm">No data</div>
+              ) : (
+                <CircularProgress
+                  percentage={percent(scope2CO2)}
+                  label={`${scope2CO2.toLocaleString()} tons`}
+                  sublabel="Scope 2"
+                  size={90}
+                />
+              )}
+            </div>
+          </DashboardCard>
+          {/* Combined Progress Bar for Scope 1 + 2 */}
+          <DashboardCard
+            title="Scope 1 + 2 CO₂ Progress"
+            icon={BarChart3}
+            className="lg:col-span-2"
+          >
+            <div className="flex flex-col items-center justify-center p-3">
+              {isLoadingCO2 ? (
+                <div className="flex items-center justify-center h-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]" />
+                </div>
+              ) : noCO2Data ? (
+                <div className="text-gray-400 text-sm">No data</div>
+              ) : (
+                <ProgressBar
+                  percentage={percent(combinedCO2)}
+                  label={`Combined CO₂: ${combinedCO2.toLocaleString()} tons`}
+                  sublabel={`Target: ${combinedTarget.toLocaleString()} tons`}
+                />
+              )}
+            </div>
+          </DashboardCard>
+
           {/* Reports Overview Card */}
           <DashboardCard 
             title="Reports" 
