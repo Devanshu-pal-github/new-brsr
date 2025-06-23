@@ -112,12 +112,9 @@ const AIActionButtons = ({ selectedTextInTextarea, handleQuickAIAction, actions,
     // Determine if the response is empty
     const isResponseEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim().length === 0);
 
-    // Only enable AI Recommend if response is empty
+    // Only disable actions based on draft/selection requirements, not on response emptiness
     const shouldDisable = (actionKey) => {
-        if (isResponseEmpty) {
-            // Only allow AI Recommend (Right) when empty
-            return actionKey !== MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right;
-        }
+        // When response is empty, do not disable any relevant actions
         return false;
     };
 

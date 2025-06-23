@@ -839,44 +839,44 @@ interface StructuredAISuggestion {
                     animate={{ scale: isVisible ? 1 : 0.95, opacity: isVisible ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                    <div className="flex flex-1 overflow-visible h-full">
+                    <div className="flex-1 flex overflow-hidden h-full">
                         <div
                             ref={leftPanelRef}
-                            className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto scrollbar-none"
+                            className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto h-full scrollbar-none"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
-                            <div className="flex-1">
-                                <div className="mb-4">
-                                    <h3 className="text-base font-semibold text-gray-800">
-                                        {question.question}
-                                    </h3>
-                                    {question.guidance && (
-                                        <div
-                                            id={`question-${question.question_id}-guidance`}
-                                            className="text-sm text-blue-600 mt-2 bg-blue-50 p-3 rounded-lg shadow-sm"
+                            <div className="sticky top-0 z-20 bg-gray-50 pb-2 shadow-sm border-b border-gray-200">
+                                <h3 className="text-base font-semibold text-gray-800">
+                                    {question.question}
+                                </h3>
+                                {question.guidance && (
+                                    <div
+                                        id={`question-${question.question_id}-guidance`}
+                                        className="text-sm text-blue-600 mt-2 bg-blue-50 p-3 rounded-lg shadow-sm"
+                                    >
+                                        <svg
+                                            className="w-4 h-4 mb-1 ml-1 inline-block"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
                                         >
-                                            <svg
-                                                className="w-4 h-4 mb-1 ml-1 inline-block"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M13 16h-1v-4h-1m0-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                />
-                                            </svg>
-                                            <ReactMarkdown
-                                                rehypePlugins={[rehypeSanitize]}
-                                                className="inline-block"
-                                            >
-                                                {question.guidance}
-                                            </ReactMarkdown>
-                                        </div>
-                                    )}
-                                </div>
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M13 16h-1v-4h-1m0-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                        </svg>
+                                        <ReactMarkdown
+                                            rehypePlugins={[rehypeSanitize]}
+                                            className="inline-block"
+                                        >
+                                            {question.guidance}
+                                        </ReactMarkdown>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1">
                                 {renderQuestionContent()}
                             </div>
                             <div>
@@ -894,7 +894,7 @@ interface StructuredAISuggestion {
                             transition={{ duration: 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
                         >
                             {isAIAssistantOpen && (
-                                <div className="flex-1 flex flex-col px-6 py-4 bg-white h-full overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                <div className="flex flex-col h-full px-6 py-4 bg-white scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                     <ToneSelector
                                         refineTone={refineTone}
                                         setRefineTone={setRefineTone}
@@ -914,33 +914,26 @@ interface StructuredAISuggestion {
                                         actions={actions}
                                         currentValue={formData.string_value}
                                     />
-                                    <div className="flex-1 bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl shadow-inner border border-slate-200/60 mt-3.5 backdrop-blur-sm scrollbar-none overflow-visible"> {/* Remove overflow-y-auto */}
-                                        <div className="p-4">
-                                            <AIResponseDisplay
-                                                aiMessage={aiMessage}
-                                                isLoading={isLoading.right}
-                                                error={error}
-                                                handlePostResponseAction={handleQuickAIAction}
-                                            />
+                                    <div className="flex-1 min-h-0 mt-3.5">
+                                        <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl shadow-inner border border-slate-200/60 h-full backdrop-blur-sm scrollbar-none overflow-y-auto">
+                                            <div className="p-4">
+                                                <AIResponseDisplay
+                                                    aiMessage={aiMessage}
+                                                    isLoading={isLoading.right}
+                                                    error={error}
+                                                    handlePostResponseAction={handleQuickAIAction}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                    {/* Remove extra Mini AI Assistant at the bottom by commenting out or deleting this block */}
-                                    {/* <AIAssistant
-                                        question={question}
-                                        currentValue={formData.string_value}
-                                        selectedTextInTextarea={selectedTextInTextarea}
-                                        handleQuickAIAction={handleQuickAIAction}
-                                        refineTone={refineTone}
-                                        setRefineTone={setRefineTone}
-                                        onAcceptSuggestion={handleAcceptAISuggestion}
-                                    /> */}
                                 </div>
                             )}
                         </motion.div>
                     </div>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white">
+                    <form onSubmit={handleSubmit} className="shrink-0">
+                        <div className="sticky bottom-0 left-0 w-full p-4 border-t border-gray-200 flex justify-end space-x-3 bg-white z-20 shadow-[0_-2px_8px_0_rgba(0,0,0,0.03)]">
                             <button
+                                type="button"
                                 onClick={onClose}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                 aria-label="Cancel changes"
