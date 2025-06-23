@@ -12,6 +12,7 @@ class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
     COMPANY_ADMIN = "company_admin"
     PLANT_ADMIN = "plant_admin"
+    
 
 class UserBase(BaseModel):
     email: EmailStr

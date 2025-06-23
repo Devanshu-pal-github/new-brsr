@@ -105,7 +105,7 @@ const Dashboard = ({ dynamicModules = [] }) => {
     }
   }
   const combinedCO2 = scope1CO2 + scope2CO2;
-  const combinedTarget = 10000; // Example target for combined
+  const combinedTarget = 5000; // Example target for combined
   const percent = (val) => Math.min(100, Math.round((val / combinedTarget) * 100));
   const noCO2Data = (!co2Data || (scope1CO2 === 0 && scope2CO2 === 0));
 

@@ -7,3 +7,4 @@ from . import answer
 from . import user_access
 from . import auth
 from . import base
+from .common_fields import CommonFields
