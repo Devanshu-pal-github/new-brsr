@@ -1,3 +1,9 @@
+import React, { useRef, useState, useCallback } from "react";
+import { MiniAIAssistantAction } from "./MiniAIAssistantAction.js.js";
+import ToneSelector from "./ToneSelector";
+import AIActionButtons from "./AIActionButtons";
+import AIResponseDisplay from "./AIResponseDisplay";
+
 const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQuickAIAction, refineTone, setRefineTone, onAcceptSuggestion }) => {
     const messagesContainerRef = useRef(null);
     const [assistantResponse, setAssistantResponse] = useState(null);
@@ -37,37 +43,39 @@ const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQui
         try {
             let prompt;
             const currentAnswer = currentValue || "";
+            const questionText = question?.question || "";
+            const contextInfo = `\nContext: This is for a sustainability/business/ESG/HR/operations/finance report. Be specific, actionable, and ensure compliance with Indian and global best practices. Output must be clear, concise, and audit-ready. If referencing laws, use the latest applicable. If suggesting improvements, be practical and relevant to Indian corporates.`;
 
             switch (action) {
                 case MiniAIAssistantAction.EXPLAIN_THIS_QUESTION:
-                    prompt = `Explain the purpose and context of the question in the context of sustainability reporting in not more than 100 words: "${question.question}"`;
+                    prompt = `Explain the purpose, intent, and compliance expectations of the following question for a sustainability/business/ESG/HR/operations/finance report. Highlight what a perfect answer should cover.\nQuestion: "${questionText}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.RECOMMEND_AI_ANSWER:
-                    prompt = `Generate a high-quality, compliant answer for the question in the context of sustainability reporting in not more than 100 words: "${question.question}" ${currentAnswer ? `based on the draft: "${currentAnswer}"` : ''}`;
+                    prompt = `Write a model answer for the following question, as would be expected in a top-tier, audit-ready Indian corporate report. Be specific, compliant, and concise.\nQuestion: "${questionText}"${currentAnswer ? `\nCurrent Draft: "${currentAnswer}"` : ''}${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.BREAK_DOWN_QUESTION:
-                    prompt = `Break down the question into sub-components or steps in not more than 100 words: "${question.question}"`;
+                    prompt = `Break down the following question into all key sub-parts and explain what information is needed for each.\nQuestion: "${questionText}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.SUGGEST_DATA_SOURCES:
-                    prompt = `Suggest reliable data sources or methods for collecting data to answer the question accurately in the context of sustainability reporting, in not more than 100 words.`;
+                    prompt = `List the most reliable, practical, and India-relevant data sources or methods for answering this question accurately.\nQuestion: "${questionText}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.GENERATE_FOLLOWUP_QUESTIONS_FOR_USER:
-                    prompt = `Generate follow-up questions based on the question and draft answer in not more than 100 words: "${question.question}" ${currentAnswer ? `Draft: "${currentAnswer}"` : ''}`;
+                    prompt = `Generate 3-5 follow-up questions that would help a user provide a more complete, compliant, and audit-ready answer.\nQuestion: "${questionText}"${currentAnswer ? `\nCurrent Draft: "${currentAnswer}"` : ''}${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.COMPARE_WITH_BEST_PRACTICE:
-                    prompt = `Compare the user's draft answer with best practices in sustainability reporting and suggest improvements in not more than 100 words: "${currentAnswer}"`;
+                    prompt = `Compare the following draft answer with global and Indian best practices. Suggest concrete improvements for compliance, clarity, and completeness.\nDraft: "${currentAnswer}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.SUMMARIZE_SELECTION:
-                    prompt = `Summarize the selected text in not more than 100 words: "${selectedTextInTextarea}"`;
+                    prompt = `Summarize the selected text in 2-3 sentences, focusing on key points and compliance.\nSelected: "${selectedTextInTextarea}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.REFINE_SELECTION:
-                    prompt = `Refine the selected text in not more than 100 words to improve clarity and align with tone "${refineTone}": "${selectedTextInTextarea}"`;
+                    prompt = `Refine the selected text to improve clarity, compliance, and professionalism. Use the tone: ${refineTone}.\nSelected: "${selectedTextInTextarea}"${contextInfo}`;
                     break;
                 case MiniAIAssistantAction.EXPLAIN_SELECTION:
-                    prompt = `Explain the meaning or significance of the selected text in not more than 100 words: "${selectedTextInTextarea}"`;
+                    prompt = `Explain the meaning, compliance relevance, and importance of the selected text.\nSelected: "${selectedTextInTextarea}"${contextInfo}`;
                     break;
                 default:
-                    prompt = `${action} for question: "${question.question}" with draft: "${currentAnswer}"`;
+                    prompt = `${action} for question: "${questionText}" with draft: "${currentAnswer}"${contextInfo}`;
             }
 
             const response = { id: Date.now().toString(), text: prompt, action, confidence: 'medium' }; // Mock response for structure
@@ -190,3 +198,5 @@ const AIAssistant = ({ question, currentValue, selectedTextInTextarea, handleQui
         </div>
     );
 };
+
+export default AIAssistant;

@@ -99,6 +99,13 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
     // Fix: Use aiMessage.text as the markdown content
     const formattedText = aiMessage?.text || "";
 
+    // Use This Suggestion button: always copy AI response to left field
+    const handleUseThisSuggestion = () => {
+        if (aiMessage?.text && handlePostResponseAction) {
+            handlePostResponseAction('USE_THIS');
+        }
+    };
+
     return (
         <div className="mt-2 relative">
             {/* Confidence Badge in Top Right */}
@@ -206,10 +213,10 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
             {aiMessage.suggestion && (
                 <div className="mt-3 pt-3">
                     <button
-                        onClick={() => handlePostResponseAction("USE_THIS", aiMessage.suggestion)}
-                        className="w-full p-2 text-white bg-[#1A2B5C] hover:bg-[#0F1D42] rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        onClick={handleUseThisSuggestion}
+                        className="w-full mt-2 p-2 border border-blue-200 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors text-white text-sm font-medium"
+                        aria-label="Use This Suggestion"
                     >
-                        <CheckCircle className="w-4 h-4" />
                         Use This Suggestion
                     </button>
                 </div>

@@ -22,6 +22,7 @@ import AIResponseDisplay from "./QuestionEdit/AIResponseDisplay";
 import ToneSelector from "./QuestionEdit/ToneSelector";
 import AIActionButtons from "./QuestionEdit/AIActionButtons";
 import { MiniAIAssistantAction } from "./QuestionEdit/MiniAIAssistantAction.js";
+import AIAssistant from "./QuestionEdit/AIAssistant";
 
 const QuestionEditPopup = ({
     question,
@@ -401,13 +402,13 @@ interface StructuredAISuggestion {
                 }
             }
 
-            // --- Ensure empty responses are sent as empty strings ---
+            // --- Ensure empty responses are sent as null (not empty string) ---
             if (question.question_type === "subjective") {
                 if (!updatedFormData.string_value || updatedFormData.string_value.trim() === "") {
-                    updatedFormData.string_value = "";
+                    updatedFormData.string_value = null;
                 }
                 if (updatedFormData.response !== undefined && (updatedFormData.response === null || updatedFormData.response.trim() === "")) {
-                    updatedFormData.response = "";
+                    updatedFormData.response = null;
                 }
             }
 
@@ -437,7 +438,7 @@ interface StructuredAISuggestion {
                 return;
             }
 
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] Form validation passed. Preparing data for submission.");
 
             let answerData;
@@ -455,14 +456,14 @@ interface StructuredAISuggestion {
                         explanation: updatedFormData.explanation || "",
                         link: updatedFormData.link || "",
                         note: updatedFormData.note || "",
-                        string_value: "",
+                        string_value: null, // Always null for has_provisions
                         decimal_value: "",
                         boolean_value: false
                     };
                     // Remove or reduce noisy/unnecessary console logs
                     // console.log("📝 [QuestionEditPopup] Prepared has_provisions answer data:", answerData);
                 } else {
-                    answerData = updatedFormData;
+                    answerData = { ...updatedFormData };
                 }
             } else if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
                 // Remove or reduce noisy/unnecessary console logs
@@ -472,13 +473,13 @@ interface StructuredAISuggestion {
                 // Remove or reduce noisy/unnecessary console logs
                 // console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
                 answerData = {
-                    string_value: updatedFormData.string_value,
-                    decimal_value: updatedFormData.decimal_value,
+                    string_value: updatedFormData.string_value === "" ? null : updatedFormData.string_value,
+                    decimal_value: updatedFormData.decimal_value === "" ? null : updatedFormData.decimal_value,
                     boolean_value: updatedFormData.boolean_value,
-                    link: updatedFormData.link,
-                    note: updatedFormData.note,
+                    link: updatedFormData.link === "" ? null : updatedFormData.link,
+                    note: updatedFormData.note === "" ? null : updatedFormData.note,
                     has_details: updatedFormData.has_details,
-                    justification: updatedFormData.justification
+                    justification: updatedFormData.justification === "" ? null : updatedFormData.justification
                 };
             }
 
@@ -500,7 +501,7 @@ interface StructuredAISuggestion {
             let company_id = localStorage.getItem("company_id");
             if (!company_id) {
                 company_id = userData?.company_id;
-                // Remove or reduce noisy/unnecessary console logs
+                // Remove or reduce noisy/unnecessary console.logs
                 // console.log("📤 [QuestionEditPopup] Using company_id from userData:", company_id);
                 if (company_id) {
                     localStorage.setItem("company_id", company_id);
@@ -513,7 +514,7 @@ interface StructuredAISuggestion {
             let financial_year = localStorage.getItem("financial_year");
             if (!financial_year) {
                 financial_year = selectedReport?.financial_year;
-                // Remove or reduce noisy/unnecessary console logs
+                // Remove or reduce noisy/unnecessary console.logs
                 // console.log("📤 [QuestionEditPopup] Using financial_year from selectedReport:", financial_year);
                 if (financial_year) {
                     localStorage.setItem("financial_year", financial_year);
@@ -523,7 +524,7 @@ interface StructuredAISuggestion {
                 }
             }
             
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📤 [QuestionEditPopup] Context values:", {
             //     questionId: question.question_id,
             //     moduleId,
@@ -565,7 +566,7 @@ interface StructuredAISuggestion {
             const currentCompanyId = localStorage.getItem("company_id");
             const currentFinancialYear = localStorage.getItem("financial_year");
             
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] Final verification before API call:", {
             //     moduleId,
             //     questionId: question.question_id,
@@ -588,7 +589,7 @@ interface StructuredAISuggestion {
                 throw new Error("Missing financial_year in localStorage");
             }
             
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
             // console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
             
@@ -600,23 +601,23 @@ interface StructuredAISuggestion {
                 answerData,
                 moduleId,
             }).unwrap();
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] submitAnswer mutation successful:", response);
             // console.log("✅ [QuestionEditPopup] API response received:", response);
 
             if (onSuccess) {
-                // Remove or reduce noisy/unnecessary console logs
+                // Remove or reduce noisy/unnecessary console.logs
                 // console.log("✅ [QuestionEditPopup] Calling onSuccess with data:", answerData);
                 await onSuccess(answerData);
             }
             toast.success("Answer submitted successfully");
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("✅ [QuestionEditPopup] Closing popup after successful submission");
             setTimeout(() => {
                 onClose();
             }, 800);
         } catch (err) {
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.error("❌ [QuestionEditPopup] Error submitting answer:", err);
             // console.error("❌ [QuestionEditPopup] Error details:", {
             //     status: err?.status,
@@ -629,7 +630,7 @@ interface StructuredAISuggestion {
                 err?.data?.message ||
                 err?.message ||
                 "Failed to submit answer. Please try again.";
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.error("❌ [QuestionEditPopup] Error message:", errorMessage);
             setError(errorMessage);
             toast.error(`Failed to save answer: ${errorMessage}`);
@@ -826,28 +827,23 @@ interface StructuredAISuggestion {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby={`question-${question.question_id}-title`}
-            style={{ overflowY: 'auto' }} // Allow browser to scroll if needed
         >
-            <div className="relative">
+            <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center">
                 <motion.div
-                    className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-visible ${isAIAssistantOpen ? "w-[90vw] max-w-6xl" : "w-[70vw] max-w-4xl"}`} // Remove h-[75vh], overflow-hidden
+                    className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-hidden w-full h-full`}
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: isVisible ? 1 : 0.95, opacity: isVisible ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                    <ModalHeader
-                        questionId={question.question_id}
-                        questionText={question.question}
-                        closeModal={onClose}
-                    />
-                    <div className="flex flex-1 overflow-visible"> {/* Remove overflow-hidden */}
+                    <div className="flex flex-1 overflow-visible h-full">
                         <div
                             ref={leftPanelRef}
-                            className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 scrollbar-none overflow-visible" // Remove overflow-y-auto
+                            className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto scrollbar-none"
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                             <div className="flex-1">
                                 <div className="mb-4">
@@ -888,7 +884,7 @@ interface StructuredAISuggestion {
                             </div>
                         </div>
                         <motion.div
-                            className="overflow-visible" // Remove overflow-hidden
+                            className="overflow-visible h-full"
                             initial={{ width: 0, opacity: 0 }}
                             animate={{
                                 width: isAIAssistantOpen ? "40%" : 0,
@@ -898,7 +894,7 @@ interface StructuredAISuggestion {
                             transition={{ duration: 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
                         >
                             {isAIAssistantOpen && (
-                                <div className="flex-1 flex flex-col px-6 py-4 bg-white h-full overflow-visible"> {/* Remove overflow-y-auto */}
+                                <div className="flex-1 flex flex-col px-6 py-4 bg-white h-full overflow-y-auto scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                     <ToneSelector
                                         refineTone={refineTone}
                                         setRefineTone={setRefineTone}
@@ -928,8 +924,8 @@ interface StructuredAISuggestion {
                                             />
                                         </div>
                                     </div>
-                                    {/* Add AIAssistant with onAcceptSuggestion prop */}
-                                    <AIAssistant
+                                    {/* Remove extra Mini AI Assistant at the bottom by commenting out or deleting this block */}
+                                    {/* <AIAssistant
                                         question={question}
                                         currentValue={formData.string_value}
                                         selectedTextInTextarea={selectedTextInTextarea}
@@ -937,7 +933,7 @@ interface StructuredAISuggestion {
                                         refineTone={refineTone}
                                         setRefineTone={setRefineTone}
                                         onAcceptSuggestion={handleAcceptAISuggestion}
-                                    />
+                                    /> */}
                                 </div>
                             )}
                         </motion.div>

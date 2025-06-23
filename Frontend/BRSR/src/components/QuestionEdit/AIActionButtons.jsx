@@ -2,6 +2,9 @@ import React from 'react';
 import { MiniAIAssistantAction } from './MiniAIAssistantAction.js'; // Assuming MiniAIAssistantAction is exported from QuestionEditPopup
 
 const AIActionButtons = ({ selectedTextInTextarea, handleQuickAIAction, actions, currentValue }) => {
+    // Ensure actions is always an object to avoid TypeError
+    actions = actions || {};
+
     const allPanelActionsWithMetadata = [
         { action: MiniAIAssistantAction.EXPLAIN_THIS_QUESTION, label: "Explain Q", icon: 'InformationCircleIcon', title: "Explain current question." },
         { action: MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Left, label: "AI Draft", icon: 'SparklesIcon', title: "AI generates an answer." },
@@ -109,6 +112,15 @@ const AIActionButtons = ({ selectedTextInTextarea, handleQuickAIAction, actions,
     // Determine if the response is empty
     const isResponseEmpty = !currentValue || (typeof currentValue === 'string' && currentValue.trim().length === 0);
 
+    // Only enable AI Recommend if response is empty
+    const shouldDisable = (actionKey) => {
+        if (isResponseEmpty) {
+            // Only allow AI Recommend (Right) when empty
+            return actionKey !== MiniAIAssistantAction.RECOMMEND_AI_ANSWER_Right;
+        }
+        return false;
+    };
+
     // Define action priorities for empty and filled states
     const emptyResponsePriority = [
         MiniAIAssistantAction.EXPLAIN_THIS_QUESTION,
@@ -172,10 +184,11 @@ const AIActionButtons = ({ selectedTextInTextarea, handleQuickAIAction, actions,
                     return (
                         <button
                             key={actionKey}
-                            onClick={() => handleQuickAIAction(actionKey)} // Pass the action string directly
+                            onClick={() => handleQuickAIAction(actionKey)}
                             title={actionMeta.title}
-                            className="flex flex-col items-center px-2 py-2 text-xs font-medium text-[#000D30] bg-[#E6E8F0] hover:bg-[#D1D6E8] hover:scale-[1.02] transition-transform duration-150 ease-out  rounded-lg  border border-[#D1D6E8] focus:ring-2 focus:ring-blue-500/50"
+                            className={`flex flex-col items-center px-2 py-2 text-xs font-medium text-[#000D30] bg-[#E6E8F0] hover:bg-[#D1D6E8] hover:scale-[1.02] transition-transform duration-150 ease-out  rounded-lg  border border-[#D1D6E8] focus:ring-2 focus:ring-blue-500/50 ${shouldDisable(actionKey) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                             aria-label={actionMeta.title}
+                            disabled={shouldDisable(actionKey)}
                         >
                             {iconMap[actionMeta.icon] || iconMap.default}
                             <span className="text-center">{actionMeta.label}</span>
