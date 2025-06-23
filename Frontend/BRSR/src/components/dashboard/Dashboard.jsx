@@ -386,19 +386,46 @@ const Dashboard = ({ dynamicModules = [] }) => {
             icon={BarChart3}
             className="lg:col-span-2"
           >
-            <div className="flex flex-col items-center justify-center p-3">
+            <div className="flex flex-col items-center justify-center p-4 gap-3">
               {isLoadingCO2 ? (
-                <div className="flex items-center justify-center h-12">
+                <div className="flex items-center justify-center h-16">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]" />
                 </div>
               ) : noCO2Data ? (
                 <div className="text-gray-400 text-sm">No data</div>
               ) : (
-                <ProgressBar
-                  percentage={percent(combinedCO2)}
-                  label={`Combined CO₂: ${combinedCO2.toLocaleString()} tons`}
-                  sublabel={`Target: ${combinedTarget.toLocaleString()} tons`}
-                />
+                <>
+                  {/* Large combined value and percent badge */}
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-3xl sm:text-xl font-extrabold text-[#1A2341]">
+                      {combinedCO2.toLocaleString()} <span className="text-lg font-medium text-slate-500">tons</span>
+                    </span>
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                      {percent(combinedCO2)}%
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full max-w-md">
+                    <ProgressBar
+                      percentage={percent(combinedCO2)}
+                      label={<span className="font-medium text-[#1A2341]">Combined CO₂</span>}
+                      sublabel={<span className="text-xs text-slate-500">Target: {combinedTarget.toLocaleString()} tons</span>}
+                    />
+                  </div>
+                  {/* Scope 1 & 2 breakdown pills */}
+                  <div className="flex gap-4 mt-3">
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 shadow-sm">
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span className="text-xs font-semibold text-[#1A2341]">Scope 1:</span>
+                      <span className="text-xs font-bold text-emerald-700">{scope1CO2.toLocaleString()} t</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 shadow-sm">
+                      <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                      <span className="text-xs font-semibold text-[#1A2341]">Scope 2:</span>
+                      <span className="text-xs font-bold text-blue-700">{scope2CO2.toLocaleString()} t</span>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </DashboardCard>
