@@ -14,7 +14,7 @@ const ReportNavbar = () => {
   return (
     <nav className="bg-[#000D30] text-white w-full shadow-md z-50">
       <div className="mx-auto px-3 sm:px-4 lg:px-6">
-        <div className="flex items-center justify-between min-h-[6vh] h-[6vh]">
+        <div className="flex items-center justify-between h-12 min-h-12">
           <div className="flex items-center">
             <Link
               to="/"

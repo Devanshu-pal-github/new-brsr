@@ -32,7 +32,7 @@ async def create_plant(
     db: AsyncIOMotorDatabase = Depends(get_database),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-    """Create a new plant"""
+    """Create a new plant and log audit"""
     try:
         now = datetime.utcnow()
         # Create plant dictionary
@@ -77,7 +77,7 @@ async def create_plant(
         # Insert the environment report
         await db.environment.insert_one(environment_report)
 
-        # Create audit log for plant creation
+        # Audit log
         action_log = ActionLog(
             action="Plant Created",
             target_id=plant_dict["id"],
@@ -90,16 +90,12 @@ async def create_plant(
                 "plant_type": plant_dict["plant_type"]
             }
         )
-
-        # Log the action using audit service - only include plant_id for plant admin role
         plant_id = user["plant_id"] if user.get("role", [])[0] == "plant_admin" else None
-        financial_year = user.get("financial_year") # Will be None if not present
-        
-
+        financial_year = user.get("financial_year")
         await audit_service.log_action(
             company_id=user["company_id"],
-            plant_id=plant_id,  # Only pass plant_id for plant admin
-            financial_year=financial_year,  # Will be None if not present in user data
+            plant_id=plant_id,
+            financial_year=financial_year,
             action_log=action_log
         )
 
@@ -173,9 +169,11 @@ async def update_plant(
 @router.delete("/{plant_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_plant(
     plant_id: str,
-    plant_service = Depends(get_plant_service)
+    plant_service = Depends(get_plant_service),
+    user: Dict = Depends(get_current_active_user),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
-    """Delete a plant and its associated answers"""
+    """Delete a plant and its associated answers, with audit log"""
     try:
         deleted = await plant_service.delete_plant(plant_id)
         if not deleted:
@@ -183,6 +181,23 @@ async def delete_plant(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Plant with ID {plant_id} not found"
             )
+        # Audit log
+        action_log = ActionLog(
+            action="Plant Deleted",
+            target_id=plant_id,
+            user_id=user["id"],
+            user_role=user.get("role", [])[0],
+            performed_at=datetime.utcnow(),
+            details={
+                "plant_id": plant_id
+            }
+        )
+        await audit_service.log_action(
+            company_id=user["company_id"],
+            plant_id=plant_id,
+            financial_year=None,
+            action_log=action_log
+        )
         return None
     except ValueError as e:
         raise HTTPException(
@@ -249,7 +264,8 @@ async def get_plant_employees(
 async def delete_employee_from_plant(
     payload: DeleteEmployeeRequest = Body(...),
     user: Dict = Depends(get_current_active_user),
-    plant_service = Depends(get_plant_service)
+    plant_service = Depends(get_plant_service),
+    audit_service: AuditService = Depends(get_audit_service)
 ):
     """
     Delete an employee from a specific plant. The company_id is taken from the current user.
@@ -264,6 +280,25 @@ async def delete_employee_from_plant(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Employee with ID {employee_id} not found in plant {plant_id}"
         )
+    # Audit log
+    
+    action_log = ActionLog(
+        action="Employee Deleted",
+        target_id=employee_id,
+        user_id=user["id"],
+        user_role=user.get("role", [])[0],
+        performed_at=datetime.utcnow(),
+        details={
+            "plant_id": plant_id,
+            "employee_id": employee_id
+        }
+    )
+    await audit_service.log_action(
+        company_id=company_id,
+        plant_id=plant_id,
+        financial_year=None,
+        action_log=action_log
+    )
     return None
 
 

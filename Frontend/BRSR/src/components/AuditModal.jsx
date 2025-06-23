@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useGetAuditLogQuery } from '../store/api/apiSlice';
+import { useGetAllCompanyAuditLogsQuery } from '../store/api/apiSlice';
 import { X, Search } from "lucide-react";
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -22,7 +22,9 @@ const AuditModal = ({ onClose }) => {
     };
   }, [onClose]);
 
-  const { data: auditData, isLoading: auditLoading, error: auditError } = useGetAuditLogQuery();
+  // Get company_id from localStorage (or replace with your preferred method)
+  const companyId = localStorage.getItem('company_id');
+  const { data: auditData, isLoading: auditLoading, error: auditError } = useGetAllCompanyAuditLogsQuery(companyId);
   console.log("auditData", auditData);
 
   const handleSearchChange = (e) => {

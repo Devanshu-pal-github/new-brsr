@@ -112,9 +112,11 @@ const GHGMainPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-2 py-4 min-w-full ">
+    <div className="min-w-full px-5 py-3 overflow-x-hidden">
       {/* Breadcrumb for GHG > Scope */}
-      <Breadcrumb section="GHG Emission" activeTab={activeScope}  />
+      <div className="mb-4 ">
+        <Breadcrumb section="GHG Emission" activeTab={activeScope}  />
+      </div>
       {/* SubHeader for Scope 1, 2, 3 */}
       <div className="mb-6 mt-4">
         <SubHeader

@@ -28,10 +28,31 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
             console.debug(`Question ${questionId} has no answer`);
             return false;
         }
-        
         const answer = answers[questionId];
         console.debug(`Checking answer for ${questionId}:`, answer);
-        
+
+        // Handle table answers
+        if (Array.isArray(answer.data)) {
+            // Consider answered if at least one row has a non-empty, non-zero value in any cell
+            const isAnswered = answer.data.some(row => {
+                if (typeof row === 'object' && row !== null) {
+                    return Object.values(row).some(value => {
+                        // Accept numbers or strings that are not empty or zero
+                        if (typeof value === 'string') {
+                            return value.trim() !== '' && value.trim() !== '0' && value.trim() !== '0.00';
+                        }
+                        if (typeof value === 'number') {
+                            return value !== 0;
+                        }
+                        return !!value;
+                    });
+                }
+                return false;
+            });
+            console.debug(`Table question ${questionId} answered:`, isAnswered);
+            return isAnswered;
+        }
+
         // Handle subjective answers
         if (answer.type === 'subjective') {
             const text = answer.data?.text;
@@ -40,28 +61,10 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
             return isAnswered;
         }
 
-        // Handle table answers
-        if (Array.isArray(answer.data)) {
-            const isAnswered = answer.data.some(row => {
-                if (typeof row === 'object') {
-                    // Check if any field in the row has data
-                    return Object.values(row).some(value => 
-                        value !== undefined && 
-                        value !== null && 
-                        value !== '' && 
-                        value !== '0'
-                    );
-                }
-                return false;
-            });
-            console.debug(`Table question ${questionId} answered:`, isAnswered);
-            return isAnswered;
-        }
-
         // For any other type of answer, check if data exists
         const isAnswered = answer.data !== undefined && 
                answer.data !== null && 
-               Object.keys(answer.data).length > 0;
+               ((typeof answer.data === 'object' && Object.keys(answer.data).length > 0) || (typeof answer.data !== 'object' && answer.data !== ''));
         console.debug(`Other type question ${questionId} answered:`, isAnswered);
         return isAnswered;
     };
@@ -132,7 +135,7 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     const { totalQuestions, totalAnswered } = calculateOverallProgress();
 
     return (
-        <aside className="hidden lg:flex flex-col mt-[15vh] mr-[1%] gap-[1.2vh] px-[0.7vw] pt-[1.2vh] pb-[1.2vh] bg-white border-l border-gray-200 shadow-lg min-w-[16vw] max-w-[18vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
             {/* Overall Progress Circle */}
             <div className="flex flex-col items-center mb-[0.7vh]">
                 <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>
@@ -218,4 +221,4 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     );
 };
 
-export default ProgressSidebar; 
+export default ProgressSidebar;

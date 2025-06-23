@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { store } from '../store';
 
 // Get user data from localStorage if available
 const getUserFromStorage = () => {

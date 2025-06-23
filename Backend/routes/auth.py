@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
+from models.auditModel import ActionLog
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.auth import UserCreate, UserInDB, Token, UserUpdate , User
+from services.auditServices import AuditService
 from services.auth import (
     authenticate_user,
     create_access_token,
@@ -22,6 +25,10 @@ router = APIRouter(tags=["Authentication"])
 
 class ForgotPasswordRequest(BaseModel):
     email: str
+
+
+def get_audit_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> AuditService:
+    return AuditService(db)
 
 @router.post("/login")
 async def login(
@@ -213,23 +220,41 @@ async def register_user(
     return UserInDB(**user_data)
 
 @router.post("/users", response_model=UserInDB)
-async def create_user(user, db):
-    """Create a new user"""
+async def create_user(user, db=Depends(get_database), user_ctx=Depends(get_current_active_user), audit_service=Depends(get_audit_service)):
+    """Create a new user and log audit"""
     # Check if email already exists
-    if db["users"].find_one({"email": user.email}):
+    if await db["users"].find_one({"email": user.email}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
     # Create user document
     user_dict = user.model_dump()
     user_dict["_id"] = generate_uuid()
     user_dict["id"] = user_dict["_id"]
     user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
-    
     # Insert into database
-    db["users"].insert_one(user_dict)
+    await db["users"].insert_one(user_dict)
+    # Audit log
+    action_log = ActionLog(
+        action="User Created",
+        target_id=user_dict["id"],
+        user_id=user_ctx["id"],
+        user_role=user_ctx.get("role", [])[0],
+        performed_at=datetime.utcnow(),
+        details={
+            "user_email": user_dict["email"],
+            "user_name": user_dict.get("full_name"),
+            "role": user_dict.get("role"),
+            "company_id": user_dict.get("company_id"),
+        }
+    )
+    await audit_service.log_action(
+        company_id=user_dict.get("company_id"),
+        plant_id=user_dict.get("plant_id", None),
+        financial_year=None,
+        action_log=action_log
+    )
     return UserInDB(**user_dict)
 
 @router.get("/users/me", response_model=UserInDB)

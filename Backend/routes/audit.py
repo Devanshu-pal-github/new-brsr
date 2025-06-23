@@ -14,49 +14,44 @@ router = APIRouter(tags=["Audit"])
 def get_audit_service(db: AsyncIOMotorDatabase = Depends(get_database)) -> AuditService:
     return AuditService(db)
 
-@router.get("/", response_model=AuditLog)
+@router.get("/", response_model=dict)
 async def get_audit_log(
     current_user: Dict = Depends(get_current_active_user),
     audit_service: AuditService = Depends(get_audit_service)
 ):
-
-    
     """
-    Fetch audit log for the current user's company. Plant and financial year are optional filters.
-
-    Args:
-        current_user: User info including company_id, and optionally plant_id and financial_year.
-
-    Returns:
-        AuditLog: Audit log data.
-
-    Raises:
-        HTTPException: If company_id is missing or audit log is not found.
+    Fetch audit log for the current user's company.
+    - If only company_id is present, returns all actions for the company.
+    - If plant_id or financial_year is present, returns the specific audit log.
     """
-    company_id = current_user["company_id"]
-    plant_id = current_user.get("plant_id")  # Optional
-    financial_year = current_user.get("financial_year")  # Optional
+    company_id = current_user.get("company_id")
+    plant_id = current_user.get("plant_id")
+    financial_year = current_user.get("financial_year")
 
     if not company_id:
         logger.warning("Missing required field in current_user: company_id")
         raise HTTPException(status_code=400, detail="Missing required user context: company_id")
 
     try:
-        # Create query parameters dict with only existing values
-        query_params = {"company_id": company_id}
-        if plant_id:
-            query_params["plant_id"] = plant_id
-        if financial_year:
-            query_params["financial_year"] = financial_year.replace("-", "_")  # Convert to MongoDB format
-
-        logger.debug(f"Fetching audit log with params: {query_params}")
-        result = await audit_service.get_audit_log(**query_params)
-        
-        if not result:
-            logger.warning(f"No audit log found for params: {query_params}")
-            raise HTTPException(status_code=404, detail="Audit log not found")
-        return result
-    except HTTPException as e:
+        if not plant_id and not financial_year:
+            # Only company_id present: return all actions
+            logger.debug(f"Fetching all audit actions for company_id: {company_id}")
+            actions = await audit_service.get_all_company_actions(company_id)
+            return {"company_id": company_id, "total_actions": len(actions), "actions": actions}
+        else:
+            # plant_id or financial_year present: return specific audit log
+            query_params = {"company_id": company_id}
+            if plant_id:
+                query_params["plant_id"] = plant_id
+            if financial_year:
+                query_params["financial_year"] = financial_year.replace("-", "_")
+            logger.debug(f"Fetching audit log with params: {query_params}")
+            result = await audit_service.get_audit_log(**query_params)
+            if not result:
+                logger.warning(f"No audit log found for params: {query_params}")
+                raise HTTPException(status_code=404, detail="Audit log not found")
+            return result
+    except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to fetch audit log: {str(e)}", exc_info=True)

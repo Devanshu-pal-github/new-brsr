@@ -102,3 +102,15 @@ class AuditService:
         except Exception as e:
             logger.error(f"Error logging action: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
+    async def get_all_company_actions(self, company_id: str) -> list:
+        """
+        Fetch all audit actions for a given company_id across all audit log documents.
+        Returns a flat list of all actions.
+        """
+        cursor = self.collection.find({"company_id": company_id})
+        all_actions = []
+        async for doc in cursor:
+            actions = doc.get("actions", [])
+            all_actions.extend(actions)
+        return all_actions

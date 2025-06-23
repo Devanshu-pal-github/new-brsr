@@ -883,6 +883,22 @@ export const apiSlice = createApi({
       },
       providesTags: ['GHGReport'],
     }),
+    getAllCompanyAuditLogs: builder.query({
+      query: (companyId) => ({
+        url: `/audit/`,
+        method: 'GET',
+        params: { company_id: companyId },
+      }),
+      transformResponse: (response) => {
+        console.log('📋 All Company Audit Logs Response:', response);
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        console.error('🔴 All Company Audit Logs Error:', response);
+        return response;
+      },
+      providesTags: ['AuditLog'],
+    }),
   }),
 });
 
@@ -919,5 +935,6 @@ export const {
   useLazyGetGHGReportQuery,
   useUpsertGHGReportMutation,
   useGetTotalCO2ByScopeMutation,
+  useGetAllCompanyAuditLogsQuery, // <-- add this
 } = apiSlice;
 export default apiSlice;
