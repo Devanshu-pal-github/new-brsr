@@ -8,25 +8,18 @@ import { useSelector } from "react-redux";
 import { useLazyGetGHGReportQuery, useUpsertGHGReportMutation } from "../../src/store/api/apiSlice";
 import { useSearchParams } from "react-router-dom";
 
-const GHGMainPage = () => {
+const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: propPlantId, financialYear: propFinancialYear, tableHeight = '60vh', onTotalCO2e }) => {
   const [activeScope, setActiveScope] = useState(GHG_SCOPES[0]);
   const [addOpen, setAddOpen] = useState(false);
   const [ghgData, setGhgData] = useState({ "Scope 1": [], "Scope 2": [], "Scope 3": [] });
   const [reportMeta, setReportMeta] = useState({});
 
-    const [searchParams, setSearchParams] = useSearchParams();
-    const currentFY = searchParams.get("financialYear") || "";
-
-  console.log("data:", ghgData);
-  console.log("reportMeta:", reportMeta);
-
-    console.log("GHGMainPage - currentFY:", currentFY);
-  // Get auth and plant info from state (adjust selectors as per your store)
+  // Use propPlantId/propFinancialYear if provided (for popup), else fallback to redux/searchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentFY = searchParams.get("financialYear") || "";
   const companyId = useSelector((state) => state.auth.companyId);
-  const plantId = useSelector((state) => state.selectedPlant?.id || null);
-  const financialYear = currentFY || "2024-2025";
-
-  
+  const plantId = propPlantId || useSelector((state) => state.selectedPlant?.id || null);
+  const financialYear = propFinancialYear || currentFY || "2024-2025";
 
   // API hooks
   const [getGHGReport, { data: fetchedReport }] = useLazyGetGHGReportQuery();
@@ -53,11 +46,13 @@ const GHGMainPage = () => {
       );
       setGhgData((prev) => ({ ...prev, [activeScope]: rows }));
       setReportMeta((prev) => ({ ...prev, [activeScope]: fetchedReport }));
+      if (onTotalCO2e) onTotalCO2e(fetchedReport.total_scope_emissions_co2e || 0);
     } else {
       setGhgData((prev) => ({ ...prev, [activeScope]: [] }));
       setReportMeta((prev) => ({ ...prev, [activeScope]: null }));
+      if (onTotalCO2e) onTotalCO2e(0);
     }
-  }, [fetchedReport, activeScope]);
+  }, [fetchedReport, activeScope, onTotalCO2e]);
 
   // Add new entry handler
   const handleAdd = async (entry) => {
@@ -114,11 +109,13 @@ const GHGMainPage = () => {
   return (
     <div className="min-w-full px-5 py-3 overflow-x-hidden">
       {/* Breadcrumb for GHG > Scope */}
-      <div className="mb-4 ">
-        <Breadcrumb section="GHG Emission" activeTab={activeScope}  />
-      </div>
+      {!hideBreadcrumb && (
+        <div className="mb-4 ">
+          <Breadcrumb section="GHG Emission" activeTab={activeScope}  />
+        </div>
+      )}
       {/* SubHeader for Scope 1, 2, 3 */}
-      <div className="mb-6 mt-4">
+      <div className={`mb-6 mt-4${smallSubHeader ? ' scale-90' : ''}`}>
         <SubHeader
           tabs={GHG_SCOPES}
           activeTab={activeScope}
@@ -132,7 +129,7 @@ const GHGMainPage = () => {
             {activeScope}
             {reportMeta[activeScope]?.total_scope_emissions_co2e !== undefined && (
               <span className="ml-4 text-base   font-semibold text-[#1A2341]">
-                (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()})
+                {/* (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()}) */}
               </span>
             )}
           </div>
@@ -143,7 +140,7 @@ const GHGMainPage = () => {
             + Add
           </button>
         </div>
-        <div className="bg-white rounded shadow p-4">
+        <div className="bg-white rounded shadow p-4" style={{ height: tableHeight }}>
           <GHGTable scope={activeScope} rows={ghgData[activeScope]} />
         </div>
       </div>

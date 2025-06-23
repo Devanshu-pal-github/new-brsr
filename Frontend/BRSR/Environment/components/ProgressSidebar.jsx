@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
 import { useSearchParams } from 'react-router-dom';
+import QuickActions from './QuickActions';
 
 const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     const [searchParams] = useSearchParams();
@@ -217,6 +218,9 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
                     </div>
                 </div>
             )}
+
+            {/* Quick Actions */}
+            <QuickActions plantId={plantId} financialYear={financialYear} />
         </aside>
     );
 };

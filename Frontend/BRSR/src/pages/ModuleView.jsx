@@ -208,7 +208,7 @@ const ModuleView = () => {
                   </li>
 
                   {/* Greenhouse Gases Emission Module */}
-                  <li className="w-full">
+                  {/* <li className="w-full">
                     <button
                       onClick={() => handleModuleClick("ghg")}
                       className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
@@ -220,7 +220,7 @@ const ModuleView = () => {
                       <Factory className="w-4 h-4 flex-shrink-0" />
                       <span className="text-left">GHG Emissions</span>
                     </button>
-                  </li>
+                  </li> */}
 
                   {/* Module List */}
                   {isLoading ? (
