@@ -832,7 +832,7 @@ interface StructuredAISuggestion {
             aria-modal="true"
             aria-labelledby={`question-${question.question_id}-title`}
         >
-            <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center">
+            <div className="relative w-full max-w-[70vw] h-[80vh] flex items-center justify-center"> {/* Increased max width to 70vw for wider popup */}
                 <motion.div
                     className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-hidden w-full h-full`}
                     initial={{ scale: 0.95, opacity: 0 }}

@@ -18,6 +18,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from "react-router-dom";
 import { selectCurrentUser } from '../../store/slices/authSlice';
 import {
   useGetCompanyReportsQuery,
@@ -25,7 +26,8 @@ import {
   useGetCompanyPlantsQuery,
   useGetPlantEmployeesQuery,
   useGetAuditLogQuery,
-  useGetTotalCO2ByScopeMutation
+  useGetTotalCO2ByScopeMutation,
+  useGetCompanyDetailsQuery
 } from '../../store/api/apiSlice';
 import DashboardCard from './DashboardCard';
 import CircularProgress from './charts/CircularProgress';
@@ -36,13 +38,16 @@ const Dashboard = ({ dynamicModules = [] }) => {
   const user = useSelector(selectCurrentUser);
   const companyId = user?.company_id;
   const plantId = user?.plant_id;
-  const financialYear = "2024-2025"; // Default financial year
+  const [searchParams, setSearchParams] = useSearchParams();
+  const financialYear = searchParams.get("financialYear") || "2024-2025"; // Default value
 
   // Fetch data from API with plantId
   const { data: reports = [], isLoading: isLoadingReports } = useGetCompanyReportsQuery(
     plantId ? { plantId, financialYear } : undefined,
     { skip: !plantId }
   );
+
+
   
   console.log("Dashboard Reports Query:", { plantId, financialYear, reports });
 
@@ -555,12 +560,12 @@ const Dashboard = ({ dynamicModules = [] }) => {
             icon={Activity}
             className="sm:col-span-2"
           >
-            <div className="space-y-2 p-3 max-h-[280px] overflow-y-auto">
+            <div className="space-y-2 p-3 max-h-[40] overflow-y-auto">
               {isLoadingAudit ? (
                 <div className="flex items-center justify-center py-4">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 </div>
-              ) : auditData?.actions?.slice(-3).reverse().map((audit, index) => (
+              ) : auditData?.actions?.slice(-5).reverse().map((audit, index) => (
                 <div 
                   key={`${audit.target_id}-${index}`}
                   className="flex items-center gap-2.5 p-2 rounded-md bg-white border border-slate-100 hover:border-slate-200 transition-colors"
@@ -572,9 +577,16 @@ const Dashboard = ({ dynamicModules = [] }) => {
                         {audit.action}
                       </span>
                     </div>
+                    {/* Show plant details if Plant Created */}
                     {audit.action === "Plant Created" && audit.details?.plant_code && (
                       <div className="text-[10px] text-slate-500 mt-0.5 truncate">
                         Plant ID: {audit.details.plant_code} • {audit.details.plant_name || 'Unnamed Plant'}
+                      </div>
+                    )}
+                    {/* Show table question if Table Answer Updated and question_title exists */}
+                    {((audit.action?.toLowerCase().includes('table answer updated') || audit.action?.toLowerCase().includes('table updated')) && audit.details?.question_title) && (
+                      <div className="text-[10px] text-indigo-600 mt-0.5 truncate font-semibold">
+                        {audit.details.question_title}
                       </div>
                     )}
                     <div className="text-[10px] text-slate-400 mt-0.5">
