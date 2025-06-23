@@ -72,8 +72,8 @@ const GHGTable = ({ scope, rows }) => {
                 </div>
             </div>
             <div
-                className="w-full"
-                style={{ minHeight: 350, maxHeight: '75vh', height: '60vh' }}
+                className="w-full responsive-ghg-table"
+                style={{ minHeight: 200, maxHeight: '60vh', height: 'auto' }}
             >
                 <DataGrid
                     rows={filteredRows}
@@ -94,11 +94,31 @@ const GHGTable = ({ scope, rows }) => {
                         },
                         ".MuiDataGrid-cell": { alignItems: "center" },
                         "& .MuiDataGrid-virtualScroller": {
-                            overflowX: "hidden"
+                            overflowX: "hidden",
+                            scrollbarWidth: "none",
+                            msOverflowStyle: "none"
+                        },
+                        "& .MuiDataGrid-virtualScroller::-webkit-scrollbar": {
+                            display: "none"
                         }
                     }}
                 />
             </div>
+            <style jsx global>{`
+              .responsive-ghg-table {
+                min-height: 200px;
+                max-height: 60vh;
+                height: auto;
+                overflow: auto;
+              }
+              .responsive-ghg-table::-webkit-scrollbar {
+                display: none;
+              }
+              .responsive-ghg-table {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+              }
+            `}</style>
         </div>
     );
 };

@@ -430,6 +430,17 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
   return (
     <AppProvider>
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        {/* Principle and Indicator display */}
+        {(question.principle || question.indicator) && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            {question.principle && (
+              <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-2 py-1 rounded">Principle: {question.principle}</span>
+            )}
+            {question.indicator && (
+              <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${question.indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {question.indicator}</span>
+            )}
+          </div>
+        )}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
             {/* <div className="font-semibold text-base text-[#20305D]">{title}</div> */}

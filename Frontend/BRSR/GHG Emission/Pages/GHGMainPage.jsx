@@ -107,7 +107,7 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
   };
 
   return (
-    <div className="min-w-full px-5 py-3 overflow-x-hidden">
+    <div className="min-w-full  overflow-x-hidden ">
       {/* Breadcrumb for GHG > Scope */}
       {!hideBreadcrumb && (
         <div className="mb-4 ">

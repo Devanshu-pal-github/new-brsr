@@ -44,7 +44,9 @@
                   { "parameter": "Energy intensity (optional) – the relevant metric may be selected by the entity", "unit": "GJ/ton" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         },
@@ -60,7 +62,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         }
@@ -108,7 +112,9 @@
                   { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity", "unit": "KL/unit" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         },
@@ -124,7 +130,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             },
             {
               "id": "WD-2",
@@ -168,7 +176,9 @@
                   { "parameter": "<b>Total water discharged (in kilolitres)</b>","unit": "KL (Kilolitres)" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         }
@@ -213,7 +223,9 @@
                   { "parameter": "Others – please specify", "unit": "" }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         },
@@ -262,7 +274,9 @@
                   }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             },
             {
               "id": "GHG-2",
@@ -301,7 +315,9 @@
                   }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         },
@@ -318,7 +334,9 @@
               "metadata": {
                 "type": "subjective",
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         }
@@ -340,7 +358,9 @@
               "metadata": {
                 "type": "subjective",
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             },
             {
               "id": "WM-3",
@@ -379,7 +399,9 @@
                   { "parameter": "Total", "unit": "MT" }
                 ],
                 "note": "Note: Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
             }
           ]
         }
@@ -400,7 +422,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         },
@@ -431,7 +455,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             },
             {
               "id": "VCEI-2",
@@ -441,7 +467,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         },
@@ -457,7 +485,9 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
-              }
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         }
