@@ -24,15 +24,13 @@ const PlantManagementModal = ({ onClose }) => {
 
   // Add click outside handler
   useEffect(() => {
+    // Only attach click outside handler if no child modal is open
+    if (isCreateModalOpen || isEmployeeModalOpen) return;
     const handleClickOutside = (event) => {
-      if (popupRef.current && 
-          !popupRef.current.contains(event.target) && 
-          !isCreateModalOpen && 
-          !isEmployeeModalOpen) {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
         onClose();
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -274,24 +272,24 @@ const PlantManagementModal = ({ onClose }) => {
             }}
           />
         </div>
-      </div>
 
-      {/* Create Plant Modal */}
-      <CreatePlantModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
-
-      {/* Employee Management Modal */}
-      {isEmployeeModalOpen && (
-        <EmployeeManagementModal
-          plantId={selectedPlantId}
-          onClose={() => {
-            setIsEmployeeModalOpen(false);
-            setSelectedPlantId(null);
-          }}
+        {/* Create Plant Modal */}
+        <CreatePlantModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
         />
-      )}
+
+        {/* Employee Management Modal */}
+        {isEmployeeModalOpen && (
+          <EmployeeManagementModal
+            plantId={selectedPlantId}
+            onClose={() => {
+              setIsEmployeeModalOpen(false);
+              setSelectedPlantId(null);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };

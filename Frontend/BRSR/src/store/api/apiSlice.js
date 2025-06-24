@@ -899,6 +899,28 @@ export const apiSlice = createApi({
       },
       providesTags: ['AuditLog'],
     }),
+    sendNotification: builder.mutation({
+      query: (notificationData) => ({
+        url: '/notifications/send',
+        method: 'POST',
+        body: notificationData,
+      }),
+      invalidatesTags: ['Notifications'],
+    }),
+    getReceivedNotifications: builder.query({
+      query: () => ({
+        url: '/notifications/received',
+        method: 'GET',
+      }),
+      providesTags: ['Notifications'],
+    }),
+    markNotificationAsRead: builder.mutation({
+      query: (notificationId) => ({
+        url: `/notifications/${notificationId}/read`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Notifications'],
+    }),
   }),
 });
 
@@ -936,5 +958,8 @@ export const {
   useUpsertGHGReportMutation,
   useGetTotalCO2ByScopeMutation,
   useGetAllCompanyAuditLogsQuery, // <-- add this
+  useSendNotificationMutation,
+  useGetReceivedNotificationsQuery,
+  useMarkNotificationAsReadMutation,
 } = apiSlice;
 export default apiSlice;

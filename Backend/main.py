@@ -24,6 +24,7 @@ from routes.geminiRoute import router as gemini_router
 from routes.audit import router as audit_router
 from routes.ghgRoute import router as ghg_router
 from routes.common_fields import router as common_fields_router
+from routes.notification import router as notification_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -236,6 +237,7 @@ app.include_router(gemini_router)
 app.include_router(audit_router, prefix="/audit")
 app.include_router(ghg_router)
 app.include_router(common_fields_router)
+app.include_router(notification_router)
 
 if __name__ == "__main__":
     import uvicorn
