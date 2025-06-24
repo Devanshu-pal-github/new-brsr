@@ -17,7 +17,8 @@ const DynamicQuestionRenderer = forwardRef(({
   onSave,
   isEditModalOpen,
   setIsEditModalOpen,
-  moduleId
+  moduleId,
+  hideTopRightAIButton // <--- Add this prop
 }, ref) => {
   const [tempData, setTempData] = useState(questionData);
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -129,103 +130,146 @@ const DynamicQuestionRenderer = forwardRef(({
     setAiChatOpen(false);
   };
 
+  // Helper to render principle/indicator/section/audit badges
+  const renderMetaBadges = () => {
+    // Support both: fields at root (question.principle) and inside metadata (question.metadata.principle)
+    const meta = question.metadata || {};
+    const principle = question.principle || meta.principle;
+    const indicator = question.indicator || meta.indicator;
+    const section = question.section || meta.section;
+    const auditRequired = question.audit_required ?? meta.audit_required;
+    const audited = question.audited ?? meta.audited;
+    return (
+      <div className="flex flex-wrap gap-2 mb-2">
+        {principle && (
+          <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Principle: {principle}</span>
+        )}
+        {indicator && (
+          <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Indicator: {indicator}</span>
+        )}
+        {section && (
+          <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-full">Section: {section}</span>
+        )}
+        {auditRequired !== undefined && (
+          <span className="inline-block bg-[#F59E42] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Audit Required: {String(auditRequired)}</span>
+        )}
+        {audited !== undefined && (
+          <span className="inline-block bg-[#6B7280] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Audited: {String(audited)}</span>
+        )}
+      </div>
+    );
+  };
+
   const renderEditableContent = () => {
     const metadata = question.metadata;
     const questionType = questionData.question_type || (metadata && metadata.type);
-    
     if (!question.metadata) {
       return <p className="text-gray-500">No metadata available for this question.</p>;
     }
-
-    switch (questionType) {
-      case 'subjective':
-        return (
-          <>
-            <SubjectiveRenderer 
-              metadata={metadata} 
-              data={tempData} 
-              isEditing={true} 
-              onSave={handleDataChange} 
-            />
-          </>
-        );
-      case 'table':
-        return (
-            <>
-            <TableRenderer 
-              metadata={metadata} 
-              data={tempData} 
-              isEditing={true} 
-              onSave={handleDataChange} 
-            />TableRenderer
-            </>
-          );
-      case 'table_with_additional_rows':
-        return (
-            <>
-            <TableWithAdditionalRowsRenderer 
-              metadata={metadata} 
-              data={tempData} 
-              isEditing={true} 
-              onSave={handleDataChange} 
-            />
-            </>
-          );
-      default:
-        return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
-    }
+    return (
+      <>
+        {renderMetaBadges()}
+        <div className="mb-1 text-base font-semibold text-gray-900">{question.question_text || question.title || question.human_readable_id}</div>
+        {(() => {
+          switch (questionType) {
+            case 'subjective':
+              return (
+                <SubjectiveRenderer 
+                  metadata={metadata} 
+                  data={tempData} 
+                  isEditing={true} 
+                  onSave={handleDataChange} 
+                />
+              );
+            case 'table':
+              return (
+                <>
+                <TableRenderer 
+                  metadata={metadata} 
+                  data={tempData} 
+                  isEditing={true} 
+                  onSave={handleDataChange} 
+                />TableRenderer
+                </>
+              );
+            case 'table_with_additional_rows':
+              return (
+                <>
+                <TableWithAdditionalRowsRenderer 
+                  metadata={metadata} 
+                  data={tempData} 
+                  isEditing={true} 
+                  onSave={handleDataChange} 
+                />
+                </>
+              );
+            default:
+              return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
+          }
+        })()}
+      </>
+    );
   };
 
   const renderReadOnlyContent = () => {
     if (!questionData || Object.keys(questionData).length === 0) {
       return <p className="text-gray-500 italic">No response provided yet.</p>;
     }
-
     const metadata = question.metadata;
     if (!metadata) {
       return <p className="text-green-600">Response submitted</p>;
     }
-
     const questionType = question.question_type || (metadata && metadata.type);
-    switch (questionType) {
-      case 'subjective':
-        return (
-          <SubjectiveRenderer 
-            metadata={metadata}
-            data={questionData}
-            isEditing={false}
-          />
-        );
-      case 'table':
-        return (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {metadata.columns.map((col, idx) => (
-                    <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {col.title}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {questionData.rows?.map((row, rowIdx) => (
-                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    {row.cells.map((cell, cellIdx) => (
-                      <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {cell.value}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      default:
-        return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
-    }
+    return (
+      <>
+        {renderMetaBadges()}
+        <div className="mb-1 text-base font-semibold text-gray-900">
+          {question.question_text || question.title || question.human_readable_id}
+        </div>
+        {/* Only render answer/response, no AI button here */}
+        {(() => {
+          switch (questionType) {
+            case 'subjective':
+              return (
+                <SubjectiveRenderer 
+                  metadata={metadata}
+                  data={questionData}
+                  isEditing={false}
+                />
+              );
+            case 'table':
+              return (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {metadata.columns.map((col, idx) => (
+                          <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {col.title}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {questionData.rows?.map((row, rowIdx) => (
+                        <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {row.cells.map((cell, cellIdx) => (
+                            <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {cell.value}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            default:
+              return <p className="text-gray-500">Unsupported question type: {questionType}</p>;
+          }
+        })()}
+      </>
+    );
   };
 
   useImperativeHandle(ref, () => ({
@@ -235,18 +279,19 @@ const DynamicQuestionRenderer = forwardRef(({
   return (
     <AppProvider>
       <div className="relative">
-        {/* AI Button (hidden placeholder for relocated header button) */}
-        <button
-          className="absolute right-2 top-2 hidden bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded-[4px] text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] items-center gap-1"
-          onClick={handleAIClick}
-          aria-label="AI Assist"
-        >
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          AI
-        </button>
-
+        {/* AI Button (original, absolutely positioned) */}
+        {!hideTopRightAIButton && (
+          <button
+            className="absolute right-2 top-2 bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded-[4px] text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] items-center gap-1"
+            onClick={handleAIClick}
+            aria-label="AI Assist"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            AI
+          </button>
+        )}
         <div className="mt-2">
           {renderReadOnlyContent()}
         </div>

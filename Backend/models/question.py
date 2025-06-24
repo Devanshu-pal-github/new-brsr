@@ -89,6 +89,9 @@ class QuestionCreate(BaseModel):
     order: Optional[int] = None
     question_number: Optional[str] = None
 
+    class Config:
+        extra = 'allow'
+
 class QuestionUpdate(BaseModel):
     """Model for updating an existing question"""
     human_readable_id: Optional[str] = None
@@ -99,6 +102,9 @@ class QuestionUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     order: Optional[int] = None
     question_number: Optional[str] = None
+
+    class Config:
+        extra = 'allow'
 
 class Question(BaseModel):
     """Question model"""
@@ -115,6 +121,9 @@ class Question(BaseModel):
     question_number: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        extra = 'allow'
 
 class QuestionWithCategory(Question):
     """Question model with category information"""

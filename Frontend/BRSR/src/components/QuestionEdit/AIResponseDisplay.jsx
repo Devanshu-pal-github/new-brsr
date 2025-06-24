@@ -70,17 +70,19 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
 
     // Helper: Parse compliance check output into grouped arrays
     function parseComplianceCheck(text) {
-        const lines = text.split(/\n|(?=\[Strength\])|(?=\[Issue\])|(?=\[Recommendation\])/g).map(l => l.trim()).filter(Boolean);
+        // Split by tags, even if all on one line
+        const tagRegex = /\[(Strength|Issue|Recommendation)\]:/gi;
+        const split = text.split(tagRegex);
         const groups = { Strength: [], Issue: [], Recommendation: [] };
-        lines.forEach(line => {
-            if (/^\[Strength\]:/i.test(line)) {
-                groups.Strength.push(line.replace(/^\[Strength\]:/i, '').trim());
-            } else if (/^\[Issue\]:/i.test(line)) {
-                groups.Issue.push(line.replace(/^\[Issue\]:/i, '').trim());
-            } else if (/^\[Recommendation\]:/i.test(line)) {
-                groups.Recommendation.push(line.replace(/^\[Recommendation\]:/i, '').trim());
+        for (let i = 1; i < split.length; i += 2) {
+            const tag = split[i];
+            const content = (split[i + 1] || '').trim();
+            if (tag && content) {
+                if (/^Strength$/i.test(tag)) groups.Strength.push(content);
+                else if (/^Issue$/i.test(tag)) groups.Issue.push(content);
+                else if (/^Recommendation$/i.test(tag)) groups.Recommendation.push(content);
             }
-        });
+        }
         return groups;
     }
 
@@ -101,8 +103,12 @@ const AIResponseDisplay = ({ aiMessage, isLoading, error, handlePostResponseActi
 
     // Use This Suggestion button: always copy AI response to left field
     const handleUseThisSuggestion = () => {
-        if (aiMessage?.text && handlePostResponseAction) {
-            handlePostResponseAction('USE_THIS');
+        let value = aiMessage?.suggestion ?? aiMessage?.text;
+        if (Array.isArray(value)) {
+            value = value.join('\n');
+        }
+        if (value && handlePostResponseAction) {
+            handlePostResponseAction('USE_THIS', value);
         }
     };
 

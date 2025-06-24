@@ -247,6 +247,7 @@ const QuestionItem = ({ question, financialYear, moduleId, answers = {} }) => {
         isEditModalOpen={isEditModalOpen}
         setIsEditModalOpen={setIsEditModalOpen}
         moduleId={moduleId}
+        hideTopRightAIButton={true} // <--- Add this prop
       />
     </div>
   );

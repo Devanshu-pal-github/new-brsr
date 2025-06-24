@@ -200,15 +200,21 @@ const QuestionEditPopup = ({
 
     const handleQuickAIAction = async (action, suggestion = null) => {
         if (action === "USE_THIS") {
-            // Synchronously update both formData and currentValue to the suggestion
+            // Accept suggestion as string or array (for bullet points)
+            let value = suggestion;
+            if (Array.isArray(suggestion)) {
+                value = suggestion.join('\n');
+            }
+            if (typeof value !== 'string' && value !== undefined && value !== null) {
+                value = String(value);
+            }
             setFormData(prev => {
-                const updated = { ...prev, string_value: suggestion };
+                const updated = { ...prev, string_value: value };
                 setCurrentValue(updated);
                 return updated;
             });
-            // Also force SubjectiveRenderer to update immediately
             setTimeout(() => {
-                setCurrentValue(prev => ({ ...prev, string_value: suggestion }));
+                setCurrentValue(prev => ({ ...prev, string_value: value }));
             }, 0);
             setAiMessage(null);
             setLeftAiMessage(null);
@@ -845,7 +851,7 @@ interface StructuredAISuggestion {
                             className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto h-full scrollbar-none"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
-                            <div className="sticky top-0 z-20 bg-gray-50 pb-2 shadow-sm border-b border-gray-200">
+                            <div className="sticky top-0 z-20 bg-gray-50 pb-2 ">
                                 <h3 className="text-base font-semibold text-gray-800">
                                     {question.question}
                                 </h3>
