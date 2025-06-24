@@ -361,20 +361,24 @@ const ModuleView = () => {
 
         {/* AI Chat Window */}
         {aiChatOpen && (
-          <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
-            <div
-              className="w-full h-full absolute top-0 left-0"
-              onClick={() => setAiChatOpen(false)}
-            />
-            <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
-              <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
-                <ChatbotWindow
-                  onClose={() => setAiChatOpen(false)}
-                  initialMode={chatbotInitialMode}
-                />
+          <>
+            {/* Dark overlay for background */}
+            <div className="fixed inset-0 z-[999]  bg-black/30 bg-opacity-60  transition-opacity duration-300" />
+            <div className="fixed inset-0 z-[1000] flex items-end justify-end transition-opacity duration-300">
+              <div
+                className="w-full h-full absolute top-0 left-0"
+                onClick={() => setAiChatOpen(false)}
+              />
+              <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
+                <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
+                  <ChatbotWindow
+                    onClose={() => setAiChatOpen(false)}
+                    initialMode={chatbotInitialMode}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </AppProvider>

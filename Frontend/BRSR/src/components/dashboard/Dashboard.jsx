@@ -326,14 +326,14 @@ const Dashboard = ({ dynamicModules = [] }) => {
             <span>Generate Report</span>
           </button>
           <button 
-            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm opacity-50 cursor-not-allowed"
             onClick={() => {/* TODO: Implement AI chat */}}
           >
             <MessageSquareText className="w-4 h-4" />
             <span>Ask AI Assistant</span>
           </button>
           <button 
-            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm opacity-50 cursor-not-allowed"
             onClick={() => {/* TODO: Implement documentation */}}
           >
             <BookOpen className="w-4 h-4" />

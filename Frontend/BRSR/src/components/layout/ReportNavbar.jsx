@@ -18,9 +18,9 @@ const ReportNavbar = () => {
           <div className="flex items-center">
             <Link
               to="/"
-              className="flex items-center gap-2 mr-16 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 mr-15 hover:opacity-90 transition-opacity"
             >
-              <Webhook className="w-7 h-7 text-[#E0F2FE] stroke-[1.25]" />
+              <Webhook className="w-8 h-8 text-[#E0F2FE] stroke-[1.25]" />
               <span className="font-semibold text-xl bg-gradient-to-r from-[#E0F2FE] to-white bg-clip-text text-transparent">
                 Serenity
               </span>
