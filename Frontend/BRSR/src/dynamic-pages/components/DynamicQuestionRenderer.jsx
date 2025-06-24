@@ -142,19 +142,19 @@ const DynamicQuestionRenderer = forwardRef(({
     return (
       <div className="flex flex-wrap gap-2 mb-2">
         {principle && (
-          <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Principle: {principle}</span>
+          <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
         )}
         {indicator && (
-          <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Indicator: {indicator}</span>
+          <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
         )}
         {section && (
-          <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-full">Section: {section}</span>
+          <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-sm">Section: {section}</span>
         )}
         {auditRequired !== undefined && (
-          <span className="inline-block bg-[#F59E42] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Audit Required: {String(auditRequired)}</span>
+          <span className="inline-block bg-[#F59E42] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
         )}
         {audited !== undefined && (
-          <span className="inline-block bg-[#6B7280] text-white text-xs font-semibold px-4 py-1 rounded-full shadow-sm">Audited: {String(audited)}</span>
+          <span className="inline-block bg-[#6B7280] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
         )}
       </div>
     );
@@ -223,8 +223,14 @@ const DynamicQuestionRenderer = forwardRef(({
     return (
       <>
         {renderMetaBadges()}
-        <div className="mb-1 text-base font-semibold text-gray-900">
-          {question.question_text || question.title || question.human_readable_id}
+        <div className="flex flex-wrap items-start gap-2 mb-1">
+          <span className="text-base font-semibold text-gray-900 break-words flex-1 min-w-0">
+            {question.question_text || question.title || question.human_readable_id}
+          </span>
+          <div className="flex gap-1 flex-shrink-0">
+            {/* AI Button (from parent) */}
+            {/* Edit Response Button (from parent) */}
+          </div>
         </div>
         {/* Only render answer/response, no AI button here */}
         {(() => {

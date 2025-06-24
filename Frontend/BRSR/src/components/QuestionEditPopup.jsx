@@ -852,6 +852,14 @@ interface StructuredAISuggestion {
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                             <div className="sticky top-0 z-20 bg-gray-50 pb-2 ">
+                                {/* Render meta badges (tags) here, always visible and clear */}
+                                <div className="flex flex-wrap gap-2 mb-2 border-b border-gray-200 pb-2 bg-white">
+                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.principle ? 'bg-[#5A7BEA] text-white' : 'bg-gray-200 text-gray-400'}`}>Principle: {question?.metadata?.principle || 'N/A'}</span>
+                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.indicator ? 'bg-[#36B37E] text-white' : 'bg-gray-200 text-gray-400'}`}>Indicator: {question?.metadata?.indicator || 'N/A'}</span>
+                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full ${question?.metadata?.section ? 'bg-[#E5E7EB] text-gray-800' : 'bg-gray-200 text-gray-400'}`}>Section: {question?.metadata?.section || 'N/A'}</span>
+                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.audit_required !== undefined ? 'bg-[#F59E42] text-white' : 'bg-gray-200 text-gray-400'}`}>Audit Required: {question?.metadata?.audit_required !== undefined ? String(question.metadata.audit_required) : 'N/A'}</span>
+                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.audited !== undefined ? 'bg-[#6B7280] text-white' : 'bg-gray-200 text-gray-400'}`}>Audited: {question?.metadata?.audited !== undefined ? String(question.metadata.audited) : 'N/A'}</span>
+                                </div>
                                 <h3 className="text-base font-semibold text-gray-800">
                                     {question.question}
                                 </h3>
