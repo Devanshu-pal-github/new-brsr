@@ -319,12 +319,9 @@ const DynamicQuestionRenderer = forwardRef(({
         {isEditModalOpen && (
           <QuestionEditPopup
             question={{
+              ...question,
               question_id: question.question_id || question._id,
               question: question.question_text || question.title || question.human_readable_id,
-              guidance: question.guidance,
-              question_type: question.question_type,
-              type: question.question_type,
-              metadata: question.metadata,
               has_string_value: question.question_type === 'subjective',
               string_value_required: question.required,
             }}

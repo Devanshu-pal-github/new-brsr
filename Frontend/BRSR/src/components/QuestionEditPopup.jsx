@@ -8,6 +8,39 @@ import {
 } from "../store/api/apiSlice";
 import { useInactivityDetector } from "./QuestionEdit/useInactivityDetector";
 import ModalHeader from "./QuestionEdit/ModalHeader";
+
+const MetaBadges = ({ question }) => {
+  const meta = question.metadata || {};
+  const principle = question.principle || meta.principle;
+  const indicator = question.indicator || meta.indicator;
+  const section = question.section || meta.section;
+  const auditRequired = question.audit_required ?? meta.audit_required;
+  const audited = question.audited ?? meta.audited;
+
+  if (!principle && !indicator && !section && auditRequired === undefined && audited === undefined) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-3">
+      {principle && (
+        <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
+      )}
+      {indicator && (
+        <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
+      )}
+      {section && (
+        <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
+      )}
+      {auditRequired !== undefined && (
+        <span className="inline-block bg-[#f59e0b] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
+      )}
+      {audited !== undefined && (
+        <span className="inline-block bg-[#10b981] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
+      )}
+    </div>
+  );
+};
 import FormFields from "./QuestionEdit/FormFields";
 import {
     LeftAIActions,
@@ -845,21 +878,14 @@ interface StructuredAISuggestion {
                     animate={{ scale: isVisible ? 1 : 0.95, opacity: isVisible ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                    <div className="flex-1 flex overflow-hidden h-full">
+                    <div className="flex-grow overflow-y-auto p-1">
                         <div
                             ref={leftPanelRef}
                             className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto h-full scrollbar-none"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                             <div className="sticky top-0 z-20 bg-gray-50 pb-2 ">
-                                {/* Render meta badges (tags) here, always visible and clear */}
-                                <div className="flex flex-wrap gap-2 mb-2 border-b border-gray-200 pb-2 bg-white">
-                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.principle ? 'bg-[#5A7BEA] text-white' : 'bg-gray-200 text-gray-400'}`}>Principle: {question?.metadata?.principle || 'N/A'}</span>
-                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.indicator ? 'bg-[#36B37E] text-white' : 'bg-gray-200 text-gray-400'}`}>Indicator: {question?.metadata?.indicator || 'N/A'}</span>
-                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full ${question?.metadata?.section ? 'bg-[#E5E7EB] text-gray-800' : 'bg-gray-200 text-gray-400'}`}>Section: {question?.metadata?.section || 'N/A'}</span>
-                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.audit_required !== undefined ? 'bg-[#F59E42] text-white' : 'bg-gray-200 text-gray-400'}`}>Audit Required: {question?.metadata?.audit_required !== undefined ? String(question.metadata.audit_required) : 'N/A'}</span>
-                                    <span className={`inline-block text-xs font-semibold px-4 py-1 rounded-full shadow-sm ${question?.metadata?.audited !== undefined ? 'bg-[#6B7280] text-white' : 'bg-gray-200 text-gray-400'}`}>Audited: {question?.metadata?.audited !== undefined ? String(question.metadata.audited) : 'N/A'}</span>
-                                </div>
+                                <MetaBadges question={question} />
                                 <h3 className="text-base font-semibold text-gray-800">
                                     {question.question}
                                 </h3>
