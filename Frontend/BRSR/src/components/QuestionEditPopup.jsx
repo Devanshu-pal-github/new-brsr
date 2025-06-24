@@ -878,7 +878,7 @@ interface StructuredAISuggestion {
                     animate={{ scale: isVisible ? 1 : 0.95, opacity: isVisible ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                    <div className="flex-grow overflow-y-auto p-1">
+                    <div className="flex-1 flex overflow-hidden">
                         <div
                             ref={leftPanelRef}
                             className="flex-1 flex flex-col px-6 py-4 border-r border-gray-200 bg-gray-50 overflow-y-auto h-full scrollbar-none"
