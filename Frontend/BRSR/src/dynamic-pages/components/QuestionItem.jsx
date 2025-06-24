@@ -202,7 +202,7 @@ const QuestionItem = ({ question, financialYear, moduleId, answers = {} }) => {
     <div className=" rounded-lg p-2 mb-2 bg-white shadow-sm hover:shadow-md transition-shadow relative text-[14px] leading-[1.45]">
       <div className="flex items-start flex-wrap gap-1.5">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-medium text-[#20305D] break-words mb-0.5">{questionTitle}</h3>
+          {/* Remove duplicate question text here */}
           {question.description && (
             <p className="text-[12px] text-gray-600 mt-0.5 mb-0">{question.description}</p>
           )}
