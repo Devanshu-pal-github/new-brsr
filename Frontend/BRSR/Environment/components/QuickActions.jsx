@@ -30,6 +30,12 @@ const QuickActions = ({ plantId, financialYear }) => {
             >
                 View GHG Emissions
             </button>
+            <button
+                className="bg-gray-300 text-gray-600 px-3 py-2 rounded text-xs font-medium cursor-not-allowed mt-1"
+                disabled
+            >
+                Coming Soon...
+            </button>
             {open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div ref={popupRef} className="bg-white rounded-lg shadow-xl p-0 w-[99vw] max-w-[1200px] md:max-w-[90vw] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px] relative animate-fade-in overflow-hidden">

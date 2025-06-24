@@ -48,8 +48,10 @@ const Dashboard = ({ dynamicModules = [] }) => {
   );
 
 
+
+
   
-  console.log("Dashboard Reports Query:", { plantId, financialYear, reports });
+ 
 
   const { data: plants = [], isLoading: isLoadingPlants } = useGetCompanyPlantsQuery(companyId);
   const { data: employees = [], isLoading: isLoadingEmployees } = useGetPlantEmployeesQuery({}, { 
@@ -61,8 +63,9 @@ const Dashboard = ({ dynamicModules = [] }) => {
   }, { skip: !reports.length || !companyId });
   const { data: auditData, isLoading: isLoadingAudit } = useGetAuditLogQuery();
   const [getTotalCO2ByScope, { data: co2Data, isLoading: isLoadingCO2 }] = useGetTotalCO2ByScopeMutation();
+  const { data: companyDetails, isLoading: isLoadingCompanyDetails } = useGetCompanyDetailsQuery(user?.id, { skip: !user?.id });
 
-  console.log("co2Data:", co2Data);
+  console.log("Company Details:", companyDetails);
 
   React.useEffect(() => {
     // Only fetch if financialYear is available
@@ -223,6 +226,8 @@ const Dashboard = ({ dynamicModules = [] }) => {
       inProgress: plants.length - reports.filter(r => r.status === 'completed').length // Remaining are in progress
     };
 
+
+
     console.log('Report Statistics:', {
       totalPlants: plants.length,
       reports,
@@ -290,6 +295,10 @@ const Dashboard = ({ dynamicModules = [] }) => {
       hour12: true
     });
   };
+
+  // Extract active report count and names from companyDetails
+  const activeReportCount = companyDetails?.active_reports?.length || 0;
+  const activeReportNames = companyDetails?.active_reports?.map(r => r.report_name).join(', ');
 
   return (
     <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen">
@@ -443,8 +452,12 @@ const Dashboard = ({ dynamicModules = [] }) => {
           >
             <div className="space-y-2.5 p-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-600">Total Plants</span>
-                <span className="text-sm font-semibold text-[#1A2341]">{stats.reports.total}</span>
+                <span className="text-xs text-slate-600">Active Reports</span>
+                <span className="text-sm font-semibold text-[#1A2341]">{activeReportCount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-slate-600">Report Name</span>
+                <span className="text-xs font-medium text-emerald-700 truncate max-w-[120px]">{activeReportNames || '-'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1.5">
@@ -458,15 +471,8 @@ const Dashboard = ({ dynamicModules = [] }) => {
                   <span className="text-xs text-slate-600">In Progress</span>
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                 </div>
-                <span className="text-sm font-medium text-blue-600">{stats.reports.inProgress}</span>
+                <span className="text-sm font-medium text-blue-600">{activeReportCount}</span>
               </div>
-              {!plantId && (
-                <div className="mt-2 pt-2 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 italic">
-                    Select a plant to view detailed report status
-                  </p>
-                </div>
-              )}
             </div>
           </DashboardCard>
 
