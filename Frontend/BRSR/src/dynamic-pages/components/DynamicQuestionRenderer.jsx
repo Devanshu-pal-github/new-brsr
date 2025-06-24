@@ -18,7 +18,7 @@ const DynamicQuestionRenderer = forwardRef(({
   isEditModalOpen,
   setIsEditModalOpen,
   moduleId,
-  hideTopRightAIButton // <--- Add this prop
+  isSaving
 }, ref) => {
   const [tempData, setTempData] = useState(questionData);
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -130,15 +130,17 @@ const DynamicQuestionRenderer = forwardRef(({
     setAiChatOpen(false);
   };
 
-  // Helper to render principle/indicator/section/audit badges
+  // Helper to render principle/indicator/section badges
   const renderMetaBadges = () => {
-    // Support both: fields at root (question.principle) and inside metadata (question.metadata.principle)
     const meta = question.metadata || {};
     const principle = question.principle || meta.principle;
     const indicator = question.indicator || meta.indicator;
     const section = question.section || meta.section;
-    const auditRequired = question.audit_required ?? meta.audit_required;
-    const audited = question.audited ?? meta.audited;
+
+    if (!principle && !indicator && !section) {
+      return null;
+    }
+
     return (
       <div className="flex flex-wrap gap-2 mb-2">
         {principle && (
@@ -150,13 +152,23 @@ const DynamicQuestionRenderer = forwardRef(({
         {section && (
           <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-sm">Section: {section}</span>
         )}
+      </div>
+    );
+  };
+
+  const renderAuditBadges = () => {
+    const meta = question.metadata || {};
+    const auditRequired = question.audit_required ?? meta.audit_required;
+    const audited = question.audited ?? meta.audited;
+    return (
+      <>
         {auditRequired !== undefined && (
-          <span className="inline-block bg-[#F59E42] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
+          <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
         )}
         {audited !== undefined && (
-          <span className="inline-block bg-[#6B7280] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
+          <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
         )}
-      </div>
+      </>
     );
   };
 
@@ -223,16 +235,31 @@ const DynamicQuestionRenderer = forwardRef(({
     return (
       <>
         {renderMetaBadges()}
-        <div className="flex flex-wrap items-start gap-2 mb-1">
+        <div className="flex justify-between items-start gap-4 mb-1">
           <span className="text-base font-semibold text-gray-900 break-words flex-1 min-w-0">
             {question.question_text || question.title || question.human_readable_id}
           </span>
-          <div className="flex gap-1 flex-shrink-0">
-            {/* AI Button (from parent) */}
-            {/* Edit Response Button (from parent) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {renderAuditBadges()}
+            <button
+              className="bg-[#4F46E5] text-white font-medium px-2 py-1 rounded-[4px] text-xs shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
+              onClick={handleAIClick}
+              aria-label="AI Assist"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              AI
+            </button>
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-2 py-1 bg-[#20305D] text-white rounded hover:bg-[#162442] text-xs font-medium"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Edit Response'}
+            </button>
           </div>
         </div>
-        {/* Only render answer/response, no AI button here */}
         {(() => {
           switch (questionType) {
             case 'subjective':
@@ -285,19 +312,6 @@ const DynamicQuestionRenderer = forwardRef(({
   return (
     <AppProvider>
       <div className="relative">
-        {/* AI Button (original, absolutely positioned) */}
-        {!hideTopRightAIButton && (
-          <button
-            className="absolute right-2 top-2 bg-[#4F46E5] text-white font-medium px-2 min-w-[32px] min-h-[20px] rounded-[4px] text-[11px] shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] items-center gap-1"
-            onClick={handleAIClick}
-            aria-label="AI Assist"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            AI
-          </button>
-        )}
         <div className="mt-2">
           {renderReadOnlyContent()}
         </div>
