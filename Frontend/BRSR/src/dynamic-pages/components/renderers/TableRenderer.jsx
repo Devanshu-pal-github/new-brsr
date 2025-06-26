@@ -78,12 +78,16 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
     return (
       <tr className={`bg-gray-${level === 0 ? '200' : '100'}`}>
         {headers.map((header, index) => {
+          if (!header) return null; // null/undefined safety
           const colSpan = header.colspan || 1;
           const rowSpan = header.rowspan || 1;
-          
+          // Use header.id if available, else fallback to a robust key
+          const key = header.id
+            ? `header-${level}-${header.id}`
+            : `header-${level}-${index}-${String(header.label).replace(/\s+/g, '_')}`;
           return (
             <th 
-              key={`header-${level}-${index}`}
+              key={key}
               colSpan={colSpan}
               rowSpan={rowSpan}
               className="border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 text-center"

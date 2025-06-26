@@ -399,7 +399,7 @@ export const LeftAIActions = ({
                 {leftActions.map(({ action, title }) =>
                     hoveredAction === action ? (
                         <div
-                            key={action}
+                            key={`hovered-${action}`}
                             className="ai-action-label-glass"
                             style={{
                                 left: '50%',
@@ -421,7 +421,7 @@ export const LeftAIActions = ({
                     {leftActions.map(({ action, icon: Icon, title, requiresDraft }) => {
                         const isDisabled = requiresDraft && !hasDraft;
                         return (
-                            <div key={action} className="relative">
+                            <div key={`left-action-${action}`} className="relative">
                                 <button
                                     onMouseEnter={() => setHoveredAction(action)}
                                     onMouseLeave={() => setHoveredAction(null)}
@@ -505,19 +505,19 @@ export const LeftAIActions = ({
                                                     {strengths.length > 0 && <>
                                                         <div className="font-semibold text-green-800 mb-1">Strengths</div>
                                                         <ul className="list-disc pl-5 mb-2 text-sm text-green-900">
-                                                            {strengths.map((pt, i) => <li key={i}>{pt}</li>)}
+                                                            {strengths.map((pt, i) => <li key={`strength-${i}-${pt}`}>{pt}</li>)}
                                                         </ul>
                                                     </>}
                                                     {issues.length > 0 && <>
                                                         <div className="font-semibold text-yellow-800 mb-1">Issues</div>
                                                         <ul className="list-disc pl-5 mb-2 text-sm text-yellow-900">
-                                                            {issues.map((pt, i) => <li key={i}>{pt}</li>)}
+                                                            {issues.map((pt, i) => <li key={`issue-${i}-${pt}`}>{pt}</li>)}
                                                         </ul>
                                                     </>}
                                                     {recommendations.length > 0 && <>
                                                         <div className="font-semibold text-blue-800 mb-1">Recommendations</div>
                                                         <ul className="list-disc pl-5 mb-2 text-sm text-blue-900">
-                                                            {recommendations.map((pt, i) => <li key={i}>{pt}</li>)}
+                                                            {recommendations.map((pt, i) => <li key={`recommendation-${i}-${pt}`}>{pt}</li>)}
                                                         </ul>
                                                     </>}
                                                 </div>
@@ -534,7 +534,7 @@ export const LeftAIActions = ({
                                             {leftAiMessage.points?.length > 0 && (
                                                 <ul className="list-disc pl-5 mb-4 text-sm text-gray-700">
                                                     {leftAiMessage.points.map((pt, idx) => (
-                                                        <li key={idx}>{pt}</li>
+                                                        <li key={`point-${idx}-${pt}`}>{pt}</li>
                                                     ))}
                                                 </ul>
                                             )}

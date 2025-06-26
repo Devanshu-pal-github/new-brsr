@@ -38,7 +38,8 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
   const searchParams = new URLSearchParams(window.location.search);
   const financialYear = searchParams.get('financialYear') || '2024-2025';
   const companyId = user?.company_id;
-  const moduleIdForQuery = selectedModule?.id;
+  // Defensive: ensure selectedModule.id is always present
+  const moduleIdForQuery = selectedModule?.id || selectedModule?._id || null;
   const [fetchModuleAnswers, { data: moduleAnswerData, isLoading: isAnswersLoading }] = useLazyGetModuleAnswerQuery();
   
   useEffect(() => {
@@ -49,6 +50,7 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
 
   const answers = moduleAnswerData?.answers || {};
 
+  // Defensive: always pass moduleId to ModuleRenderer
   return (
     <div className="relative flex">
       <div className="flex-1  rounded-lg ">
@@ -66,7 +68,7 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
                 Module: {selectedModule.name}
               </div> */}
             </div>
-            <ModuleRenderer module={selectedModule} answers={answers} financialYear={financialYear} />
+            <ModuleRenderer module={{...selectedModule, id: selectedModule.id || selectedModule._id}} answers={answers} financialYear={financialYear} />
           </>
         ) : (
           <div className="text-center text-gray-600 ">

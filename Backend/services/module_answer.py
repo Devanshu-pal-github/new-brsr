@@ -149,6 +149,7 @@ class ModuleAnswerService:
         # If answers field is present in the update data
         if "answers" in update_dict:
             answers_update = update_dict.pop("answers")
+            existing_answers = existing.answers if hasattr(existing, "answers") else {}
             
             # For each question ID in the answers update
             for question_id, answer_value in answers_update.items():
@@ -161,24 +162,21 @@ class ModuleAnswerService:
                     print(f"Warning: Question with ID {question_id} not found. Skipping answer update for this question.")
                     continue
 
-                # The answer_value for a subjective question is expected to be a dictionary
-                # where keys correspond to the 'key' fields in the question's metadata.
-                # We need to store this dictionary under the question_id.
-                if question.question_type == "subjective":
-                    # Ensure the incoming answer_value is a dictionary for subjective questions
-                    print(f"Debug: Incoming answer_value for subjective question {question_id}: {answer_value}, type: {type(answer_value)}")
-                    if isinstance(answer_value, dict):
-                        update_operations[f"answers.{question_id}"] = answer_value
-                    else:
-                        print(f"Warning: Expected dictionary for subjective question answer, but got {type(answer_value)}. Skipping update for question {question_id}.")
+                # Merge logic: if existing answer is a dict and incoming is a dict, merge them
+                existing_answer = existing_answers.get(question_id)
+                if isinstance(existing_answer, dict) and isinstance(answer_value, dict):
+                    merged_answer = {**existing_answer, **answer_value}  # incoming fields overwrite existing
+                    update_operations[f"answers.{question_id}"] = merged_answer
                 else:
-                    # For other question types, store the value directly
+                    # For non-dict or new answers, just set as is
                     update_operations[f"answers.{question_id}"] = answer_value
         
         # Add remaining fields to the update operations
         for key, value in update_dict.items():
             update_operations[key] = value
         
+        # Debug: Print the update_operations before DB update
+        print("[DEBUG] update_operations to be written to DB:", update_operations)
         # Update in database
         result = await self.collection.update_one(
             {
@@ -247,6 +245,8 @@ class ModuleAnswerService:
             for key, value in update_data.items():
                 update_operations[key] = value
             
+            # Debug: Print the update_operations before DB update
+            print("[DEBUG] update_operations to be written to DB:", update_operations)
             # Update in database
             await self.collection.update_one(
                 {

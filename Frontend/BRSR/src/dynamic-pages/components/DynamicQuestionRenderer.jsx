@@ -274,7 +274,7 @@ const DynamicQuestionRenderer = forwardRef(({
                     <thead className="bg-gray-50">
                       <tr>
                         {metadata.columns.map((col, idx) => (
-                          <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th key={col.id || col.key || idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {col.title}
                           </th>
                         ))}
@@ -282,10 +282,10 @@ const DynamicQuestionRenderer = forwardRef(({
                     </thead>
                     <tbody>
                       {questionData.rows?.map((row, rowIdx) => (
-                        <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          {row.cells.map((cell, cellIdx) => (
-                            <td key={cellIdx} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {cell.value}
+                        <tr key={row.id || rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {(Array.isArray(row.cells) ? row.cells : []).map((cell, cellIdx) => (
+                            <td key={cell?.id || `${rowIdx}-${cellIdx}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {cell && cell.value != null ? cell.value : <span className="text-gray-400 italic">-</span>}
                             </td>
                           ))}
                         </tr>

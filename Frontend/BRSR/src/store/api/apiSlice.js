@@ -257,7 +257,7 @@ export const apiSlice = createApi({
     
     updateQuestionAnswer: builder.mutation({
       queryFn: async (
-        { questionId, questionTitle, updatedData, financialYear, plantId },
+        { questionId, questionTitle, updatedData, financialYear, plantId, moduleId }, // <-- Added moduleId here
         { dispatch, getState },
         extraOptions,
         baseQuery

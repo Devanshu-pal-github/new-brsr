@@ -505,9 +505,31 @@ interface StructuredAISuggestion {
                     answerData = { ...updatedFormData };
                 }
             } else if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
-                // Remove or reduce noisy/unnecessary console logs
-                // console.log("📝 [QuestionEditPopup] Preparing table answer");
-                answerData = currentValue;
+                // Always expect table data in currentValue.table
+                const tableData = currentValue.table || currentValue;
+                let hasAnyValue = false;
+                if (tableData && typeof tableData === 'object' && Array.isArray(tableData.rows)) {
+                    for (const row of tableData.rows) {
+                        if (row && Array.isArray(row.cells)) {
+                            for (const cell of row.cells) {
+                                if (cell && cell.value !== undefined && cell.value !== null && String(cell.value).trim() !== "") {
+                                    hasAnyValue = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (hasAnyValue) break;
+                    }
+                }
+                if (hasAnyValue) {
+                    // Submit as { table: ... } if that's the expected structure, else just tableData
+                    answerData = tableData;
+                } else {
+                    setErrors({ form: "Table answer cannot be empty. Please fill in at least one cell before submitting." });
+                    setIsSaveLoading(false);
+                    toast.error("Table answer cannot be empty. Please fill in at least one cell before submitting.");
+                    return;
+                }
             } else {
                 // Remove or reduce noisy/unnecessary console logs
                 // console.log("📝 [QuestionEditPopup] Using legacy format for question type:", question.question_type);
@@ -847,7 +869,10 @@ interface StructuredAISuggestion {
                         metadata={metadata} 
                         data={currentValue} 
                         isEditing={true}
-                        onSubmit={(data) => setCurrentValue(data)} 
+                        onSave={(data) => {
+                            setCurrentValue(data);
+                            setFormData(prev => ({ ...prev, ...data }));
+                        }}
                     />
                 );
             case 'table_with_additional_rows':
@@ -856,7 +881,10 @@ interface StructuredAISuggestion {
                         metadata={metadata} 
                         data={currentValue} 
                         isEditing={true}
-                        onSubmit={(data) => setCurrentValue(data)} 
+                        onSave={(data) => {
+                            setCurrentValue(data);
+                            setFormData(prev => ({ ...prev, ...data }));
+                        }}
                     />
                 );
             default:
