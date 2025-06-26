@@ -582,6 +582,7 @@ const ChatbotMessages = ({
   handleRejectAnswer,
   effectiveActiveQuestion,
   carouselData,
+  mode,
 }) => {
   const containerRef = useRef(null);
 
@@ -686,8 +687,9 @@ const ChatbotMessages = ({
                     renderMessageContent(msg)
                   )}
                   {msg.sender === 'ai' &&
-                    ((msg.is_content_answer && msg.is_content_answer !== 'FALSE') || (msg.tags && msg.tags.includes('answer'))) &&
-                    effectiveActiveQuestion && (
+                    mode === 'question' &&
+                    effectiveActiveQuestion &&
+                    (Array.isArray(msg.tags) && (msg.tags.includes('draft') || msg.tags.includes('answer'))) && (
                       <div className="mt-2 flex gap-2">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
@@ -1377,6 +1379,7 @@ return (
           handleRejectAnswer={handleRejectAnswer}
           effectiveActiveQuestion={effectiveActiveQuestion}
           carouselData={carouselData}
+          mode={mode}
         />
         <ChatbotInput
           input={input}
