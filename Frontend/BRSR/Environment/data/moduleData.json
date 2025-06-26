@@ -415,6 +415,25 @@
           "id": "sensitive-areas",
           "questions": [
             {
+              "id": "ESA-1",
+              "type": "Essential",
+              "title": "Operations in Ecologically Sensitive Areas",
+              "description": "If the entity has operations/offices in/around ecologically sensitive areas (such as national parks, wildlife sanctuaries, biosphere reserves, wetlands, biodiversity hotspots, forests, coastal regulation zones etc.) where environmental approvals / clearances are required, please specify details.",
+              "isAuditRequired": false,
+              "metadata": {
+                "type": "dynamic-table",
+                "columns": [
+                  { "label": "S. No.", "key": "s_no" },
+                  { "label": "Location of operations/offices", "key": "location" },
+                  { "label": "Type of operations", "key": "type_of_operations" },
+                  { "label": "Whether the conditions of environmental approval / clearance are being complied with? (Y/N)<br/>If no, the reasons thereof and corrective action taken, if any.", "key": "compliance" }
+                ],
+                "note": "Add a row for each location/operation as applicable."
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
+            },
+            {
               "id": "ESA-2",
               "type": "Leadership",
               "title": "Biodiversity Impact in Ecologically Sensitive Areas",
@@ -431,12 +450,56 @@
         {
           "name": "Environmental Impact Assessments",
           "id": "eia",
-          "questions": []
+          "questions": [
+            {
+              "id": "EIA-1",
+              "type": "Essential",
+              "title": "Environmental Impact Assessments Conducted",
+              "description": "Details of environmental impact assessments of projects undertaken by the entity based on applicable laws, in the current financial year.",
+              "isAuditRequired": false,
+              "metadata": {
+                "type": "dynamic-table",
+                "columns": [
+                  { "label": "S. No.", "key": "s_no" },
+                  { "label": "Name and brief details of project", "key": "project_details" },
+                  { "label": "EIA Notification No.", "key": "eia_notification_no" },
+                  { "label": "Date", "key": "date" },
+                  { "label": "Whether conducted by independent external agency (Yes / No)", "key": "independent_agency" },
+                  { "label": "Results communicated in public domain (Yes / No)", "key": "results_public" },
+                  { "label": "Relevant Web link", "key": "web_link" }
+                ],
+                "note": "Add a row for each project as applicable."
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
+            }
+          ]
         },
         {
           "name": "Regulatory Compliance",
           "id": "compliance",
-          "questions": []
+          "questions": [
+            {
+              "id": "RC-1",
+              "type": "Essential",
+              "title": "Environmental Law/Regulation/Guideline Non-Compliance Details",
+              "description": "Is the entity compliant with the applicable environmental law/ regulations/ guidelines in India; such as the Water (Prevention and Control of Pollution) Act, Air (Prevention and Control of Pollution) Act, Environment protection act and rules thereunder (Y/N). If not, provide details of all such non-compliances, in the following format:",
+              "isAuditRequired": false,
+              "metadata": {
+                "type": "dynamic-table",
+                "columns": [
+                  { "label": "S. No.", "key": "s_no" },
+                  { "label": "Specify the law / regulation / guidelines which was not complied with", "key": "law_not_complied" },
+                  { "label": "Provide details of the non-compliance", "key": "non_compliance_details" },
+                  { "label": "Any fines / penalties / action taken by regulatory agencies such as pollution control boards or by courts", "key": "fines_penalties" },
+                  { "label": "Corrective action taken, if any", "key": "corrective_action" }
+                ],
+                "note": "Add a row for each non-compliance as applicable."
+              },
+              "principle": "Principle 6",
+              "indicator": "Essential"
+            }
+          ]
         }
       ]
     },
@@ -485,6 +548,32 @@
               "isAuditRequired": false,
               "metadata": {
                 "type": "subjective"
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
+            }
+          ]
+        },
+        {
+          "name": "Leadership Indicators",
+          "id": "leadership-indicators",
+          "questions": [
+            {
+              "id": "LI-6",
+              "type": "Leadership",
+              "title": "Resource Efficiency and Impact Reduction Initiatives",
+              "description": "If the entity has undertaken any specific initiatives or used innovative technology or solutions to improve resource efficiency, or reduce impact due to emissions / effluent discharge / waste generated, please provide details of the same as well as outcome of such initiatives, as per the following format:",
+              "isAuditRequired": false,
+              "metadata": {
+                "type": "dynamic-table",
+                "columns": [
+                  { "label": "S. No.", "key": "s_no" },
+                  { "label": "Initiative undertaken", "key": "initiative" },
+                  { "label": "Details of the initiative (<i>summary</i>)", "key": "initiative_details" },
+                  { "label": "Outcome of the initiative", "key": "outcome" },
+                  { "label": "Web-link (if any)", "key": "web_link" }
+                ],
+                "note": "Add a row for each initiative as applicable."
               },
               "principle": "Principle 6",
               "indicator": "Leadership"

@@ -82,7 +82,10 @@ const DynamicTableRenderer = ({ metadata, data = {}, isEditing = false, onSave }
             <tr key={idx}>
               {metadata.columns.map((col) => (
                 <td key={col.key} className="border border-gray-300 px-2 py-1 text-xs">
-                  {isEditing ? (
+                  {col.key === 's_no' ? (
+                    // Render serial number automatically
+                    <div>{idx + 1}</div>
+                  ) : isEditing ? (
                     <input
                       className="w-full border rounded px-1 py-0.5 text-xs"
                       value={row[col.key] || ''}

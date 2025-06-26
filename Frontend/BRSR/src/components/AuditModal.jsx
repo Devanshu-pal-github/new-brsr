@@ -170,7 +170,7 @@ const AuditModal = ({ onClose }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
+        className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"
       >
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-base sm:text-lg md:text-xl font-semibold text-[#1A2341]">Audit Log</h1>

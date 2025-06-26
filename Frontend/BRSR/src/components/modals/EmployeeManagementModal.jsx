@@ -206,7 +206,8 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
+        className="bg-white rounded-xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"
+        
       >
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-2">
@@ -404,7 +405,7 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
           }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-[98vw] w-full sm:w-[450px] md:w-[520px] border-2 border-[#1A2341] flex flex-col items-center relative animate-fadeIn"
+            className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-[98vw] w-full sm:w-[450px] md:w-[520px] border-1 border-[#1A2341] flex flex-col items-center relative animate-fadeIn"
             style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18)' }}
             onClick={e => e.stopPropagation()} // Prevent modal close when clicking inside
           >
