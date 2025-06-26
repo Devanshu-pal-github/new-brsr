@@ -79,11 +79,14 @@ const SubjectiveRenderer = ({
       typeof fieldValue
     );
 
+    const isYourResponseLabel = normalizeLabel(field.label) === 'your response';
     const showLabel =
       field.label &&
       normalizeLabel(field.label) !== "" &&
       normalizeLabel(field.label) !== mainNorm &&
-      !mainNorm.includes(normalizeLabel(field.label));
+      !mainNorm.includes(normalizeLabel(field.label)) &&
+      // Hide generic placeholder label in read-only mode
+      !(isYourResponseLabel && !isEditing);
     switch (field.type) {
       case "text":
         return (
@@ -104,7 +107,7 @@ const SubjectiveRenderer = ({
                 }
               />
             ) : (
-              <div className="p-2 rounded">
+              <div className="p-2 rounded whitespace-pre-line text-gray-900">
                 {fieldValue || (
                   <span className="text-gray-400 italic">
                     No response provided
@@ -249,7 +252,7 @@ const SubjectiveRenderer = ({
                 placeholder="https://example.com"
               />
             ) : (
-              <div className="p-2 rounded">
+              <div className="p-2 rounded whitespace-pre-line text-gray-900">
                 {fieldValue ? (
                   <a
                     href={fieldValue}
@@ -286,7 +289,7 @@ const SubjectiveRenderer = ({
                 }
               />
             ) : (
-              <div className="p-2 rounded">
+              <div className="p-2 rounded whitespace-pre-line text-gray-900">
                 {fieldValue || (
                   <span className="text-gray-400 italic">
                     No response provided
