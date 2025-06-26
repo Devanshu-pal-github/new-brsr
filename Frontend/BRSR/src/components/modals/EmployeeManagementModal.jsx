@@ -194,8 +194,20 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
 
   if (employeesError) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl p-8">
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+        onClick={onClose} // Close popup when clicking outside
+      >
+        <div
+          className="bg-white rounded-xl p-8 relative"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 transition"
+          >
+            &times;
+          </button>
           <div className="text-red-500">Error loading employees: {employeesError?.data?.message || 'Please try again later'}</div>
         </div>
       </div>
@@ -409,7 +421,7 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
             style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18)' }}
             onClick={e => e.stopPropagation()} // Prevent modal close when clicking inside
           >
-            <div className="text-2xl font-bold text-[#1A2341] mb-4 w-full text-center">Send Notification</div>
+            <div className="text-2xl font-semibold text-[#1A2341] mb-4 w-full text-center">Send Notification</div>
             <input
               type="text"
               className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base focus:outline-none focus:ring-2 focus:ring-[#1A2341] placeholder:text-gray-400 text-black"

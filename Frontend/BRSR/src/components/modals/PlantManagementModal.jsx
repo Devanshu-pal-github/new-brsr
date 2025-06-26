@@ -20,12 +20,13 @@ const PlantManagementModal = ({ onClose }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPlantId, setSelectedPlantId] = useState(null);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, plantId: null });
   const popupRef = useRef(null);
 
   // Add click outside handler
   useEffect(() => {
     // Only attach click outside handler if no child modal is open
-    if (isCreateModalOpen || isEmployeeModalOpen) return;
+    if (isCreateModalOpen || isEmployeeModalOpen || deleteConfirmation.isOpen) return;
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
         onClose();
@@ -35,7 +36,7 @@ const PlantManagementModal = ({ onClose }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose, isCreateModalOpen, isEmployeeModalOpen]);
+  }, [onClose, isCreateModalOpen, isEmployeeModalOpen, deleteConfirmation.isOpen]);
 
   const user = useSelector((state) => state.auth.user);
   const [deletePlant] = useDeletePlantMutation();
@@ -52,10 +53,20 @@ const PlantManagementModal = ({ onClose }) => {
     try {
       await deletePlant(plantId).unwrap();
       toast.success('Plant deleted successfully');
+      setDeleteConfirmation({ isOpen: false, plantId: null });
     } catch (error) {
       toast.error(error?.data?.message || 'Failed to delete plant');
       console.error('Failed to delete plant:', error);
+      setDeleteConfirmation({ isOpen: false, plantId: null });
     }
+  };
+
+  const handleDeleteClick = (plantId) => {
+    setDeleteConfirmation({ isOpen: true, plantId });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmation({ isOpen: false, plantId: null });
   };
 
   const handleManagePlant = (plantId) => {
@@ -126,31 +137,7 @@ const PlantManagementModal = ({ onClose }) => {
       renderCell: (params) => (
         <div className="flex items-center justify-center w-full h-full gap-3">
           <button
-            onClick={() => {
-              toast((t) => (
-                <div className="flex flex-col gap-2">
-                  <p className="font-medium">Delete Plant?</p>
-                  <p className="text-sm text-gray-600">Are you sure you want to delete this plant?</p>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => {
-                        handleDeletePlant(params.row.id);
-                        toast.dismiss(t.id);
-                      }}
-                      className="px-3 py-1 text-sm text-white bg-[#4A5D4B] rounded-md hover:bg-[#3E4E3F]"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => toast.dismiss(t.id)}
-                      className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ));
-            }}
+            onClick={() => handleDeleteClick(params.row.id)}
             className="bg-gray-500 text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700 transition cursor-pointer"
             title="Delete Plant"
           >
@@ -179,8 +166,20 @@ const PlantManagementModal = ({ onClose }) => {
 
   if (plantsError) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl p-8">
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+        onClick={onClose} // Close popup when clicking outside
+      >
+        <div
+          className="bg-white rounded-xl p-8 relative"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 transition"
+          >
+            &times;
+          </button>
           <div className="text-red-500">Error loading plants: {plantsError?.data?.message || 'Please try again later'}</div>
         </div>
       </div>
@@ -288,6 +287,51 @@ const PlantManagementModal = ({ onClose }) => {
               setSelectedPlantId(null);
             }}
           />
+        )}
+
+        {/* Centered Delete Confirmation Modal */}
+        {deleteConfirmation.isOpen && (
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={handleDeleteCancel}
+          >
+            <div
+              className="bg-white rounded-xl p-6 max-w-md w-[90%] mx-4 shadow-2xl border-1 border-[#1A2341]"
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the popup
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1A2341]">Delete Plant?</h3>
+                    <p className="text-sm text-gray-600">This action cannot be undone.</p>
+                  </div>
+                </div>
+
+                <p className="text-gray-700">
+                  Are you sure you want to delete this plant?
+                </p>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={handleDeleteCancel}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={() => handleDeletePlant(deleteConfirmation.plantId)}
+                    className="flex-1 px-4 py-2.5 bg-[#1A2341] text-white rounded-md hover:bg-[#1A2341]/90 transition-colors font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

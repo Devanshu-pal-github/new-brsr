@@ -168,6 +168,8 @@ async def register_user(
         "access_modules": []
     }
     """
+    
+    
     # Check if email already exists
     if await db["users"].find_one({"email": user_data["email"]}):
         raise HTTPException(
