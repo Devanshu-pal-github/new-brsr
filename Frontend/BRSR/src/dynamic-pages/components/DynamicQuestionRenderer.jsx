@@ -224,13 +224,7 @@ const DynamicQuestionRenderer = forwardRef(({
   };
 
   const renderReadOnlyContent = () => {
-    if (!questionData || Object.keys(questionData).length === 0) {
-      return <p className="text-gray-500 italic">No response provided yet.</p>;
-    }
     const metadata = question.metadata;
-    if (!metadata) {
-      return <p className="text-green-600">Response submitted</p>;
-    }
     const questionType = question.question_type || (metadata && metadata.type);
     return (
       <>
@@ -260,7 +254,10 @@ const DynamicQuestionRenderer = forwardRef(({
             </button>
           </div>
         </div>
-        {(() => {
+        {/* Answer/response area */}
+        {(!questionData || Object.keys(questionData).length === 0) ? (
+          <p className="text-gray-500 italic">No response provided yet.</p>
+        ) : (() => {
           switch (questionType) {
             case 'subjective':
               return (
