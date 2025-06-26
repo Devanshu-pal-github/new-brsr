@@ -42,7 +42,7 @@ const CategoryContainer = ({ category, financialYear, moduleId, answers }) => {
   // No need for toggle function since parent is handling expansion
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white">
+    <div className=" rounded-lg bg-white">
       {isLoading ? (
         <div className="text-center py-4">
           <p className="text-gray-500">Loading questions...</p>
