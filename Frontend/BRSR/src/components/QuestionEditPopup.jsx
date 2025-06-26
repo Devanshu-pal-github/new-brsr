@@ -24,19 +24,19 @@ const MetaBadges = ({ question }) => {
   return (
     <div className="flex flex-wrap gap-2 mb-3">
       {principle && (
-        <span className="inline-block bg-[#5A7BEA] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
+        <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
       )}
       {indicator && (
-        <span className="inline-block bg-[#36B37E] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
+        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
       )}
       {section && (
         <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
       )}
       {auditRequired !== undefined && (
-        <span className="inline-block bg-[#f59e0b] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
+        <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
       )}
       {audited !== undefined && (
-        <span className="inline-block bg-[#10b981] text-white text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
+        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
       )}
     </div>
   );
