@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, Settings, FileText } from 'lucide-react';
 import { logout, selectCurrentUser } from '../../store/slices/authSlice';
 import AuditModal from "../AuditModal";
+import MCPModal from "../MCPModal";
+import { v4 as uuidv4 } from 'uuid';
 
 const getUserInitials = (name) => {
   if (!name) return "";
@@ -17,6 +19,7 @@ const getUserInitials = (name) => {
 const UserMenu = () => {
   const [open, setOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [isMCPModalOpen, setIsMCPModalOpen] = useState(false);
   const menuRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -72,6 +75,15 @@ const UserMenu = () => {
           </li>
           <li
             className="px-4 py-2 cursor-pointer hover:bg-[#20305D] text-white"
+            onClick={() => {
+              setIsMCPModalOpen(true);
+              setOpen(false);
+            }}
+          >
+            MCP
+          </li>
+          <li
+            className="px-4 py-2 cursor-pointer hover:bg-[#20305D] text-white"
             onClick={handleLogout}
           >
             Logout
@@ -80,6 +92,9 @@ const UserMenu = () => {
       )}
       {isAuditModalOpen && (
         <AuditModal onClose={() => setIsAuditModalOpen(false)} />
+      )}
+      {isMCPModalOpen && (
+        <MCPModal onClose={() => setIsMCPModalOpen(false)} />
       )}
     </div>
   );

@@ -1,6 +1,8 @@
-from fastapi import FastAPI, HTTPException, Request
+import json
+from multiprocessing.util import get_logger
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -10,6 +12,12 @@ import pytz
 from datetime import datetime
 from google import genai
 from google.genai import types
+from bson import ObjectId
+
+from services.mcpServices.LLMs.Groq.ToolService import get_tool_service, ToolService
+from services.mcpServices.LLMs.Groq.GroqSerivce import get_groq_service, GroqService
+from services.mcpServices.LLMs.Groq.LoggerService import get_logger
+from services.mcpServices.LLMs.Groq.DatabaseService import get_database_service, DatabaseService
 # Import routers directly
 from routes.report import router as report_router
 from routes.module import router as module_router
@@ -25,6 +33,7 @@ from routes.audit import router as audit_router
 from routes.ghgRoute import router as ghg_router
 from routes.common_fields import router as common_fields_router
 from routes.notification import router as notification_router
+from routes.mcp_router import router as mcp_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -35,6 +44,7 @@ from services.auth import SessionManager
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Load environment variables
 load_dotenv()
@@ -72,10 +82,69 @@ DB_NAME = os.getenv("DB_NAME", "brsr_db")
 
 # Mock message storage (replace with MongoDB in production)
 messages = []
-
+chat_sessions = set()
 class MessageRequest(BaseModel):
     message: str
+    
+# Define request model
+class ChatRequest(BaseModel):
+    sessionId: str
+    message: str
 
+
+def convert_objectid(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, list):
+        return [convert_objectid(item) for item in obj]
+    if isinstance(obj, dict):
+        return {k: convert_objectid(v) for k, v in obj.items()}
+    return obj
+
+@app.post("/api/chat")
+async def chat_endpoint(
+    request: ChatRequest,
+    db_service: DatabaseService = Depends(get_database_service),
+    groq_service: GroqService = Depends(get_groq_service)
+):
+    tool_service = get_tool_service(db_service.get_db())
+    try:
+        logger.info("Received chat request: sessionId=%s, message=%s", request.sessionId, request.message)
+        if not request.sessionId or len(request.sessionId) > 100:
+            raise HTTPException(status_code=400, detail="Invalid sessionId")
+        if not request.message or len(request.message) > 1000:
+            raise HTTPException(status_code=400, detail="Message too long or empty")
+
+        response = await groq_service.query([{"role": "user", "content": request.message}])
+        logger.info("Groq response: %s", response)
+
+        is_db_related = response.get("isDbRelated", False)
+        result = response.get("response", "No response provided")
+
+        if is_db_related:
+            try:
+                if isinstance(result, str):
+                    result = json.loads(result)
+                db_result = tool_service.db_call(result, user_prompt=request.message)
+                logger.info("Database query result: %s", db_result)
+                db_result = convert_objectid(db_result)
+                return JSONResponse({"reply": db_result})
+            except Exception as e:
+                logger.error("Error executing database query: %s", e)
+                return JSONResponse({"reply": f"Error executing database query: {str(e)}"}, status_code=500)
+        else:
+            logger.info("Non-database response: %s", result)
+            return JSONResponse({"reply": result})
+    except HTTPException as he:
+        logger.error("HTTP error: %s", he)
+        raise he
+    except Exception as e:
+        logger.error("Unexpected error in chat endpoint: %s", e)
+        return JSONResponse({"reply": f"Unexpected error: {str(e)}"}, status_code=500)
+    
+    
 # Database connection handler
 @app.on_event("startup")
 async def startup_db_client():
@@ -238,6 +307,8 @@ app.include_router(audit_router, prefix="/audit")
 app.include_router(ghg_router)
 app.include_router(common_fields_router)
 app.include_router(notification_router)
+# Include MCP router
+app.include_router(mcp_router)
 
 if __name__ == "__main__":
     import uvicorn

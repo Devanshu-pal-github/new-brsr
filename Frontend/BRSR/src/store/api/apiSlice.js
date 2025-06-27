@@ -921,6 +921,24 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Notifications'],
     }),
+    mcpChat: builder.mutation({
+      query: ({ sessionId, message }) => ({
+        url: '/api/chat',
+        method: 'POST',
+        body: { sessionId, message },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (response) => {
+        // Optionally log or process response
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        // Optionally log or process error
+        return response;
+      },
+    }),
   }),
 });
 
@@ -961,5 +979,6 @@ export const {
   useSendNotificationMutation,
   useGetReceivedNotificationsQuery,
   useMarkNotificationAsReadMutation,
+  useMcpChatMutation,
 } = apiSlice;
 export default apiSlice;
