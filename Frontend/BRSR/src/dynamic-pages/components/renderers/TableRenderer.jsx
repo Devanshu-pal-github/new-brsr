@@ -71,6 +71,59 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
     return localData.rows[rowIndex].cells[colIndex].value || '';
   };
 
+  // Helper: check if a row is a total row
+  const isTotalRow = (rowData) => rowData.label && rowData.label.toLowerCase() === 'total';
+
+  // Helper: check if a column is a percentage column
+  const isPercentageCol = (colIndex) => {
+    const col = metadata.columns[colIndex];
+    return col && col.type === 'percentage';
+  };
+
+  // Helper: get the index of the 'Total (A)' column (first data col)
+  const totalAColIndex = 0;
+
+  // Helper: for a given percentage column, get the numerator col index
+  const getNumeratorColIndex = (colIndex) => {
+    // e.g. % (B/A) is after Number (B), so numerator is colIndex-1
+    return colIndex - 1;
+  };
+
+  // Compute calculated values for total rows and percentage columns
+  const computeCellValue = (rowIndex, colIndex) => {
+    const rowData = metadata.rows[rowIndex] || {};
+    // If total row, sum values from previous rows in the section
+    if (isTotalRow(rowData)) {
+      // Find section start (above this total row)
+      let sectionStart = rowIndex - 1;
+      while (sectionStart >= 0 && !metadata.rows[sectionStart].isSectionHeader && !isTotalRow(metadata.rows[sectionStart])) {
+        sectionStart--;
+      }
+      sectionStart++;
+      let sum = 0;
+      for (let i = sectionStart; i < rowIndex; i++) {
+        const val = parseFloat(getCellValue(i, colIndex));
+        if (!isNaN(val)) sum += val;
+      }
+      return sum === 0 ? '' : sum;
+    }
+    // If percentage column, calculate as (numerator/TotalA)*100
+    if (isPercentageCol(colIndex)) {
+      const numeratorCol = getNumeratorColIndex(colIndex);
+      const numerator = parseFloat(getCellValue(rowIndex, numeratorCol));
+      const denominator = parseFloat(getCellValue(rowIndex, totalAColIndex));
+      if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+        return ((numerator / denominator) * 100).toFixed(2);
+      }
+      return '';
+    }
+    // Default: return user value
+    return getCellValue(rowIndex, colIndex);
+  };
+
+  // Helper: check if a row is a section header
+  const isSectionHeader = (rowData) => rowData.isSectionHeader;
+
   // Render table headers recursively
   const renderHeaders = (headers, level = 0) => {
     if (!headers || headers.length === 0) return null;
@@ -121,13 +174,20 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   // Render table rows
   const renderRows = () => {
     if (!metadata.rows || !metadata.columns) return null;
-    
     const rowCount = metadata.rows.length || 0;
     const columnCount = metadata.columns.length || 0;
-    
     return Array(rowCount).fill(0).map((_, rowIndex) => {
       const rowData = metadata.rows[rowIndex] || {};
-      
+      if (isSectionHeader(rowData)) {
+        // Render a section header row spanning all columns + label col
+        return (
+          <tr key={`row-${rowIndex}`} className="bg-gray-100">
+            <td colSpan={columnCount + 1} className="border border-gray-300 px-4 py-2 font-bold text-gray-800 text-center">
+              {rowData.label}
+            </td>
+          </tr>
+        );
+      }
       return (
         <tr key={`row-${rowIndex}`} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
           {/* Row label if present */}
@@ -136,16 +196,15 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
               {rowData.label}
             </td>
           )}
-          
           {/* Row cells */}
           {Array(columnCount).fill(0).map((_, colIndex) => {
             const columnData = metadata.columns[colIndex] || {};
             const cellType = columnData.type || 'text';
-            const cellValue = getCellValue(rowIndex, colIndex);
-            
+            const isCalc = isTotalRow(rowData) || isPercentageCol(colIndex);
+            const cellValue = computeCellValue(rowIndex, colIndex);
             return (
               <td key={`cell-${rowIndex}-${colIndex}`} className="border border-gray-300 px-4 py-2">
-                {isEditing ? (
+                {isEditing && !isCalc ? (
                   renderEditableCell(cellType, cellValue, rowIndex, colIndex)
                 ) : (
                   renderReadOnlyCell(cellType, cellValue)
