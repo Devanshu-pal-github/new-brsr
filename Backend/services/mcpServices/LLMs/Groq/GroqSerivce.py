@@ -21,6 +21,15 @@ class GroqService:
     def get_context():
         return GroqContext
 
+    def _strip_code_block(self, content):
+        import re
+        content = content.strip()
+        # Remove code block markers if present
+        if content.startswith('```'):
+            content = re.sub(r'^```[a-zA-Z]*\n?', '', content)
+            content = re.sub(r'\n?```$', '', content)
+        return content.strip()
+
     async def query(self, messages):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -49,7 +58,8 @@ class GroqService:
                     content = data["choices"][0]["message"].get("content", "")
                     logger.info("Groq API content: %s", content)
                     try:
-                        return json.loads(content)
+                        clean_content = self._strip_code_block(content)
+                        return json.loads(clean_content)
                     except Exception as e:
                         logger.error("Failed to parse Groq content as JSON: %s", e)
                         return {"response": f"Groq returned non-JSON content: {content}"}

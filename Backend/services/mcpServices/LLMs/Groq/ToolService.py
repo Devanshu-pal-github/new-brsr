@@ -30,8 +30,15 @@ class ToolService:
             print_debug_query(query, user_prompt, projection, collection_name, operation)
 
 
+
+
             # If this is an update operation
             if update is not None:
+                # Defensive: If this is an upsert-style employee creation, reject or convert to insert_one
+                # Only allow upsert for non-users collections
+                if collection_name == "users" and (query_obj.get("upsert") or (isinstance(update, dict) and ("$set" in update or "$setOnInsert" in update))):
+                    logger.error("Received upsert-style or update operation for employee creation. This is forbidden. LLM must use operation: insert_one and document. Rejecting operation.")
+                    return {"error": "LLM used forbidden upsert/update pattern for employee creation. Only operation: insert_one with document is allowed."}
                 # Replace <current_datetime> placeholder with actual datetime
                 import datetime
                 from copy import deepcopy
@@ -47,6 +54,17 @@ class ToolService:
                 result = collection.update_one(query, update_doc)
                 logger.info(f"Update result: matched={result.matched_count}, modified={result.modified_count}")
                 return {"matched": result.matched_count, "modified": result.modified_count}
+
+            # If this is an insert_one operation (employee creation)
+            if operation == "insert_one":
+                document = query_obj.get("document")
+                if not document:
+                    logger.error("No document provided for insert_one operation.")
+                    return {"error": "No document provided for insert_one operation."}
+                logger.info(f"Running insert_one: document={document}")
+                result = collection.insert_one(document)
+                logger.info(f"Insert result: inserted_id={result.inserted_id}")
+                return {"inserted_id": str(result.inserted_id)}
 
             # If this is a delete_one operation (robust to LLM mistakes)
             if operation in ("delete_one", "delete"):

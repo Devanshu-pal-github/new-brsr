@@ -1,3 +1,77 @@
+
+# === CRITICAL: EMPLOYEE CREATION RULES (ALWAYS AT TOP, STRICT ENFORCEMENT) ===
+# For any employee creation, ONLY output the following structure. If you output anything else, it is a critical error and will be rejected by the backend.
+#
+# - For employee creation, ONLY use 'operation': 'create_employee'. Never use 'insert', 'insert_one', 'update', 'upsert', or 'hashed_password'.
+# - If you output 'update', 'upsert', 'insert', 'insert_one', or 'hashed_password', it is a critical error and will be rejected.
+# - Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+#
+# CORRECT FORMAT (MANDATORY):
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "create_employee",
+#     "employee": {
+#       "email": <string>,
+#       "full_name": <string>,
+#       "password": <string>,
+#       "role": <string>,
+#       "company_id": <UUID>,  # required for company_admin, optional for plant_admin
+#       "plant_id": <UUID>     # optional, only for plant_admin
+#     }
+#   }
+# }
+#
+# EXAMPLES:
+# 1. Plant admin:
+# Input: "Add a plant admin with email jane@ex.com, name Jane, password secret, for plant_id 1656d76f-dca9-4a50-b4ed-5f96ee38342e"
+# Output:
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "create_employee",
+#     "employee": {
+#       "email": "jane@ex.com",
+#       "full_name": "Jane",
+#       "password": "secret",
+#       "role": "plant_admin",
+#       "plant_id": "1656d76f-dca9-4a50-b4ed-5f96ee38342e"
+#     }
+#   }
+# }
+# 2. Company admin:
+# Input: "Create a new company admin with email john.doe@example.com, name John Doe, password mypass, for company_id 123e4567-e89b-12d3-a456-426614174000"
+# Output:
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "create_employee",
+#     "employee": {
+#       "email": "john.doe@example.com",
+#       "full_name": "John Doe",
+#       "password": "mypass",
+#       "role": "company_admin",
+#       "company_id": "123e4567-e89b-12d3-a456-426614174000"
+#     }
+#   }
+# }
+#
+# BAD EXAMPLES (NEVER DO THIS!):
+# - { "collection": "users", "query": {"email": "..."}, "update": { ... }, "upsert": true }
+# - { "collection": "users", "operation": "insert", ... }
+# - { "collection": "users", "operation": "insert_one", ... }
+# - { "employee": { "hashed_password": "..." } }
+# - Wrapping the JSON in a code block (forbidden!):
+#   ```json
+#   { "isDbRelated": true, ... }
+#   ```
+# - Including 'hashed_password', '_id', 'id', 'created_at', 'updated_at', 'is_active', or 'access_modules' in the employee object.
+# - Using company name directly in the employee object.
+#
+# STRICT OUTPUT RULES FOR EMPLOYEE CREATION:
+# - Always use "operation": "create_employee" for employee creation.
+# - Never wrap the JSON response in code blocks (no ```json or ```). Output only a single valid JSON object, nothing else.
+# - If the LLM is unsure, do not output any query.
 GroqContext = """
 # --- UPDATE OPERATIONS (PUT/POST) FOR ENVIRONMENT COLLECTION ---
 # You can generate MongoDB update queries for the 'environment' collection to support natural language update requests (PUT/POST), such as updating answers, comments, attachments, status, or audit status.
@@ -131,7 +205,7 @@ GroqContext = """
 # {
 #   "collection": "companies",
 #   "query": {"name": {"$regex": "Aditya Birla Pvt. Ltd.", "$options": "i"}},
-#   "projection": {"metadata.id": 1, "_id": 0}
+#   "projection": {"id": 1, "_id": 0}
 # }
 # Step 2: Use the resulting companyId in the update query:
 # {
@@ -702,7 +776,7 @@ Remember to:
 # {
 #   "collection": "companies",
 #   "query": {"name": {"$regex": "Aditya Birla Pvt. Ltd.", "$options": "i"}},
-#   "projection": {"metadata.id": 1, "_id": 0}
+#   "projection": {"id": 1, "_id": 0}
 # }
 # Step 2: Use the resulting companyId in the delete query if needed:
 # {
