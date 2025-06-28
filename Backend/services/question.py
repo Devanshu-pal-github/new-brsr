@@ -95,6 +95,11 @@ class QuestionService:
                 detail="Question not found"
             )
 
+        # Ensure all five key fields are present at the root, even if missing in DB
+        for field in ["principle", "indicator", "section", "audit_required", "audited"]:
+            if field not in question:
+                question[field] = None
+
         if include_category:
             category_info = await self._get_category_info(question["category_id"])
             if category_info:
@@ -548,6 +553,13 @@ class QuestionService:
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
+        # Add extra fields if present
+        import inspect
+        frame = inspect.currentframe()
+        args, _, _, values = inspect.getargvalues(frame)
+        for field in ["principle", "indicator", "section", "audit_required", "audited"]:
+            if field in values and values[field] is not None:
+                question_dict[field] = values[field]
 
         try:
             await self.db.questions.insert_one(question_dict)
@@ -722,6 +734,12 @@ class QuestionService:
                     raise ValueError("category_id is required for each question")
                 ordered_questions.append(Question(**question))
                 
+        # Ensure all questions have the five key fields, even if missing in DB
+        for q in questions:
+            for field in ["principle", "indicator", "section", "audit_required", "audited"]:
+                if field not in q:
+                    q[field] = None
+        
         return ordered_questions
         
     async def update_question_metadata(

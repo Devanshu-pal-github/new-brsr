@@ -30,6 +30,9 @@ const DynamicQuestionRenderer = forwardRef(({
   console.log('🧩 Question:', question);
   console.log('🧩 Using moduleId:', moduleId);
 
+  // DEBUG: Log the question object to verify what is received from backend
+  console.log('[DynamicQuestionRenderer] Rendering question:', question);
+
   useEffect(() => {
     setTempData(questionData);
   }, [questionData]);
@@ -130,47 +133,30 @@ const DynamicQuestionRenderer = forwardRef(({
     setAiChatOpen(false);
   };
 
-  // Helper to render principle/indicator/section badges
-  const renderMetaBadges = () => {
-    const meta = question.metadata || {};
-    const principle = question.principle || meta.principle;
-    const indicator = question.indicator || meta.indicator;
-    const section = question.section || meta.section;
+  // Helper to get the correct value for a field (root, then metadata, then N/A)
+  function getFieldValue(field, metaField) {
+    if (question[field] !== undefined && question[field] !== null && question[field] !== "") return question[field];
+    if (meta[metaField] !== undefined && meta[metaField] !== null && meta[metaField] !== "") return meta[metaField];
+    return 'N/A';
+  }
+  const meta = question.metadata || {};
+  const principle = getFieldValue('principle', 'principle');
+  const indicator = getFieldValue('indicator', 'indicator');
+  const section = getFieldValue('section', 'section');
+  const auditRequired = getFieldValue('audit_required', 'audit_required');
+  const audited = getFieldValue('audited', 'audited');
 
-    if (!principle && !indicator && !section) {
-      return null;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-2 mb-2">
-        {principle && (
-          <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
-        )}
-        {indicator && (
-          <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
-        )}
-        {section && (
-          <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-sm">Section: {section}</span>
-        )}
-      </div>
-    );
-  };
-
-  const renderAuditBadges = () => {
-    const meta = question.metadata || {};
-    const auditRequired = question.audit_required ?? meta.audit_required;
-    const audited = question.audited ?? meta.audited;
-    return (
-      <>
-        {auditRequired !== undefined && (
-          <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
-        )}
-        {audited !== undefined && (
-          <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
-        )}
-      </>
-    );
-  };
+  const renderMetaBadges = () => (
+    <div className="flex flex-wrap gap-2 mb-2">
+      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
+      <span className={`inline-block px-4 py-1 rounded-sm text-xs font-semibold ${indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {indicator}</span>
+      <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-sm">Section: {section}</span>
+      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm">Audit Required: {String(auditRequired)}</span>
+      {auditRequired === true && (
+        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-4 py-1 rounded-sm">Audited: {String(audited)}</span>
+      )}
+    </div>
+  );
 
   const renderEditableContent = () => {
     const metadata = question.metadata;
@@ -232,7 +218,6 @@ const DynamicQuestionRenderer = forwardRef(({
             {question.question_text || question.title || question.human_readable_id}
           </span>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {renderAuditBadges()}
             <button
               className="bg-[#4F46E5] text-white font-medium px-2 py-1 rounded-[4px] text-xs shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
               onClick={handleAIClick}

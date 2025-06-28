@@ -26,6 +26,11 @@ class QuestionCreateWithCategory(BaseModel):
     question_text: str
     question_type: str
     metadata: Dict = {}
+    principle: Optional[str] = None
+    indicator: Optional[str] = None
+    section: Optional[str] = None
+    audit_required: Optional[bool] = None
+    audited: Optional[bool] = None
     
 class QuestionBatchRequest(BaseModel):
     question_ids: List[str] = Field(..., description="List of question IDs to fetch")

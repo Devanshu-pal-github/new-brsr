@@ -11,31 +11,19 @@ import ModalHeader from "./QuestionEdit/ModalHeader";
 
 const MetaBadges = ({ question }) => {
   const meta = question.metadata || {};
-  const principle = question.principle || meta.principle;
-  const indicator = question.indicator || meta.indicator;
-  const section = question.section || meta.section;
-  const auditRequired = question.audit_required ?? meta.audit_required;
-  const audited = question.audited ?? meta.audited;
-
-  if (!principle && !indicator && !section && auditRequired === undefined && audited === undefined) {
-    return null;
-  }
+  const principle = question.principle || meta.principle || 'N/A';
+  const indicator = question.indicator || meta.indicator || 'N/A';
+  const section = question.section || meta.section || 'N/A';
+  const auditRequired = (question.audit_required !== undefined ? question.audit_required : (meta.audit_required !== undefined ? meta.audit_required : 'N/A'));
+  const audited = (question.audited !== undefined ? question.audited : (meta.audited !== undefined ? meta.audited : 'N/A'));
 
   return (
     <div className="flex flex-wrap gap-2 mb-3">
-      {principle && (
-        <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
-      )}
-      {indicator && (
-        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
-      )}
-      {section && (
-        <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
-      )}
-      {auditRequired !== undefined && (
-        <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
-      )}
-      {audited !== undefined && (
+      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
+      <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
+      <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
+      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
+      {auditRequired === true && (
         <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
       )}
     </div>
