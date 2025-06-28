@@ -38,14 +38,17 @@ class QuestionService:
         question_dict["updated_at"] = datetime.utcnow()
 
         if question_dict.get("question_number"):
+            # Always cast question_number to string for comparison and storage
+            question_number_str = str(question_dict["question_number"])
             existing_question = await self.db.questions.find_one(
-                {"category_id": category_id, "question_number": question_dict["question_number"]}
+                {"category_id": category_id, "question_number": question_number_str}
             )
             if existing_question:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Question number {question_dict['question_number']} already exists in category {category_id}"
+                    detail=f"Question number {question_number_str} already exists in category {category_id}"
                 )
+            question_dict["question_number"] = question_number_str
         else:
             highest_question = await self.db.questions.find_one(
                 {"category_id": category_id},
@@ -507,14 +510,17 @@ class QuestionService:
             )
             
         if question_number:
+            # Always cast question_number to string for comparison and storage
+            question_number_str = str(question_number)
             existing_question = await self.db.questions.find_one(
-                {"category_id": category_id, "question_number": question_number}
+                {"category_id": category_id, "question_number": question_number_str}
             )
             if existing_question:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Question number {question_number} already exists in category {category_id}"
+                    detail=f"Question number {question_number_str} already exists in category {category_id}"
                 )
+            question_number = question_number_str
         else:
             highest_question = await self.db.questions.find_one(
                 {"category_id": category_id},

@@ -169,7 +169,15 @@ async def startup_db_client():
     
     # Create indexes for Questions collection
     await app.mongodb.questions.create_index("module_id")
-    await app.mongodb.questions.create_index("question_number", unique=True)
+    # Remove the old global unique index if it exists
+    try:
+        await app.mongodb.questions.drop_index("question_number_1")
+    except Exception:
+        pass  # Index may not exist yet
+    # Create a compound unique index on (category_id, question_number)
+    await app.mongodb.questions.create_index([
+        ("category_id", 1), ("question_number", 1)
+    ], unique=True)
     
     # Create indexes for User Access collection
     await app.mongodb.user_access.create_index([
@@ -309,6 +317,137 @@ app.include_router(common_fields_router)
 app.include_router(notification_router)
 # Include MCP router
 app.include_router(mcp_router)
+
+# Request and response models for NL to Table feature
+class NLToTableRequest(BaseModel):
+    input: str
+    tableData: list
+    metadata: dict = None
+
+class NLToTableResponse(BaseModel):
+    suggestions: list
+
+@app.post("/api/ai/nl-to-table", response_model=NLToTableResponse)
+async def nl_to_table_endpoint(request: NLToTableRequest):
+    """
+    Accepts a natural language instruction and table data, returns AI-generated table suggestions.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return a dummy suggestion for demonstration
+    dummy_suggestions = request.tableData  # Echoes input for now
+    return NLToTableResponse(suggestions=dummy_suggestions)
+
+# Request and response models for Explain Calculation feature
+class ExplainCalculationRequest(BaseModel):
+    value: str
+    context: dict = None
+
+class ExplainCalculationResponse(BaseModel):
+    explanation: str
+
+@app.post("/api/ai/explain-calculation", response_model=ExplainCalculationResponse)
+async def explain_calculation_endpoint(request: ExplainCalculationRequest):
+    """
+    Accepts a cell value and context, returns an AI-generated explanation for the calculation.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return a dummy explanation
+    dummy_explanation = f"The value '{request.value}' is a result of a calculation based on the provided context. (Demo response)"
+    return ExplainCalculationResponse(explanation=dummy_explanation)
+
+# Request and response models for Scenario Simulation feature
+class ScenarioSimulationRequest(BaseModel):
+    input: str
+    tableData: list
+    metadata: dict = None
+
+class ScenarioSimulationResponse(BaseModel):
+    simulation: list
+
+@app.post("/api/ai/scenario-simulation", response_model=ScenarioSimulationResponse)
+async def scenario_simulation_endpoint(request: ScenarioSimulationRequest):
+    """
+    Accepts a scenario description and table data, returns AI-generated scenario impact.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return a dummy simulation (echo input tableData)
+    dummy_simulation = request.tableData
+    return ScenarioSimulationResponse(simulation=dummy_simulation)
+
+# Request and response models for Guided Data Entry feature
+class GuidedDataEntryRequest(BaseModel):
+    step: int
+    tableData: list
+    metadata: dict = None
+
+class GuidedDataEntryResponse(BaseModel):
+    hint: str
+
+@app.post("/api/ai/guided-data-entry", response_model=GuidedDataEntryResponse)
+async def guided_data_entry_endpoint(request: GuidedDataEntryRequest):
+    """
+    Accepts the current step and table data, returns an AI-generated hint for the step.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return a dummy hint
+    dummy_hint = f"Hint for step {request.step + 1}: Please fill in the required data. (Demo response)"
+    return GuidedDataEntryResponse(hint=dummy_hint)
+
+# Request and response models for Data Consistency Check feature
+class DataConsistencyCheckRequest(BaseModel):
+    tableData: list
+    metadata: dict = None
+
+class DataConsistencyCheckResponse(BaseModel):
+    issues: list
+    suggestions: list
+
+@app.post("/api/ai/data-consistency-check", response_model=DataConsistencyCheckResponse)
+async def data_consistency_check_endpoint(request: DataConsistencyCheckRequest):
+    """
+    Accepts table data and metadata, returns AI-identified issues and suggestions for fixes.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return dummy issues and suggestions
+    dummy_issues = ["Row 2 total does not match column sum."] if request.tableData else []
+    dummy_suggestions = ["Update Row 2 total to match sum."] if dummy_issues else []
+    return DataConsistencyCheckResponse(issues=dummy_issues, suggestions=dummy_suggestions)
+
+# Request and response models for Example Data Generator feature
+class ExampleDataGeneratorRequest(BaseModel):
+    metadata: dict = None
+
+class ExampleDataGeneratorResponse(BaseModel):
+    exampleData: list
+
+@app.post("/api/ai/example-data-generator", response_model=ExampleDataGeneratorResponse)
+async def example_data_generator_endpoint(request: ExampleDataGeneratorRequest):
+    """
+    Accepts table metadata, returns AI-generated example data.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return dummy example data
+    dummy_example_data = [{"col1": "Example", "col2": 123}]  # Replace with realistic structure as needed
+    return ExampleDataGeneratorResponse(exampleData=dummy_example_data)
+
+# Request and response models for Contextual Help feature
+class ContextualHelpRequest(BaseModel):
+    column: dict = None
+    row: dict = None
+    metadata: dict = None
+
+class ContextualHelpResponse(BaseModel):
+    help: str
+
+@app.post("/api/ai/contextual-help", response_model=ContextualHelpResponse)
+async def contextual_help_endpoint(request: ContextualHelpRequest):
+    """
+    Accepts column, row, and metadata, returns AI-powered guidance for the cell/column.
+    """
+    # TODO: Integrate with real AI logic/model
+    # For now, return a dummy help message
+    dummy_help = "This is regulatory/domain guidance for the selected cell/column. (Demo response)"
+    return ContextualHelpResponse(help=dummy_help)
 
 if __name__ == "__main__":
     import uvicorn
