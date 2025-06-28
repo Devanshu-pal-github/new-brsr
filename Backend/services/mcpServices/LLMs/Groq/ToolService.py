@@ -20,6 +20,10 @@ class ToolService:
             if isinstance(query_obj, dict) and query_obj.get("operation") == "create_employee":
                 return self._handle_create_employee(query_obj, user_prompt)
             
+            # Handle create_plant operation specially
+            if isinstance(query_obj, dict) and query_obj.get("operation") == "create_plant":
+                return self._handle_create_plant(query_obj, user_prompt)
+            
             # Handle the case where LLM uses "create" operation on "users" collection (employee creation)
             if (isinstance(query_obj, dict) and 
                 query_obj.get("collection") == "users" and 
@@ -194,6 +198,79 @@ class ToolService:
         except Exception as e:
             logger.error(f"Error creating employee: {str(e)}")
             return {"error": f"Failed to create employee: {str(e)}"}
+    
+    def _handle_create_plant(self, query_obj, user_prompt=""):
+        """Handle create_plant operation specifically"""
+        try:
+            import datetime
+            import uuid
+            # Extract plant data
+            plant_data = query_obj.get("plant", {})
+            if not plant_data:
+                logger.error("No plant data provided for create_plant operation")
+                return {"error": "No plant data provided for create_plant operation"}
+            # Validate required fields
+            required_fields = ["company_id", "name", "code", "type", "address", "contact_email", "contact_phone"]
+            missing_fields = [field for field in required_fields if not plant_data.get(field)]
+            if missing_fields:
+                logger.error(f"Missing required fields for plant creation: {missing_fields}")
+                return {"error": f"Missing required fields: {', '.join(missing_fields)}"}
+            # Reserved code check
+            if plant_data["code"] in ["C001", "P001"]:
+                logger.error("Reserved plant codes (C001, P001) cannot be used")
+                return {"error": "Reserved plant codes (C001, P001) cannot be used"}
+            # Check for duplicate code
+            collection = self.db["plants"]
+            if collection.find_one({"plant_code": plant_data["code"]}):
+                logger.error(f"Plant code {plant_data['code']} already exists")
+                return {"error": f"Plant code {plant_data['code']} already exists"}
+            now = datetime.datetime.utcnow()
+            plant_id = str(uuid.uuid4())
+            plant_doc = {
+                "id": plant_id,
+                "plant_code": plant_data["code"],
+                "plant_name": plant_data["name"],
+                "company_id": plant_data["company_id"],
+                "plant_type": plant_data["type"],
+                "access_level": "calc_modules_only",
+                "address": plant_data["address"],
+                "contact_email": plant_data["contact_email"],
+                "contact_phone": plant_data["contact_phone"],
+                "created_at": now,
+                "updated_at": now
+            }
+            # Insert plant
+            collection.insert_one(plant_doc)
+            # Insert environment report
+            env_report = {
+                "id": str(uuid.uuid4()),
+                "companyId": plant_data["company_id"],
+                "plantId": plant_id,
+                "plant_type": plant_data["type"],
+                "financialYear": "2024-2025",
+                "answers": {},
+                "status": "draft",
+                "createdAt": now,
+                "updatedAt": now,
+                "version": 1
+            }
+            self.db["environment"].insert_one(env_report)
+            # Update company's plant_ids
+            self.db["companies"].update_one(
+                {"_id": plant_data["company_id"]},
+                {"$push": {"plant_ids": plant_id}, "$set": {"updated_at": now}}
+            )
+            logger.info(f"Plant created successfully with ID: {plant_id}")
+            return {
+                "success": True,
+                "message": "Plant created successfully",
+                "plant_id": plant_id,
+                "name": plant_data["name"],
+                "code": plant_data["code"]
+            }
+        except Exception as e:
+            logger.error(f"Error creating plant: {str(e)}")
+            return {"error": f"Failed to create plant: {str(e)}"}
 
 def get_tool_service(db=None):
     return ToolService(db)

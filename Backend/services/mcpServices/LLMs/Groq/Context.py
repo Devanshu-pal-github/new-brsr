@@ -1,6 +1,7 @@
 
 
-# === CRITICAL: EMPLOYEE CREATION RULES (ALWAYS AT TOP, STRICT ENFORCEMENT) ===
+
+# === CRITICAL: EMPLOYEE & PLANT CREATION RULES (ALWAYS AT TOP, STRICT ENFORCEMENT) ===
 #
 # 🚨🚨🚨 FOR EMPLOYEE CREATION, YOU MUST FOLLOW THESE RULES. IF YOU DO NOT, YOUR RESPONSE WILL BE REJECTED AND THE OPERATION WILL FAIL. 🚨🚨🚨
 #
@@ -30,60 +31,77 @@
 #   }
 # }
 #
-# EXAMPLES (ALWAYS FOLLOW THIS):
-# 1. Plant admin:
-# Input: "Add a plant admin with email jane@ex.com, name Jane, password secret, for plant_id 1656d76f-dca9-4a50-b4ed-5f96ee38342e"
-# Output:
+# 🚨🚨🚨 FOR PLANT CREATION, YOU MUST FOLLOW THESE RULES. IF YOU DO NOT, YOUR RESPONSE WILL BE REJECTED AND THE OPERATION WILL FAIL. 🚨🚨🚨
+#
+# 1. For plant creation, ONLY use:
+#    { "operation": "create_plant", ... }
+#    Never use 'insert', 'insert_one', 'update', 'upsert', 'create', or 'plant_code'.
+# 2. If you output 'update', 'upsert', 'insert', 'insert_one', 'create', or 'plant_code', IT IS A CRITICAL ERROR and will be REJECTED.
+# 3. Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+# 4. If you are unsure, DO NOT output any query.
+# 5. NEVER use "collection": "plants" - this is FORBIDDEN for plant creation.
+# 6. NEVER use "data" field - always use "plant" field.
+# 7. NEVER use "plant_code" - always use "code".
+#
+# CORRECT FORMAT (MANDATORY):
 # {
 #   "isDbRelated": true,
 #   "response": {
-#     "operation": "create_employee",
-#     "employee": {
-#       "email": "jane@ex.com",
-#       "full_name": "Jane",
-#       "password": "secret",
-#       "role": "plant_admin",
-#       "plant_id": "1656d76f-dca9-4a50-b4ed-5f96ee38342e"
+#     "operation": "create_plant",
+#     "plant": {
+#       "company_id": <string>,
+#       "name": <string>,
+#       "code": <string>,
+#       "type": <string>,
+#       "address": <string>,
+#       "contact_email": <string>,
+#       "contact_phone": <string>,
+#       "metadata": <object>
 #     }
 #   }
 # }
-# 2. Company admin:
-# Input: "Create a new company admin with email john.doe@example.com, name John Doe, password mypass, for company_id 123e4567-e89b-12d3-a456-426614174000"
+#
+# EXAMPLES (ALWAYS FOLLOW THIS):
+# 1. Plant creation:
+# Input: "Create a new plant for company 123e4567-e89b-12d3-a456-426614174000 named ‘Greenfield’ with code ‘PLT100’, type ‘regular’, address ‘123 Main St’, email ‘plant@company.com’, phone ‘1234567890’."
 # Output:
 # {
 #   "isDbRelated": true,
 #   "response": {
-#     "operation": "create_employee",
-#     "employee": {
-#       "email": "john.doe@example.com",
-#       "full_name": "John Doe",
-#       "password": "mypass",
-#       "role": "company_admin",
-#       "company_id": "123e4567-e89b-12d3-a456-426614174000"
+#     "operation": "create_plant",
+#     "plant": {
+#       "company_id": "123e4567-e89b-12d3-a456-426614174000",
+#       "name": "Greenfield",
+#       "code": "PLT100",
+#       "type": "regular",
+#       "address": "123 Main St",
+#       "contact_email": "plant@company.com",
+#       "contact_phone": "1234567890",
+#       "metadata": {}
 #     }
 #   }
 # }
 #
 # 🚫 HARD NEGATIVE EXAMPLES (NEVER DO THIS!):
-# - { "collection": "users", "query": {"email": "..."}, "update": { ... }, "upsert": true }
-# - { "collection": "users", "operation": "insert", ... }
-# - { "collection": "users", "operation": "insert_one", ... }
-# - { "collection": "users", "operation": "create", ... }  # NEVER USE "create" - use "create_employee"
-# - { "response": { "collection": "users", "operation": "create", "data": {...} } }  # FORBIDDEN FORMAT
-# - { "employee": { "hashed_password": "..." } }
+# - { "collection": "plants", "query": {"name": "..."}, "update": { ... }, "upsert": true }
+# - { "collection": "plants", "operation": "insert", ... }
+# - { "collection": "plants", "operation": "insert_one", ... }
+# - { "collection": "plants", "operation": "create", ... }  # NEVER USE "create" - use "create_plant"
+# - { "response": { "collection": "plants", "operation": "create", "data": {...} } }  # FORBIDDEN FORMAT
+# - { "plant": { "plant_code": "..." } }  # Use "code" instead
 # - Wrapping the JSON in a code block (forbidden!):
 #   ```json
 #   { "isDbRelated": true, ... }
 #   ```
-# - Including 'hashed_password', '_id', 'id', 'created_at', 'updated_at', 'is_active', or 'access_modules' in the employee object.
-# - Using company name directly in the employee object.
-# - Using "data" instead of "employee" field.
+# - Including 'plant_code', '_id', 'id', 'created_at', 'updated_at', 'is_active', or 'access_modules' in the plant object.
+# - Using company name directly in the plant object.
+# - Using "data" instead of "plant" field.
 #
-# STRICT OUTPUT RULES FOR EMPLOYEE CREATION:
-# - Always use "operation": "create_employee" for employee creation.
-# - Always use "employee" field, never "data" field.
-# - Always use "password" field, never "hashed_password" field.
-# - Never include "collection" field in employee creation.
+# STRICT OUTPUT RULES FOR PLANT CREATION:
+# - Always use "operation": "create_plant" for plant creation.
+# - Always use "plant" field, never "data" field.
+# - Always use "code" field, never "plant_code" field.
+# - Never include "collection" field in plant creation.
 # - Never wrap the JSON response in code blocks (no ```json or ```). Output only a single valid JSON object, nothing else.
 # - If the LLM is unsure, do not output any query.
 GroqContext = """
