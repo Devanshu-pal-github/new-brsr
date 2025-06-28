@@ -1,10 +1,18 @@
 
+
 # === CRITICAL: EMPLOYEE CREATION RULES (ALWAYS AT TOP, STRICT ENFORCEMENT) ===
-# For any employee creation, ONLY output the following structure. If you output anything else, it is a critical error and will be rejected by the backend.
 #
-# - For employee creation, ONLY use 'operation': 'create_employee'. Never use 'insert', 'insert_one', 'update', 'upsert', or 'hashed_password'.
-# - If you output 'update', 'upsert', 'insert', 'insert_one', or 'hashed_password', it is a critical error and will be rejected.
-# - Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+# 🚨🚨🚨 FOR EMPLOYEE CREATION, YOU MUST FOLLOW THESE RULES. IF YOU DO NOT, YOUR RESPONSE WILL BE REJECTED AND THE OPERATION WILL FAIL. 🚨🚨🚨
+#
+# 1. For employee creation, ONLY use:
+#    { "operation": "create_employee", ... }
+#    Never use 'insert', 'insert_one', 'update', 'upsert', 'create', or 'hashed_password'.
+# 2. If you output 'update', 'upsert', 'insert', 'insert_one', 'create', or 'hashed_password', IT IS A CRITICAL ERROR and will be REJECTED.
+# 3. Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+# 4. If you are unsure, DO NOT output any query.
+# 5. NEVER use "collection": "users" - this is FORBIDDEN for employee creation.
+# 6. NEVER use "data" field - always use "employee" field.
+# 7. NEVER use "hashed_password" - always use "password".
 #
 # CORRECT FORMAT (MANDATORY):
 # {
@@ -22,7 +30,7 @@
 #   }
 # }
 #
-# EXAMPLES:
+# EXAMPLES (ALWAYS FOLLOW THIS):
 # 1. Plant admin:
 # Input: "Add a plant admin with email jane@ex.com, name Jane, password secret, for plant_id 1656d76f-dca9-4a50-b4ed-5f96ee38342e"
 # Output:
@@ -56,10 +64,12 @@
 #   }
 # }
 #
-# BAD EXAMPLES (NEVER DO THIS!):
+# 🚫 HARD NEGATIVE EXAMPLES (NEVER DO THIS!):
 # - { "collection": "users", "query": {"email": "..."}, "update": { ... }, "upsert": true }
 # - { "collection": "users", "operation": "insert", ... }
 # - { "collection": "users", "operation": "insert_one", ... }
+# - { "collection": "users", "operation": "create", ... }  # NEVER USE "create" - use "create_employee"
+# - { "response": { "collection": "users", "operation": "create", "data": {...} } }  # FORBIDDEN FORMAT
 # - { "employee": { "hashed_password": "..." } }
 # - Wrapping the JSON in a code block (forbidden!):
 #   ```json
@@ -67,9 +77,13 @@
 #   ```
 # - Including 'hashed_password', '_id', 'id', 'created_at', 'updated_at', 'is_active', or 'access_modules' in the employee object.
 # - Using company name directly in the employee object.
+# - Using "data" instead of "employee" field.
 #
 # STRICT OUTPUT RULES FOR EMPLOYEE CREATION:
 # - Always use "operation": "create_employee" for employee creation.
+# - Always use "employee" field, never "data" field.
+# - Always use "password" field, never "hashed_password" field.
+# - Never include "collection" field in employee creation.
 # - Never wrap the JSON response in code blocks (no ```json or ```). Output only a single valid JSON object, nothing else.
 # - If the LLM is unsure, do not output any query.
 GroqContext = """

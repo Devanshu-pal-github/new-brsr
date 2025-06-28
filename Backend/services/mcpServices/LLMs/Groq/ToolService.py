@@ -8,10 +8,36 @@ def print_debug_query(query, user_prompt, projection=None, collection=None, oper
 class ToolService:
     def __init__(self, db=None):
         from services.mcpServices.LLMs.Groq.DatabaseService import DatabaseService
-        self.db = db if db is not None else DatabaseService().get_db()
+        if db is not None:
+            self.db = db
+        else:
+            db_service = DatabaseService()
+            self.db = db_service.get_db()
 
     def db_call(self, query_obj, user_prompt=""):
         try:
+            # Handle create_employee operation specially
+            if isinstance(query_obj, dict) and query_obj.get("operation") == "create_employee":
+                return self._handle_create_employee(query_obj, user_prompt)
+            
+            # Handle the case where LLM uses "create" operation on "users" collection (employee creation)
+            if (isinstance(query_obj, dict) and 
+                query_obj.get("collection") == "users" and 
+                query_obj.get("operation") == "create" and 
+                "data" in query_obj):
+                # Convert to proper create_employee format
+                employee_data = query_obj.get("data", {})
+                # Convert hashed_password to password if present
+                if "hashed_password" in employee_data:
+                    employee_data["password"] = employee_data.pop("hashed_password")
+                
+                converted_query = {
+                    "operation": "create_employee",
+                    "employee": employee_data
+                }
+                logger.info(f"Converting LLM 'create' operation to 'create_employee': {converted_query}")
+                return self._handle_create_employee(converted_query, user_prompt)
+            
             # Support for new format: {"collection": ..., "query": {...}, "projection": {...}, "operation": ...}
             if isinstance(query_obj, dict) and "query" in query_obj and "collection" in query_obj:
                 collection_name = query_obj.get("collection")
@@ -98,6 +124,76 @@ class ToolService:
         except Exception as e:
             logger.error("Error executing db_call: %s", e)
             return f"Failed to execute query: {str(e)}"
+
+    def _handle_create_employee(self, query_obj, user_prompt=""):
+        """Handle create_employee operation specifically"""
+        try:
+            import datetime
+            import uuid
+            from services.auth import get_password_hash
+            
+            # Extract employee data
+            employee_data = query_obj.get("employee", {})
+            
+            if not employee_data:
+                logger.error("No employee data provided for create_employee operation")
+                return {"error": "No employee data provided for create_employee operation"}
+            
+            # Validate required fields
+            required_fields = ["email", "full_name", "password", "role"]
+            missing_fields = [field for field in required_fields if not employee_data.get(field)]
+            
+            if missing_fields:
+                logger.error(f"Missing required fields for employee creation: {missing_fields}")
+                return {"error": f"Missing required fields: {', '.join(missing_fields)}"}
+            
+            # Check if email already exists
+            collection = self.db["users"]
+            existing_user = collection.find_one({"email": employee_data["email"]})
+            if existing_user:
+                logger.error(f"Email {employee_data['email']} already exists")
+                return {"error": f"Email {employee_data['email']} already registered"}
+            
+            # Prepare user document
+            user_doc = {
+                "_id": str(uuid.uuid4()),
+                "email": employee_data["email"],
+                "full_name": employee_data["full_name"],
+                "role": employee_data["role"],
+                "hashed_password": get_password_hash(employee_data["password"]),
+                "is_active": True,
+                "access_modules": [],
+                "created_at": datetime.datetime.utcnow(),
+                "updated_at": datetime.datetime.utcnow()
+            }
+            
+            # Set id field same as _id
+            user_doc["id"] = user_doc["_id"]
+            
+            # Add company_id and plant_id if provided
+            if employee_data.get("company_id"):
+                user_doc["company_id"] = employee_data["company_id"]
+            
+            if employee_data.get("plant_id"):
+                user_doc["plant_id"] = employee_data["plant_id"]
+            
+            # Insert the user
+            logger.info(f"Creating employee with document: {user_doc}")
+            result = collection.insert_one(user_doc)
+            
+            logger.info(f"Employee created successfully with ID: {result.inserted_id}")
+            return {
+                "success": True,
+                "message": "Employee created successfully",
+                "user_id": str(result.inserted_id),
+                "email": employee_data["email"],
+                "full_name": employee_data["full_name"],
+                "role": employee_data["role"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating employee: {str(e)}")
+            return {"error": f"Failed to create employee: {str(e)}"}
 
 def get_tool_service(db=None):
     return ToolService(db)
