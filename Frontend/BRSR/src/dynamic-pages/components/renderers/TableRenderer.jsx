@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useCurrentFinancialYear } from '../../../components/layout/FinancialYearDropdown';
 
 const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   const [localData, setLocalData] = useState(data || {});
+  const currentFinancialYear = useCurrentFinancialYear();
+  // Helper to get previous FY string
+  const getPreviousFinancialYear = (fy) => {
+    if (!fy || !fy.includes('-')) return '';
+    const [start, end] = fy.split('-').map(Number);
+    if (isNaN(start) || isNaN(end)) return '';
+    return `${start - 1}-${end - 1}`;
+  };
+  const previousFinancialYear = getPreviousFinancialYear(currentFinancialYear);
 
   // Update local data when the prop changes (skip while editing)
   useEffect(() => {
@@ -138,6 +148,22 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
           const key = header.id
             ? `header-${level}-${header.id}`
             : `header-${level}-${index}-${String(header.label).replace(/\s+/g, '_')}`;
+          // Dynamically replace FY label if present
+          let label = header.label;
+          if (typeof label === 'string') {
+            // Remove 'FY ___<br/>' or similar patterns before the year
+            label = label.replace(/FY\s*_{2,}\s*<br\s*\/?>/gi, '').trim();
+            // Remove any remaining 'FY ___' or 'FY__' or 'FY ___' (with or without spaces)
+            label = label.replace(/FY\s*_+/gi, '').trim();
+            // Remove any remaining <br> or <br/> tags
+            label = label.replace(/<br\s*\/?>/gi, '').trim();
+            if (label.includes('Current Financial Year')) {
+              label = label.replace('Current Financial Year', currentFinancialYear || 'Current Financial Year');
+            }
+            if (label.includes('Previous Financial Year')) {
+              label = label.replace('Previous Financial Year', previousFinancialYear || 'Previous Financial Year');
+            }
+          }
           return (
             <th 
               key={key}
@@ -150,7 +176,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
                 maxWidth: header.maxWidth || 'none'
               }}
             >
-              {header.label}
+              {label}
             </th>
           );
         })}
