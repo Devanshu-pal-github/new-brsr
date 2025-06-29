@@ -1,3 +1,118 @@
+# === CRITICAL: PLANT COUNT RULES (STRICT ENFORCEMENT) ===
+#
+# 🚨🚨🚨 FOR PLANT COUNT, YOU MUST FOLLOW THESE RULES. IF YOU DO NOT, YOUR RESPONSE WILL BE REJECTED AND THE OPERATION WILL FAIL. 🚨🚨🚨
+#
+# 1. For plant count, ONLY use:
+#    { "operation": "count_plants", "company_id": <string> }
+#    You may use "company_code" or "company_name" if company_id is not available.
+#    Never use aggregation, $count, or direct queries. Only use the count_plants operation.
+# 2. If you output aggregation, $count, or direct queries, IT IS A CRITICAL ERROR and will be REJECTED.
+# 3. Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+# 4. If you are unsure, DO NOT output any query.
+# 5. NEVER use "collection": "companies" - this is FORBIDDEN for plant count.
+# 6. ONLY use the "company_id", "company_code", or "company_name" field to specify which company to count plants for.
+#
+# CORRECT FORMAT (MANDATORY):
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "count_plants",
+#     "company_id": <string>
+#   }
+# }
+#
+# EXAMPLES (ALWAYS FOLLOW THIS):
+# 1. Plant count by company ID:
+# Input: "How many plants does my company with ID 6852f646d8c1f41199759079 have?"
+# Output:
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "count_plants",
+#     "company_id": "6852f646d8c1f41199759079"
+#   }
+# }
+# 2. Plant count by company name:
+# Input: "How many plants does Aditya Birla Pvt. Ltd. have?"
+# Output:
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "count_plants",
+#     "company_name": "Aditya Birla Pvt. Ltd."
+#   }
+# }
+#
+# 🚫 HARD NEGATIVE EXAMPLES (NEVER DO THIS!):
+# - { "collection": "companies", "operation": "aggregate", ... }
+# - { "collection": "companies", "operation": "$count", ... }
+# - { "operation": "aggregate", ... }
+# - { "operation": "$count", ... }
+# - Wrapping the JSON in a code block (forbidden!):
+#   ```json
+#   { "isDbRelated": true, ... }
+#   ```
+# - Including 'collection', 'query', or any other field except 'operation' and a company identifier.
+#
+# STRICT OUTPUT RULES FOR PLANT COUNT:
+# - Always use "operation": "count_plants" for plant count.
+# - Only use "company_id", "company_code", or "company_name" field to specify the company.
+# - Never include "collection", "query", or any other field.
+# - Never wrap the JSON response in code blocks (no ```json or ```). Output only a single valid JSON object, nothing else.
+# - If the LLM is unsure, do not output any query.
+
+# === CRITICAL: PLANT DELETION RULES (STRICT ENFORCEMENT) ===
+#
+# 🚨🚨🚨 FOR PLANT DELETION, YOU MUST FOLLOW THESE RULES. IF YOU DO NOT, YOUR RESPONSE WILL BE REJECTED AND THE OPERATION WILL FAIL. 🚨🚨🚨
+#
+# 1. For plant deletion, ONLY use:
+#    { "operation": "delete_plant", ... }
+#    Never use 'delete_one', 'delete', 'remove', 'update', 'upsert', 'collection', or 'query'.
+# 2. If you output 'delete_one', 'delete', 'remove', 'update', 'upsert', 'collection', or 'query', IT IS A CRITICAL ERROR and will be REJECTED.
+# 3. Never use a code block (no ```json or ```). Output only a single valid JSON object, nothing else.
+# 4. If you are unsure, DO NOT output any query.
+# 5. NEVER use "collection": "plants" - this is FORBIDDEN for plant deletion.
+# 6. ONLY use the "plant_id" field to specify which plant to delete.
+#
+# CORRECT FORMAT (MANDATORY):
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "delete_plant",
+#     "plant_id": <string>
+#   }
+# }
+#
+# EXAMPLES (ALWAYS FOLLOW THIS):
+# 1. Plant deletion:
+# Input: "Delete the plant with ID 123e4567-e89b-12d3-a456-426614174000."
+# Output:
+# {
+#   "isDbRelated": true,
+#   "response": {
+#     "operation": "delete_plant",
+#     "plant_id": "123e4567-e89b-12d3-a456-426614174000"
+#   }
+# }
+#
+# 🚫 HARD NEGATIVE EXAMPLES (NEVER DO THIS!):
+# - { "collection": "plants", "operation": "delete_one", "query": {"id": "..."} }
+# - { "collection": "plants", "operation": "delete", "query": {"id": "..."} }
+# - { "operation": "delete_one", "plant_id": "..." }
+# - { "operation": "delete", "plant_id": "..." }
+# - { "operation": "remove", ... }
+# - Wrapping the JSON in a code block (forbidden!):
+#   ```json
+#   { "isDbRelated": true, ... }
+#   ```
+# - Including 'collection', 'query', or any other field except 'operation' and 'plant_id'.
+#
+# STRICT OUTPUT RULES FOR PLANT DELETION:
+# - Always use "operation": "delete_plant" for plant deletion.
+# - Only use "plant_id" field to specify the plant.
+# - Never include "collection", "query", or any other field.
+# - Never wrap the JSON response in code blocks (no ```json or ```). Output only a single valid JSON object, nothing else.
+# - If the LLM is unsure, do not output any query.
 
 
 

@@ -2,36 +2,35 @@ import React from 'react';
 import QuestionRenderer from './QuestionRenderer';
 import { useGetCompanyReportsQuery } from '../../src/store/api/apiSlice';
 
-const CategoryRenderer = ({ category, financialYear, plantId }) => {
+const CategoryRenderer = ({ category, financialYear, plantId, turnover }) => {
+
   // Only fetch if we have a plantId
   const { data: reports = [], isLoading, error } = useGetCompanyReportsQuery(
     plantId ? { plantId, financialYear } : undefined,
     { skip: !plantId }
   );
-  console.log("Reports from API:", reports);
-  
+  // turnover is now passed as a prop from Plants.jsx
+  // Remove local fetching of common fields
+  // (If you want per-plant turnover, restore the fetch logic)
+  // Accept turnover as a prop
+  console.log('[CategoryRenderer] turnover prop:', turnover);
+
   if (!financialYear) {
     console.warn('CategoryRenderer: financialYear prop is required');
   }
-
   if (!plantId) {
     console.warn('CategoryRenderer: plantId prop is required');
   }
 
   // Find the report for the current financial year
   const currentReport = reports?.find(report => report.financialYear === financialYear);
-  console.log("Current Report:", currentReport);
-  
   // Process questions with answers from the report
   const questionsWithAnswers = category.questions?.map(question => {
     const answer = currentReport?.answers?.[question.id];
-    console.log(`Processing question ${question.id}:`, { question, answer });
-    
     // If we have an answer, ensure it has the correct structure
     let processedAnswer = null;
     if (answer) {
       const type = answer.type || question.metadata?.type || 'subjective';
-      
       if (type === 'subjective') {
         processedAnswer = {
           questionId: answer.questionId || question.id,
@@ -43,21 +42,17 @@ const CategoryRenderer = ({ category, financialYear, plantId }) => {
         // For table types, transform the data into the expected format
         const tableData = {};
         const data = answer.updatedData || answer.data || [];
-        
         // Convert array of objects to object with row indices
         if (Array.isArray(data)) {
           data.forEach((row, index) => {
             if (row.row_index !== undefined) {
-              // If row_index is provided, use it
               tableData[row.row_index] = { ...row };
               delete tableData[row.row_index].row_index;
             } else {
-              // Otherwise use array index
               tableData[index] = row;
             }
           });
         }
-
         processedAnswer = {
           questionId: answer.questionId || question.id,
           questionTitle: answer.questionTitle || question.title,
@@ -66,7 +61,6 @@ const CategoryRenderer = ({ category, financialYear, plantId }) => {
         };
       }
     }
-
     return {
       ...question,
       answer: processedAnswer
@@ -90,6 +84,7 @@ const CategoryRenderer = ({ category, financialYear, plantId }) => {
           question={question}
           financialYear={financialYear}
           plantId={plantId}
+          turnover={turnover}
         />
       ))}
     </div>

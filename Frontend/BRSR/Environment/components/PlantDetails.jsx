@@ -5,11 +5,25 @@ import SubHeader from './SubHeader';
 import Layout from '../../src/components/layout/Layout';
 import QuestionCategory from './QuestionCategory';
 import moduleData from '../data/moduleData.json';
+import { useGetCommonFieldsQuery } from '../../src/store/api/apiSlice';
 
 const PlantDetails = () => {
     const { plantId } = useParams();
-    
     const [activeSubmodule, setActiveSubmodule] = useState('Energy Management');
+
+    // Fetch company-level common fields (no plant_id)
+    const currentFY = localStorage.getItem('financial_year');
+    const { data: commonFields } = useGetCommonFieldsQuery(
+        { plant_id: '', financial_year: currentFY },
+        { skip: !currentFY }
+    );
+    let turnover = undefined;
+    if (Array.isArray(commonFields) && commonFields.length > 0) {
+        turnover = commonFields[0]?.financials?.turnover;
+    } else if (commonFields && typeof commonFields === 'object') {
+        turnover = commonFields.financials?.turnover;
+    }
+    console.log('[PlantDetails] extracted turnover:', turnover);
 
     // Get current submodule
     const currentSubmodule = moduleData.submodules.find(
@@ -44,6 +58,9 @@ const PlantDetails = () => {
                                     <QuestionCategory 
                                         key={category.id}
                                         category={category}
+                                        financialYear={currentFY}
+                                        plantId={plantId}
+                                        turnover={turnover}
                                     />
                                 ))}
                             </div>
@@ -56,4 +73,4 @@ const PlantDetails = () => {
     );
 };
 
-export default PlantDetails; 
+export default PlantDetails;

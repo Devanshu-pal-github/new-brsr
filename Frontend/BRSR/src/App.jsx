@@ -3,6 +3,20 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { Provider, useSelector } from 'react-redux';
 import { store } from './store/store';
 import { useEffect } from 'react';
+import { useGetCommonFieldsQuery } from './store/api/apiSlice';
+
+// Wrapper component for EnvironmentContent that fetches turnover
+const EnvironmentContentWrapper = () => {
+  const currentFY = localStorage.getItem('financial_year');
+  const { data: commonFields } = useGetCommonFieldsQuery(
+    { plant_id: '', financial_year: currentFY },
+    { skip: !currentFY }
+  );
+  const turnover = commonFields?.financials?.turnover;
+  console.log('[EnvironmentContentWrapper] fetched turnover:', turnover);
+
+  return <EnvironmentContent turnover={turnover} />;
+};
 
 // Pages
 import Login from './pages/Login';
@@ -106,7 +120,7 @@ function App() {
             path="/environment/:plantId" 
             element={
               <ProtectedRoute>
-                <EnvironmentContent />
+                <EnvironmentContentWrapper />
               </ProtectedRoute>
             } 
           />

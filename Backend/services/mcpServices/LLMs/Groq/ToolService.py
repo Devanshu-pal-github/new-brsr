@@ -1,3 +1,4 @@
+
 from services.mcpServices.LLMs.Groq.LoggerService import get_logger
 
 logger = get_logger("MCP.ToolService")
@@ -6,6 +7,147 @@ def print_debug_query(query, user_prompt, projection=None, collection=None, oper
     logger.info(f"Executing MongoDB query: {query} | Projection: {projection} | Collection: {collection} | Operation: {operation} | User prompt: {user_prompt}")
 
 class ToolService:
+
+    def _handle_get_total_emissions(self, query_obj, user_prompt=""):
+        """Handle total CO2 emissions queries by company/plant name or ID, year, and scope."""
+        try:
+            import re
+            db = self.db
+            if db is None:
+                return {"error": "Database connection not initialized."}
+            # Accept company_name, company_id, plant_name, plant_id, financial_year, scope
+            company_id = query_obj.get("company_id")
+            company_name = query_obj.get("company_name")
+            plant_id = query_obj.get("plant_id")
+            plant_name = query_obj.get("plant_name")
+            financial_year = query_obj.get("financial_year")
+            scope = query_obj.get("scope")  # Can be "Scope 1", "Scope 2", or None (for both)
+
+            def normalize_name(name):
+                # Remove periods, spaces, and lowercase
+                return re.sub(r'[^a-z0-9]', '', name.lower()) if name else ''
+
+            # Resolve company_name to company_id if needed
+            if not company_id and company_name:
+                companies = list(db["companies"].find({}))
+                norm_input = normalize_name(company_name)
+                matched = None
+                for c in companies:
+                    db_name = c.get("name", "")
+                    if normalize_name(db_name) == norm_input:
+                        matched = c
+                        break
+                if not matched:
+                    return {"error": f"Company '{company_name}' not found"}
+                # Use the normal 'id' field (not _id) for company_id matching in ghg_reports
+                company_id = matched.get("id") or str(matched.get("_id"))
+
+            # Resolve plant_name to plant_id if needed
+            if not plant_id and plant_name:
+                plant_doc = db["plants"].find_one({"plant_name": {"$regex": f"^{plant_name}$", "$options": "i"}})
+                if not plant_doc:
+                    return {"error": f"Plant '{plant_name}' not found"}
+                plant_id = plant_doc["id"]
+                # If company_id not set, get from plant
+                if not company_id:
+                    company_id = plant_doc.get("company_id")
+
+
+            # If only company_id is given, get all plant_ids for that company
+            plant_ids = []
+            if company_id and not plant_id:
+                # Find company by 'id' field (not _id)
+                company_doc = db["companies"].find_one({"id": company_id})
+                if not company_doc:
+                    return {"error": f"Company with id '{company_id}' not found"}
+                plant_ids = company_doc.get("plant_ids", [])
+            elif plant_id:
+                plant_ids = [plant_id]
+            else:
+                return {"error": "No company or plant specified for emissions query"}
+
+            # Build query for ghg_reports (must include company_id for robust matching)
+            ghg_query = {"company_id": company_id}
+            if plant_ids:
+                ghg_query["plant_id"] = {"$in": plant_ids}
+            if financial_year:
+                ghg_query["financial_year"] = financial_year
+            if scope:
+                if isinstance(scope, str):
+                    # For a single scope, match exactly
+                    ghg_query["scope"] = {"$eq": scope}
+                elif isinstance(scope, list):
+                    # For multiple scopes, use $in
+                    ghg_query["scope"] = {"$in": scope}
+
+            ghg_reports = list(db["ghg_reports"].find(ghg_query))
+            if not ghg_reports:
+                return {"error": "No GHG reports found for the specified criteria"}
+
+            # Sum total_scope_emissions_co2e by scope
+            total = 0.0
+            scope_totals = {}
+            for report in ghg_reports:
+                s = report.get("scope", "Unknown")
+                val = report.get("total_scope_emissions_co2e", 0.0)
+                try:
+                    val = float(val)
+                except Exception:
+                    val = 0.0
+                total += val
+                scope_totals[s] = scope_totals.get(s, 0.0) + val
+
+            result = {
+                "company_id": company_id,
+                "plant_ids": plant_ids,
+                "financial_year": financial_year,
+                "scope": scope,
+                "total_emissions_co2e": total,
+                "scope_breakdown": scope_totals,
+            }
+            return result
+        except Exception as e:
+            logger.error(f"Error in get_total_emissions: {str(e)}")
+            return {"error": f"Failed to get total emissions: {str(e)}"}
+    def _handle_count_plants(self, query_obj, user_prompt=""):
+        """Handle count_plants operation: returns the number of plants for a company."""
+        try:
+            # Accept company_id, company_code, or company_name
+            company_id = query_obj.get("company_id")
+            company_code = query_obj.get("company_code")
+            company_name = query_obj.get("company_name")
+            company_query = {}
+            if company_id:
+                company_query["_id"] = company_id
+            elif company_code:
+                company_query["code"] = company_code
+            elif company_name:
+                company_query["name"] = company_name
+            else:
+                return {"error": "No company identifier provided for count_plants operation"}
+            collection = self.db["companies"]
+            company_doc = collection.find_one(company_query)
+            if not company_doc:
+                return {"error": "Company not found"}
+            plant_ids = company_doc.get("plant_ids", [])
+            return {"plant_count": len(plant_ids), "plant_ids": plant_ids, "company_id": str(company_doc.get("_id")), "company_name": company_doc.get("name")}
+        except Exception as e:
+            logger.error(f"Error counting plants: {str(e)}")
+            return {"error": f"Failed to count plants: {str(e)}"}
+    def _handle_delete_plant(self, query_obj, user_prompt=""):
+        """Handle delete_plant operation specifically"""
+        try:
+            plant_id = query_obj.get("plant_id")
+            if not plant_id:
+                logger.error("No plant_id provided for delete_plant operation")
+                return {"error": "No plant_id provided for delete_plant operation"}
+            collection = self.db["plants"]
+            result = collection.delete_one({"id": plant_id})
+            logger.info(f"Delete plant result: deleted={result.deleted_count}")
+            return {"deleted": result.deleted_count, "plant_id": plant_id}
+        except Exception as e:
+            logger.error(f"Error deleting plant: {str(e)}")
+            return {"error": f"Failed to delete plant: {str(e)}"}
     def __init__(self, db=None):
         from services.mcpServices.LLMs.Groq.DatabaseService import DatabaseService
         if db is not None:
@@ -19,10 +161,22 @@ class ToolService:
             # Handle create_employee operation specially
             if isinstance(query_obj, dict) and query_obj.get("operation") == "create_employee":
                 return self._handle_create_employee(query_obj, user_prompt)
-            
+
             # Handle create_plant operation specially
             if isinstance(query_obj, dict) and query_obj.get("operation") == "create_plant":
                 return self._handle_create_plant(query_obj, user_prompt)
+
+            # Handle delete_plant operation specially
+            if isinstance(query_obj, dict) and query_obj.get("operation") == "delete_plant":
+                return self._handle_delete_plant(query_obj, user_prompt)
+
+            # Handle count_plants operation specially
+            if isinstance(query_obj, dict) and query_obj.get("operation") == "count_plants":
+                return self._handle_count_plants(query_obj, user_prompt)
+
+            # Handle get_total_emissions operation
+            if isinstance(query_obj, dict) and query_obj.get("operation") == "get_total_emissions":
+                return self._handle_get_total_emissions(query_obj, user_prompt)
             
             # Handle the case where LLM uses "create" operation on "users" collection (employee creation)
             if (isinstance(query_obj, dict) and 

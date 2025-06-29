@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../store/slices/authSlice';
 import { Building, MapPin, Users, Calendar } from 'lucide-react';
-import { useGetCompanyPlantsQuery } from '../store/api/apiSlice';
+import { useGetCompanyPlantsQuery, useGetCommonFieldsQuery } from '../store/api/apiSlice';
 import EnvironmentContent from '../../Environment/components/EnvironmentContent';
 
 const PlantsPage = ({ moduleId }) => {
@@ -19,6 +19,15 @@ const PlantsPage = ({ moduleId }) => {
     } = useGetCompanyPlantsQuery(user?.company_id, {
         skip: !user?.company_id
     });
+
+    // Fetch turnover for energy intensity calculations
+    const currentFY = localStorage.getItem('financial_year');
+    const { data: commonFields } = useGetCommonFieldsQuery(
+        { plant_id: '', financial_year: currentFY },
+        { skip: !currentFY }
+    );
+    const turnover = commonFields?.financials?.turnover;
+    console.log('[PlantsPage] fetched turnover:', turnover);
 
     console.log("plants", plants); 
 
@@ -57,7 +66,7 @@ const PlantsPage = ({ moduleId }) => {
                                 </div>
 
                                 {moduleId === 'environment' ? (
-                                    <EnvironmentContent />
+                                    <EnvironmentContent turnover={turnover} />
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {plants.map((plant) => (

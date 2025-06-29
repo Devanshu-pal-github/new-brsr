@@ -13,12 +13,15 @@ const EnvironmentContent = ({
   plantId: propPlantId,
   environmentReports: propReports,
   renderBare = false,
+  turnover: propTurnover,
 }) => {
   const location = useLocation();
   const { plantId: statePlantId, environmentReports: stateReports } =
     location.state || {};
   const plantId = propPlantId || statePlantId;
   const environmentReports = propReports || stateReports;
+  const turnover = propTurnover;
+  console.log("[EnvironmentContent] turnover prop:", turnover);
   const [searchParams] = useSearchParams();
   const financialYear = searchParams.get("financialYear") || "2024-2025"; // Default value
   const [activeSubmodule, setActiveSubmodule] = useState(null);
@@ -67,6 +70,7 @@ const EnvironmentContent = ({
                     financialYear={financialYear}
                     plantId={plantId}
                     environmentReports={environmentReports}
+                    turnover={turnover}
                     onAnswerUpdate={(questionId, answer) => {
                       setAnswers((prev) => ({
                         ...prev,

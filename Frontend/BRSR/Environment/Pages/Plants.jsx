@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { useSelector } from 'react-redux';
 import {
   useGetCompanyPlantsQuery,
   useGetCompanyReportsQuery,
+  useGetCommonFieldsQuery,
 } from '../../src/store/api/apiSlice';
 import Layout from '../../src/components/layout/Layout';
 import Breadcrumb from '../components/Breadcrumb';
@@ -26,6 +28,11 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
   const [activeTab, setActiveTab] = useState('Main Facilities');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
+  const [searchParams] = useSearchParams();
+  const currentFY = searchParams.get('financialYear') || '';
+
+  // State to hold common fields globally in this component (or lift to context if needed)
+  const [commonFields, setCommonFields] = useState(null);
 
   const {
     data: plants = [],
@@ -35,10 +42,38 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
     skip: !user?.company_id,
   });
 
+  // Fetch common fields for the company and current financial year (plant_id is optional/null)
+  const {
+    data: fetchedCommonFields,
+    isLoading: commonFieldsLoading,
+    error: commonFieldsError,
+  } = useGetCommonFieldsQuery(
+    { plant_id: '', financial_year: currentFY },
+    { skip: !user?.company_id || !currentFY }
+  );
+
+  // Save to state when fetched (even if empty array)
+  useEffect(() => {
+    setCommonFields(fetchedCommonFields);
+    console.log('[Plants.jsx] fetchedCommonFields:', fetchedCommonFields);
+  }, [fetchedCommonFields]);
+
+  // Extract turnover from commonFields (company-wide)
+  let turnover = undefined;
+  if (Array.isArray(commonFields) && commonFields.length > 0) {
+    turnover = commonFields[0]?.financials?.turnover;
+  } else if (commonFields && typeof commonFields === 'object') {
+    turnover = commonFields.financials?.turnover;
+  }
+  console.log('[Plants.jsx] extracted turnover:', turnover);
+
   // Skip fetching reports until we have a company ID
   const { data: environmentReports = [] } = useGetCompanyReportsQuery(undefined, {
     skip: true // We'll fetch reports when a specific plant is selected
   });
+
+  // You can now use `commonFields` anywhere in this component or pass it to context/provider
+  // Example: const turnover = commonFields?.[0]?.financials?.turnover;
 
   /* ────────────────────────────── HELPERS ─────────────────────────────── */
   const tabs = ['Main Facilities', 'Other Plants'];
@@ -55,7 +90,7 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
       onPlantSelect(plantId, environmentReports, plants.find((p) => p.id === plantId));
       return;
     }
-    navigate(`/environment/${plantId}`, {
+    navigate(`/environment/${plantId}?financialYear=${currentFY}`, {
       state: {
         plantId,
         environmentReports,

@@ -55,6 +55,17 @@ async def chat_endpoint(
                 db_result = tool_service.db_call(result, user_prompt=request.message)
                 logger.info("Database query result: %s", db_result)
                 db_result = convert_objectid(db_result)
+                # --- Friendly message for plant count queries ---
+                if (
+                    isinstance(db_result, dict)
+                    and "plant_count" in db_result
+                    and "company_name" in db_result
+                    and db_result.get("plant_count") is not None
+                ):
+                    company = db_result.get("company_name", "The company")
+                    count = db_result.get("plant_count", 0)
+                    reply = f"{company} has {count} plant{'s' if count != 1 else ''}."
+                    return JSONResponse({"reply": reply, "plant_ids": db_result.get("plant_ids", [])})
                 return JSONResponse({"reply": db_result})
             except Exception as e:
                 logger.error("Error executing database query: %s", e)

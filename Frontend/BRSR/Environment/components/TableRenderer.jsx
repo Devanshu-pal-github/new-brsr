@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useCurrentFinancialYear } from '../../src/components/layout/FinancialYearDropdown';
 
-const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
+const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) => {
   const [localData, setLocalData] = useState(data || {});
+  useEffect(() => {
+    console.log('[TableRenderer] data prop:', data);
+    console.log('[TableRenderer] localData state:', localData);
+    console.log('[TableRenderer] turnover prop:', turnover);
+  }, [data, localData, turnover]);
   const currentFY = useCurrentFinancialYear();
   // Calculate previous FY (assume format '2024-25' or '2024')
   let prevFY = '';
@@ -16,28 +21,68 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
     }
   }
 
-  // Update local data when the prop changes
+
+  // Auto-calculate total energy consumption and energy intensity per rupee of turnover
   useEffect(() => {
-    if (data) {
-      setLocalData(data);
+    if (!metadata?.rows) return;
+    // Find indices for relevant rows
+    const totalEnergyIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumption (A+B+C)'));
+    const energyIntensityIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Energy intensity per rupee of turnover'));
+    if (totalEnergyIdx === -1 || energyIntensityIdx === -1) {
+      setLocalData(data || {});
+      return;
     }
-  }, [data]);
+    // Deep copy
+    const updated = JSON.parse(JSON.stringify(data || {}));
+    ['current_year', 'previous_year'].forEach(yearKey => {
+      // Remove commas and parse as float
+      const a = parseFloat((updated[0]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+      const b = parseFloat((updated[1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+      const c = parseFloat((updated[2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+      const total = a + b + c;
+      if (!updated[totalEnergyIdx]) updated[totalEnergyIdx] = {};
+      updated[totalEnergyIdx][yearKey] = total !== 0 ? total : '';
+      if (!updated[energyIntensityIdx]) updated[energyIntensityIdx] = {};
+      if (turnover && total) {
+        updated[energyIntensityIdx][yearKey] = (total / turnover).toFixed(4);
+      } else {
+        updated[energyIntensityIdx][yearKey] = '';
+      }
+    });
+    setLocalData(updated);
+  }, [data, metadata, turnover]);
 
   const handleCellChange = (rowIndex, columnKey, value) => {
     // Create a deep copy of the data
     const updatedData = JSON.parse(JSON.stringify(localData));
-    
     // Ensure the row exists
     if (!updatedData[rowIndex]) {
       updatedData[rowIndex] = {};
     }
-    
     // Update the cell value
     updatedData[rowIndex][columnKey] = value;
-    
+    // If editing A/B/C, recalculate total and intensity
+    const totalEnergyIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumption (A+B+C)'));
+    const energyIntensityIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Energy intensity per rupee of turnover'));
+    if ([0,1,2].includes(rowIndex) && totalEnergyIdx !== -1 && energyIntensityIdx !== -1) {
+      ['current_year', 'previous_year'].forEach(yearKey => {
+        // Remove commas and parse as float
+        const a = parseFloat((rowIndex === 0 && columnKey === yearKey ? value : updatedData[0]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const b = parseFloat((rowIndex === 1 && columnKey === yearKey ? value : updatedData[1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const c = parseFloat((rowIndex === 2 && columnKey === yearKey ? value : updatedData[2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const total = a + b + c;
+        if (!updatedData[totalEnergyIdx]) updatedData[totalEnergyIdx] = {};
+        updatedData[totalEnergyIdx][yearKey] = total !== 0 ? total : '';
+        if (!updatedData[energyIntensityIdx]) updatedData[energyIntensityIdx] = {};
+        if (turnover && total) {
+          updatedData[energyIntensityIdx][yearKey] = (total / turnover).toFixed(4);
+        } else {
+          updatedData[energyIntensityIdx][yearKey] = '';
+        }
+      });
+    }
     // Update local state
     setLocalData(updatedData);
-    
     // Call the parent onSave if provided
     if (onSave) {
       onSave(updatedData);
@@ -329,6 +374,57 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
                   </tr>
                 );
               }
+              // Make water intensity per rupee of turnover row read-only and auto-calculated
+              if (
+                isWithdrawalTable &&
+                row.parameter &&
+                row.parameter.toLowerCase().includes('water intensity per rupee of turnover')
+              ) {
+                // Find the index for total volume of water consumption row
+                const totalConsumptionIdx = metadata.rows.findIndex(r => r.parameter && r.parameter.toLowerCase().includes('total volume of water consumption'));
+                return (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {columnsWithUnits.map((column, colIdx) => {
+                      const columnKey = column.key || `col${colIdx}`;
+                      if (columnKey === 'parameter') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                            dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                          />
+                        );
+                      }
+                      if (columnKey === 'unit') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic bg-gray-100"
+                          >
+                            {row.unit || ''}
+                          </td>
+                        );
+                      }
+                      let intensity = '';
+                      if (totalConsumptionIdx !== -1 && turnover) {
+                        const totalVal = localData[totalConsumptionIdx]?.[columnKey];
+                        const totalNum = parseFloat((totalVal || '').toString().replace(/,/g, ''));
+                        if (!isNaN(totalNum) && totalNum && turnover) {
+                          intensity = (totalNum / turnover).toFixed(4);
+                        }
+                      }
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm bg-gray-100"
+                        >
+                          <div>{intensity}</div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              }
               // All other rows (editable)
               return (
                 <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
@@ -478,51 +574,120 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
                 </tr>
               );
             }
-            return (
-              <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {columnsWithUnits.map((column, colIdx) => {
-                  const columnKey = column.key || `col${colIdx}`;
-                  if (columnKey === 'parameter') {
+            // Make energy intensity and water intensity rows read-only, always show calculated value
+            if (
+              (row.parameter && row.parameter.includes('Energy intensity per rupee of turnover')) ||
+              (row.parameter && row.parameter.toLowerCase().includes('water intensity per rupee of turnover'))
+            ) {
+              // For energy intensity
+              const totalEnergyIdx = metadata.rows.findIndex(r => r.parameter && r.parameter.includes('Total energy consumption (A+B+C)'));
+              // For water intensity
+              const totalConsumptionIdx = metadata.rows.findIndex(r => r.parameter && r.parameter.toLowerCase().includes('total volume of water consumption'));
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                          dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                        />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic bg-gray-100"
+                        >
+                          {row.unit || ''}
+                        </td>
+                      );
+                    }
+                    let intensity = '';
+                    // Energy intensity
+                    if (row.parameter && row.parameter.includes('Energy intensity per rupee of turnover')) {
+                      if (totalEnergyIdx !== -1 && turnover) {
+                        const totalVal = localData[totalEnergyIdx]?.[columnKey];
+                        const totalNum = parseFloat((totalVal || '').toString().replace(/,/g, ''));
+                        if (!isNaN(totalNum) && totalNum && turnover) {
+                          intensity = (totalNum / turnover).toFixed(4);
+                        }
+                      }
+                    }
+                    // Water intensity
+                    if (row.parameter && row.parameter.toLowerCase().includes('water intensity per rupee of turnover')) {
+                      if (totalConsumptionIdx !== -1 && turnover) {
+                        const totalVal = localData[totalConsumptionIdx]?.[columnKey];
+                        const totalNum = parseFloat((totalVal || '').toString().replace(/,/g, ''));
+                        if (!isNaN(totalNum) && totalNum && turnover) {
+                          intensity = (totalNum / turnover).toFixed(4);
+                        }
+                      }
+                    }
+                    // Always render as read-only, never editable
+                    return (
+                      <td 
+                        key={colIdx} 
+                        className="border border-gray-300 px-4 py-2 text-sm bg-gray-100"
+                        style={{ pointerEvents: 'none', backgroundColor: '#f3f4f6' }}
+                      >
+                        <div>{intensity}</div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            } else {
+              // ...existing code for normal rows...
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm"
+                          dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                        />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
+                        >
+                          {row.unit || ''}
+                        </td>
+                      );
+                    }
+                    const cellValue = localData[rowIdx]?.[columnKey] || '';
                     return (
                       <td 
                         key={colIdx} 
                         className="border border-gray-300 px-4 py-2 text-sm"
-                        dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
-                      />
-                    );
-                  }
-                  if (columnKey === 'unit') {
-                    return (
-                      <td 
-                        key={colIdx} 
-                        className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
                       >
-                        {row.unit || ''}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                            value={cellValue}
+                            onChange={(e) => handleCellChange(rowIdx, columnKey, e.target.value)}
+                            placeholder="Enter value"
+                          />
+                        ) : (
+                          <div>{cellValue}</div>
+                        )}
                       </td>
                     );
-                  }
-                  const cellValue = localData[rowIdx]?.[columnKey] || '';
-                  return (
-                    <td 
-                      key={colIdx} 
-                      className="border border-gray-300 px-4 py-2 text-sm"
-                    >
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
-                          value={cellValue}
-                          onChange={(e) => handleCellChange(rowIdx, columnKey, e.target.value)}
-                          placeholder="Enter value"
-                        />
-                      ) : (
-                        <div>{cellValue}</div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
+                  })}
+                </tr>
+              );
+            }
           })}
         </tbody>
       </table>

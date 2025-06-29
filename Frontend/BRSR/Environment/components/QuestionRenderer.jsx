@@ -178,8 +178,9 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
   );
 };
 
-const QuestionRenderer = ({ question, financialYear, plantId }) => {
-  console.log('Rendering Question:', question);
+const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
+  console.log('[QuestionRenderer] Rendering Question:', question);
+  console.log('[QuestionRenderer] turnover prop:', turnover);
   const { title, description, metadata, isAuditRequired } = question;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [questionData, setQuestionData] = useState(() => {
@@ -398,14 +399,26 @@ const QuestionRenderer = ({ question, financialYear, plantId }) => {
             isReadOnly={!isEditModalOpen}
           />
         );
-      case 'table':
+      case 'table': {
+        // Patch: If data is an array, convert to object for TableRenderer
+        let tableData = questionData?.data || {};
+        if (Array.isArray(tableData)) {
+          // Convert array to object with row indices as keys
+          const objData = {};
+          tableData.forEach((row, idx) => {
+            objData[idx] = row;
+          });
+          tableData = objData;
+        }
         return (
           <TableRenderer
             metadata={metadata}
-            data={questionData?.data || {}}
+            data={tableData}
             isEditing={false}
+            turnover={turnover}
           />
         );
+      }
       case 'multi-table':
         return (
           <MultiTableRenderer

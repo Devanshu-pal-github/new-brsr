@@ -7,7 +7,7 @@ import {
   selectCompanyDetails,
 } from "../store/slices/authSlice";
 import Navbar from "../components/layout/ReportNavbar";
-import { useGetReportModulesQuery } from "../store/api/apiSlice";
+import { useGetReportModulesQuery, useGetCommonFieldsQuery } from "../store/api/apiSlice";
 import { Loader2,Factory } from "lucide-react";
 import DynamicPageRenderer from "../dynamic-pages";
 import Plants from "../../../BRSR/Environment/Pages/Plants";
@@ -73,6 +73,36 @@ const ModuleView = () => {
       refetchOnMountOrArgChange: true,
     }
   );
+
+  // Fetch turnover for energy intensity calculations
+  const financialYearFromUrl = searchParams.get('financialYear');
+  const financialYearFromStorage = localStorage.getItem('financial_year');
+  const selectedReport = JSON.parse(localStorage.getItem('selectedReport') || '{}');
+  const financialYearFromReport = selectedReport.financial_year || selectedReport.year || selectedReport.financialYear;
+  
+  const currentFY = financialYearFromUrl || financialYearFromStorage || financialYearFromReport;
+  
+  console.log('[ModuleView] Financial year sources:', {
+    fromUrl: financialYearFromUrl,
+    fromStorage: financialYearFromStorage,
+    fromReport: financialYearFromReport,
+    selected: currentFY
+  });
+  
+  const { data: commonFields } = useGetCommonFieldsQuery(
+    { plant_id: '', financial_year: currentFY },
+    { skip: !currentFY || !user?.company_id }
+  );
+  
+  // Extract turnover using the same logic as Plants.jsx
+  let turnover = undefined;
+  if (Array.isArray(commonFields) && commonFields.length > 0) {
+    turnover = commonFields[0]?.financials?.turnover;
+  } else if (commonFields && typeof commonFields === 'object') {
+    turnover = commonFields.financials?.turnover;
+  }
+  
+  console.log('[ModuleView] currentFY:', currentFY, 'commonFields:', commonFields, 'extracted turnover:', turnover);
 
   // Filter modules based on user role
   const [filteredModules, setFilteredModules] = useState([]);
@@ -287,6 +317,7 @@ const ModuleView = () => {
                     renderBare
                     plantId={selectedPlantData.plantId}
                     environmentReports={selectedPlantData.environmentReports}
+                    turnover={turnover}
                   />
                 </div>
               ) : (

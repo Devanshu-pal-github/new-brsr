@@ -804,6 +804,24 @@ export const apiSlice = createApi({
       providesTags: ['AuditLog']
     }),
     // --- AUDIT STATUS FETCH API ---
+    getCommonFields: builder.query({
+      query: ({ plant_id, financial_year }) => {
+        console.log('[apiSlice] getCommonFields query params:', { plant_id, financial_year });
+        const params = [];
+        if (plant_id) params.push(`plant_id=${encodeURIComponent(plant_id)}`);
+        if (financial_year) params.push(`financial_year=${encodeURIComponent(financial_year)}`);
+        const queryString = params.length ? `?${params.join('&')}` : '';
+        return {
+      url: `/commonFields${queryString}`,
+          method: 'GET',
+        };
+      },
+      transformResponse: (response) => {
+        console.log('[apiSlice] getCommonFields response:', response);
+        return Array.isArray(response) ? response : [];
+      },
+      providesTags: ['CommonFields'],
+    }),
     getAuditStatus: builder.query({
       query: ({ financialYear, questionId, plantId }) => ({
         url: `/environment/reports/${financialYear}/audit-status/${questionId}`,
@@ -818,6 +836,7 @@ export const apiSlice = createApi({
         { type: 'AuditStatus', id: `${arg.questionId}-${arg.plantId}-${arg.financialYear}` }
       ]
     }),
+    
     getGHGReport: builder.query({
       query: ({ financial_year, plant_id, scope }) => {
         // Ensure financial_year is always a valid string
@@ -980,5 +999,6 @@ export const {
   useGetReceivedNotificationsQuery,
   useMarkNotificationAsReadMutation,
   useMcpChatMutation,
+  useGetCommonFieldsQuery,
 } = apiSlice;
 export default apiSlice;

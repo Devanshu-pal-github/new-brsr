@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import CategoryRenderer from './CategoryRenderer';
 
-const QuestionCategory = ({ category, financialYear, plantId }) => {
+const QuestionCategory = ({ category, financialYear, plantId, turnover }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     if (!financialYear) {
@@ -34,6 +34,7 @@ const QuestionCategory = ({ category, financialYear, plantId }) => {
                         category={category} 
                         financialYear={financialYear}
                         plantId={plantId}
+                        turnover={turnover}
                     />
                 </div>
             )}
