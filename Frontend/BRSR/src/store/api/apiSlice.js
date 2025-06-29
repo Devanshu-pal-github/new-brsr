@@ -1,3 +1,4 @@
+
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { loginPending, loginFulfilled, loginRejected, logout, tokenExpired } from '../slices/authSlice';
 import { store } from '../store'; // Import the store
@@ -940,6 +941,27 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Notifications'],
     }),
+
+        // --- RAG DOCUMENT QA ---
+    uploadRagDocument: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return {
+          url: '/rag/upload/',
+          method: 'POST',
+          body: formData,
+        };
+      },
+    }),
+    ragChat: builder.mutation({
+      query: ({ file_id, question }) => ({
+        url: '/rag/chat/',
+        method: 'POST',
+        body: { file_id, question },
+      }),
+    }),
+    
     mcpChat: builder.mutation({
       query: ({ sessionId, message }) => ({
         url: '/api/chat',
@@ -1000,5 +1022,7 @@ export const {
   useMarkNotificationAsReadMutation,
   useMcpChatMutation,
   useGetCommonFieldsQuery,
+  useUploadRagDocumentMutation,
+  useRagChatMutation,
 } = apiSlice;
 export default apiSlice;

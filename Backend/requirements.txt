@@ -13,3 +13,8 @@ google-ai-generativelanguage==0.6.15
 google-auth==2.38.0
 google-api-python-client==2.166.0
 fastapi-utils==0.2.1
+langchain==0.2.1
+faiss-cpu==1.8.0
+sentence-transformers==2.7.0
+pypdf==4.2.0
+google-generativeai==0.5.4

@@ -1,8 +1,11 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import GHGMainPage from '../../GHG Emission/Pages/GHGMainPage';
+import RagDocumentQA from './RagDocumentQA';
 
 const QuickActions = ({ plantId, financialYear }) => {
     const [open, setOpen] = useState(false);
+    const [ragOpen, setRagOpen] = useState(false);
     const [totalCO2e, setTotalCO2e] = useState(null);
     const popupRef = useRef(null);
 
@@ -31,11 +34,14 @@ const QuickActions = ({ plantId, financialYear }) => {
                 View GHG Emissions
             </button>
             <button
-                className="bg-gray-300 text-gray-600 px-3 py-2 rounded text-xs font-medium cursor-not-allowed mt-1"
-                disabled
+                className="bg-[#4F46E5] text-white px-3 py-2 rounded text-xs font-medium hover:bg-[#2c3e50] transition mt-1"
+                onClick={() => setRagOpen(true)}
             >
-                Coming Soon...
+                Upload Document
             </button>
+            {ragOpen && (
+                <RagDocumentQA open={ragOpen} onClose={() => setRagOpen(false)} />
+            )}
             {open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div ref={popupRef} className="bg-white rounded-lg shadow-xl p-0 w-[99vw] max-w-[1200px] md:max-w-[90vw] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px] relative animate-fade-in overflow-hidden">

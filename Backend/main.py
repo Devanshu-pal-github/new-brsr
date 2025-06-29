@@ -18,6 +18,7 @@ from services.mcpServices.LLMs.Groq.ToolService import get_tool_service, ToolSer
 from services.mcpServices.LLMs.Groq.GroqSerivce import get_groq_service, GroqService
 from services.mcpServices.LLMs.Groq.LoggerService import get_logger
 from services.mcpServices.LLMs.Groq.DatabaseService import get_database_service, DatabaseService
+
 # Import routers directly
 from routes.report import router as report_router
 from routes.module import router as module_router
@@ -35,6 +36,8 @@ from routes.common_fields import router as common_fields_router
 from routes.notification import router as notification_router
 from routes.mcp_router import router as mcp_router
 from routes.dynamic_audit import router as dynamic_audit_router
+# Import RAG router
+from rag.router import router as rag_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -301,6 +304,7 @@ async def root():
         "version": "1.0.0"
     }
 
+
 # Include routers
 app.include_router(module_router, prefix="/modules")
 app.include_router(company_router)
@@ -319,6 +323,8 @@ app.include_router(notification_router)
 # Include MCP router
 app.include_router(mcp_router)
 app.include_router(dynamic_audit_router)
+# Include RAG router
+app.include_router(rag_router)
 
 # Request and response models for NL to Table feature
 class NLToTableRequest(BaseModel):
