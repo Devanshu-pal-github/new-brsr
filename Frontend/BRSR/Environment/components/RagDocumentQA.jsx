@@ -2,16 +2,30 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useUploadRagDocumentMutation, useRagChatMutation } from '../../src/store/api/apiSlice';
 
-const RagDocumentQA = ({ open, onClose }) => {
+// Remove `question` from props to avoid duplicate identifier
+const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMetadata, onAnswerSuggested, onTableValues }) => {
     const [file, setFile] = useState(null);
     const [fileId, setFileId] = useState('');
-    const [question, setQuestion] = useState('');
+    const [question, setQuestion] = useState(questionText);
     const [answer, setAnswer] = useState('');
     const [uploadRagDocument, { isLoading: isUploading }] = useUploadRagDocumentMutation();
     const [ragChat, { isLoading: isChatting }] = useRagChatMutation();
     const [error, setError] = useState('');
 
     const fileInputRef = React.useRef();
+    // Support both `isOpen` and `open` prop for backward compatibility
+    const visible = typeof isOpen !== 'undefined' ? isOpen : open;
+    React.useEffect(() => {
+        // Reset state when modal opens
+        if (visible) {
+            setFile(null);
+            setFileId('');
+            setAnswer('');
+            setError('');
+            setQuestion(questionText);
+        }
+    }, [visible, questionText]);
+
     const handleFileChange = async (e) => {
         const selectedFile = e.target.files[0];
         setFile(selectedFile);
@@ -47,11 +61,18 @@ const RagDocumentQA = ({ open, onClose }) => {
         }
     };
 
-    if (!open) return null;
+    const handleUseAnswer = () => {
+        if (onAnswerSuggested && answer) {
+            onAnswerSuggested(answer);
+            if (onClose) onClose();
+        }
+    };
+
+    if (!visible) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div
-                className="bg-white rounded-xl shadow-2xl p-6 w-[90vw] max-w-xl min-w-[320px] max-h-[90vh] flex flex-col relative border-2 border-[#1A2341]"
+                className="bg-white rounded-xl shadow-2xl p-6 w-[90vw] max-w-xl min-w-[320px] max-h-[90vh] flex flex-col relative border-1 border-[#1A2341]"
                 style={{ boxSizing: 'border-box' }}
             >
                 <button className="absolute top-2 right-2 text-gray-400 hover:text-[#1A2341] text-2xl font-bold" onClick={onClose}>×</button>
@@ -99,8 +120,16 @@ const RagDocumentQA = ({ open, onClose }) => {
                                 className="mt-3 p-3 bg-[#F5F6FA] border border-[#E0E7FF] rounded text-sm text-[#1A2341] max-h-48 overflow-y-auto whitespace-pre-line"
                                 style={{ minHeight: '96px', maxHeight: '192px' }}
                             >
-                                <strong className="block mb-1">Answer:</strong>
+                                <strong className="block mb-1">Suggested Answer:</strong>
                                 <ReactMarkdown>{answer}</ReactMarkdown>
+                                {onAnswerSuggested && (
+                                    <button
+                                        className="mt-2 bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition"
+                                        onClick={handleUseAnswer}
+                                    >
+                                        Use this answer
+                                    </button>
+                                )}
                             </div>
                         )}
                     </>

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import RagDocumentQA from './RagDocumentQA';
 
 const SubjectiveQuestionRenderer = ({ 
     question,
@@ -10,6 +11,7 @@ const SubjectiveQuestionRenderer = ({
     
     // Get the answer text from the structured answer object
     const answerText = answer?.data?.text || '';
+    const [showRagModal, setShowRagModal] = useState(false);
     console.log('Extracted answer text:', answerText);
 
     const handleChange = (e) => {
@@ -46,6 +48,15 @@ const SubjectiveQuestionRenderer = ({
                         </svg>
                     </div>
                 )}
+                {!isReadOnly && (
+                    <button
+                        className="mb-2 px-2 py-1 bg-[#4F46E5] text-white text-xs rounded hover:bg-[#4338CA] transition-colors"
+                        type="button"
+                        onClick={() => setShowRagModal(true)}
+                    >
+                        Get Answer from Document
+                    </button>
+                )}
                 <textarea
                     className={`w-full p-3 border rounded-md transition-colors ${
                         isReadOnly 
@@ -62,6 +73,24 @@ const SubjectiveQuestionRenderer = ({
                     <p className="text-sm text-gray-500 mt-1">
                         Last updated: {new Date(answer.lastUpdated).toLocaleString()}
                     </p>
+                )}
+                {showRagModal && (
+                    <RagDocumentQA
+                        open={showRagModal}
+                        onClose={() => setShowRagModal(false)}
+                        questionText={question?.title || ''}
+                        onAnswerSuggested={(ans) => {
+                            if (onAnswerChange) {
+                                onAnswerChange({
+                                    questionId: question.id,
+                                    questionTitle: question.title,
+                                    type: 'subjective',
+                                    data: { text: ans }
+                                });
+                            }
+                            setShowRagModal(false);
+                        }}
+                    />
                 )}
             </div>
         </div>

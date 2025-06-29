@@ -1,3 +1,11 @@
+# Table Extraction Logic for RAG
+import re
+try:
+    from pint import UnitRegistry
+    ureg = UnitRegistry()
+except ImportError:
+    ureg = None  # If pint is not installed, skip unit conversion
+
 
 # Standard library imports
 import os
@@ -125,3 +133,58 @@ async def delete_file_and_index(file_id: str, db) -> bool:
         pass  # Ignore errors if directory does not exist
     await db.rag_files.delete_one({"_id": file_id})
     return True
+
+
+async def extract_table_values(file_id: str, table_metadata: dict, question: str):
+    """
+    Extracts values for each editable cell in the table using RAG and Gemini.
+    Returns: { 'suggested_values': {rowIdx: {colKey: value, ...}, ...}, 'unit_warnings': [ ... ] }
+    """
+    # Only process if rows and columns exist
+    rows = table_metadata.get('rows', [])
+    columns = table_metadata.get('columns', [])
+    # Identify editable rows (not auto-calculated)
+    auto_calc_keywords = ['total', 'intensity', 'sum', 'auto']
+    editable_row_indices = [
+        idx for idx, row in enumerate(rows)
+        if not any(kw in (row.get('parameter', '').lower()) for kw in auto_calc_keywords)
+            and not row.get('isHeader')
+    ]
+    # Identify year columns (e.g., 'current_year', 'previous_year')
+    year_col_keys = [col.get('key') for col in columns if col.get('key') not in ('parameter', 'unit')]
+    # If dynamicYear, fallback to all except parameter/unit
+    if not year_col_keys:
+        year_col_keys = [col.get('key') for col in columns if col.get('key') not in ('parameter', 'unit')]
+    suggested_values = {}
+    unit_warnings = []
+    for row_idx in editable_row_indices:
+        row = rows[row_idx]
+        param = row.get('parameter', '')
+        expected_unit = row.get('unit', '').strip()
+        suggested_values[str(row_idx)] = {}
+        for col_key in year_col_keys:
+            # Compose a specific prompt for this cell
+            prompt = f"Extract the value for '{param}' for column '{col_key}' in {expected_unit or 'the expected unit'} from the document. If the value is in a different unit, specify the unit used."
+            docs = retrieve_relevant_chunks(file_id, prompt, k=3)
+            context = "\n".join([doc.page_content for doc in docs])
+            answer = ask_gemini_with_context(context, prompt)
+            # Try to extract value and unit from answer
+            value, found_unit = None, None
+            # Look for patterns like: 1234 (GJ), 1234 GJ, 1234.5, etc.
+            match = re.search(r"([\d,.]+)\s*([a-zA-Z/()]+)?", answer)
+            if match:
+                value = match.group(1).replace(',', '')
+                found_unit = (match.group(2) or '').strip()
+            # Unit conversion if needed
+            if value and expected_unit and found_unit and ureg:
+                try:
+                    val = float(value)
+                    q = val * ureg(found_unit)
+                    val_converted = q.to(ureg(expected_unit.split()[0])).magnitude
+                    value = str(round(val_converted, 4))
+                    if found_unit != expected_unit:
+                        unit_warnings.append(f"Converted '{param}' for '{col_key}' from {found_unit} to {expected_unit}.")
+                except Exception as e:
+                    unit_warnings.append(f"Could not convert '{param}' for '{col_key}' from {found_unit} to {expected_unit}: {e}")
+            suggested_values[str(row_idx)][col_key] = value or answer.strip()
+    return {"suggested_values": suggested_values, "unit_warnings": unit_warnings}

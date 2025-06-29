@@ -5,6 +5,7 @@ import DynamicTableRenderer from './DynamicTableRenderer';
 import { useUpdateTableAnswerEnvironmentMutation, useUpdateSubjectiveAnswerMutation, useUpdateAuditStatusMutation, useGetAuditStatusQuery } from '../../src/store/api/apiSlice';
 import { toast } from 'react-toastify';
 import SubjectiveQuestionRenderer from './SubjectiveQuestionRenderer';
+import RagDocumentQA from './RagDocumentQA';
 import ChatbotWindow from '../../src/AICHATBOT/ChatbotWindow';
 import { AppProvider } from '../../src/AICHATBOT/AppProvider';
 
@@ -336,16 +337,64 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
     setTempData(JSON.parse(JSON.stringify(newData)));
   };
 
+  // --- RAG Table Integration ---
+  // State for showing RAG modal for tables
+  const [ragTableModalOpen, setRagTableModalOpen] = useState(false);
+  // Callback to receive RAG table values
+  const handleRagTableValues = (ragValues) => {
+    // ragValues: { rowIdx: { colKey: value, ... }, ... }
+    // Only update editable fields (not auto-calculated)
+    if (!metadata?.rows) return;
+    const autoCalcRows = metadata.rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => {
+        const param = row.parameter?.toLowerCase() || '';
+        return param.includes('total') || param.includes('intensity') || param.includes('sum') || param.includes('auto');
+      })
+      .map(({ idx }) => idx);
+    // Deep copy
+    const updated = JSON.parse(JSON.stringify(tempData?.data || {}));
+    Object.entries(ragValues || {}).forEach(([rowIdx, rowData]) => {
+      if (!autoCalcRows.includes(Number(rowIdx))) {
+        updated[rowIdx] = { ...updated[rowIdx], ...rowData };
+      }
+    });
+    setTempData({ ...tempData, data: updated });
+  };
+
   const renderEditableContent = () => {
     switch (metadata?.type) {
       case 'table':
         return (
-          <TableRenderer
-            metadata={metadata}
-            data={tempData?.data || {}}
-            isEditing={true}
-            onSave={(newData) => setTempData({ ...tempData, data: newData })}
-          />
+          <>
+            <div className="flex justify-end mb-2">
+              <button
+                className="px-3 py-1 bg-[#4F46E5] text-white text-sm rounded hover:bg-[#4338CA] transition-colors flex items-center gap-1"
+                onClick={() => setRagTableModalOpen(true)}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Get Values from Document
+              </button>
+            </div>
+            <TableRenderer
+              metadata={metadata}
+              data={tempData?.data || {}}
+              isEditing={true}
+              onSave={(newData) => setTempData({ ...tempData, data: newData })}
+              turnover={turnover}
+            />
+            {/* RAG Table Modal */}
+            {ragTableModalOpen && (
+              <RagDocumentQA
+                isOpen={ragTableModalOpen}
+                onClose={() => setRagTableModalOpen(false)}
+                question={question}
+                mode="table"
+                tableMetadata={metadata}
+                onTableValues={handleRagTableValues}
+              />
+            )}
+          </>
         );
       case 'multi-table':
         return (
@@ -367,16 +416,11 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
         );
       case 'subjective':
         return (
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-md min-h-[200px]"
-            placeholder="Enter your response here..."
-            value={tempData?.data?.text || ''}
-            onChange={(e) => setTempData({
-              questionId: question.id,
-              questionTitle: title,
-              type: 'subjective',
-              data: { text: e.target.value }
-            })}
+          <SubjectiveQuestionRenderer
+            question={question}
+            answer={tempData}
+            onAnswerChange={setTempData}
+            isReadOnly={false}
           />
         );
       default:
@@ -393,10 +437,8 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
           <SubjectiveQuestionRenderer
             question={question}
             answer={questionData}
-            onAnswerChange={(newData) => {
-              handleSave(newData);
-            }}
-            isReadOnly={!isEditModalOpen}
+            onAnswerChange={() => {}}
+            isReadOnly={true}
           />
         );
       case 'table': {

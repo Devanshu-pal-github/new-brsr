@@ -1,6 +1,9 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Body, Depends
-from .rag_service import process_pdf_and_store, retrieve_relevant_chunks, ask_gemini_with_context, delete_file_and_index
+from .rag_service import process_pdf_and_store, retrieve_relevant_chunks, ask_gemini_with_context, delete_file_and_index, extract_table_values
+
+# Table Extraction Models
+from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from dependencies import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -60,3 +63,32 @@ async def delete_file(file_id: str, db: AsyncIOMotorDatabase = Depends(get_datab
     if not success:
         raise HTTPException(status_code=404, detail="File not found")
     return {"message": "File and vector index deleted successfully"}
+
+
+
+
+class TableExtractionRequest(BaseModel):
+    file_id: str
+    table_metadata: Dict[str, Any]
+    question: str
+
+class TableExtractionResponse(BaseModel):
+    suggested_values: Dict[str, Dict[str, Any]]
+    unit_warnings: Optional[List[str]] = []
+
+# Table extraction endpoint
+@router.post("/extract-table", response_model=TableExtractionResponse)
+async def extract_table(
+    request: TableExtractionRequest = Body(...),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """
+    Extracts table values from a document for a given table metadata and question.
+    Returns a mapping of rowIdx -> {colKey: value, ...} for editable fields only.
+    """
+    result = await extract_table_values(
+        file_id=request.file_id,
+        table_metadata=request.table_metadata,
+        question=request.question
+    )
+    return result
