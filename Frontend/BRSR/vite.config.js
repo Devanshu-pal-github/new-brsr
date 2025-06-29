@@ -4,4 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss()],
+  server: {
+    proxy: {
+      '/dynamic-audit': 'http://localhost:8000', // Proxy API requests to backend
+    },
+  },
 })

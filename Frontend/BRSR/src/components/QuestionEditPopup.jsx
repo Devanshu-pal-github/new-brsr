@@ -8,6 +8,23 @@ import {
 } from "../store/api/apiSlice";
 import { useInactivityDetector } from "./QuestionEdit/useInactivityDetector";
 import ModalHeader from "./QuestionEdit/ModalHeader";
+import axios from "axios";
+
+// Fetch audited state for a question/company
+async function fetchAuditedState({ question_id, company_id, token }) {
+  try {
+    const response = await axios.get(`/dynamic-audit/audited/${question_id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: { company_id },
+    });
+    return response.data;
+  } catch (err) {
+    console.error("[AUDIT] Failed to fetch audited state", err);
+    throw err;
+  }
+}
 
 const MetaBadges = ({ question }) => {
   const meta = question.metadata || {};
@@ -80,6 +97,9 @@ const QuestionEditPopup = ({
     const user = useSelector((state) => state.auth.user);
     const textareaRef = useRef(null);
     const leftPanelRef = useRef(null);
+    const [auditedValue, setAuditedValue] = useState(null);
+    const [showAuditedConfirm, setShowAuditedConfirm] = useState(false);
+    const [pendingAuditedValue, setPendingAuditedValue] = useState(null);
 
     useEffect(() => {
         setIsVisible(true);
@@ -532,12 +552,12 @@ interface StructuredAISuggestion {
                 };
             }
 
-            // Remove or reduce noisy/unnecessary console logs
+            // Remove or reduce noisy/unnecessary console.logs
             // console.log("📤 [QuestionEditPopup] Answer data prepared:", answerData);
             // console.log("📤 [QuestionEditPopup] Using moduleId:", moduleId);
 
             if (!moduleId) {
-                // Remove or reduce noisy/unnecessary console logs
+                // Remove or reduce noisy/unnecessary console.logs
                 // console.error("❌ [QuestionEditPopup] Missing moduleId for question:", question.question_id);
                 throw new Error("Module ID is required but not provided");
             }
@@ -880,6 +900,71 @@ interface StructuredAISuggestion {
         }
     };
 
+    // Fetch latest audited state when popup opens
+    useEffect(() => {
+        if (!isOpen) return;
+        const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+        const company_id = userData.company_id || user?.company_id;
+        const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+        if (!company_id || !question?.question_id || !token) return;
+        fetchAuditedState({ question_id: question.question_id, company_id, token })
+            .then((data) => {
+                if (typeof data.audited === "boolean") {
+                    setAuditedValue(data.audited);
+                } else {
+                    setAuditedValue(null); // No audit doc found, show neither selected
+                }
+            })
+            .catch((err) => {
+                setAuditedValue(null);
+            });
+    }, [isOpen, question?.question_id]);
+
+    // Debug: log auditedValue whenever it changes
+    useEffect(() => {
+        console.log("[AUDIT] Current auditedValue:", auditedValue);
+    }, [auditedValue]);
+
+    // Update auditedValue immediately after save
+    const saveAuditedToBackend = async (auditedValue) => {
+        try {
+            const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+            const company_id = userData.company_id || user?.company_id;
+            const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+            if (!company_id) {
+                console.error("[AUDIT] Missing company_id", { company_id });
+                toast.error("Missing company information");
+                return;
+            }
+            if (!token) {
+                console.error("[AUDIT] Missing auth token");
+                toast.error("Missing authentication token");
+                return;
+            }
+            console.log("[AUDIT] Saving audited state", { auditedValue, questionId: question?.question_id, moduleId, company_id });
+            const response = await axios.post(
+                "/dynamic-audit/audited",
+                {
+                    question_id: question?.question_id,
+                    audited: auditedValue,
+                    module_id: moduleId,
+                    company_id,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            setAuditedValue(auditedValue); // update immediately after save
+            console.log("[AUDIT] Backend response:", response.data);
+            toast.success("Audited state saved!");
+        } catch (err) {
+            console.error("[AUDIT] Failed to save audited state", err);
+            toast.error("Failed to save audited state");
+        }
+    };
+
     return (
         <div
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -887,7 +972,7 @@ interface StructuredAISuggestion {
             aria-modal="true"
             aria-labelledby={`question-${question.question_id}-title`}
         >
-            <div className="relative w-full max-w-[70vw] h-[80vh] flex items-center justify-center"> {/* Increased max width to 70vw for wider popup */}
+            <div className="relative w-full max-w-[70vw] h-[80vh] flex items-center justify-center">
                 <motion.div
                     className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-hidden w-full h-full`}
                     initial={{ scale: 0.95, opacity: 0 }}
@@ -905,6 +990,31 @@ interface StructuredAISuggestion {
                                 <h3 className="text-base font-semibold text-gray-800">
                                     {question.question}
                                 </h3>
+                                <div className="flex items-center gap-4 my-2">
+                                    <label className="text-sm font-medium text-gray-700">Audited:</label>
+                                    <div className="flex gap-2">
+                                        <label className="flex items-center gap-1">
+                                            <input
+                                                type="radio"
+                                                name="audited"
+                                                value="true"
+                                                checked={auditedValue === true}
+                                                onChange={() => { setPendingAuditedValue(true); setShowAuditedConfirm(true); }}
+                                            />
+                                            <span>Audited</span>
+                                        </label>
+                                        <label className="flex items-center gap-1">
+                                            <input
+                                                type="radio"
+                                                name="audited"
+                                                value="false"
+                                                checked={auditedValue === false}
+                                                onChange={() => { setPendingAuditedValue(false); setShowAuditedConfirm(true); }}
+                                            />
+                                            <span>Not Audited</span>
+                                        </label>
+                                    </div>
+                                </div>
                                 {question.guidance && (
                                     <div
                                         id={`question-${question.question_id}-guidance`}
@@ -1047,6 +1157,36 @@ interface StructuredAISuggestion {
                     `}</style>
                 </button>
             </div>
+
+            {/* Confirmation Modal for Audited Change */}
+            {showAuditedConfirm && (
+              <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/40">
+                <div className="bg-white rounded-lg shadow-lg p-6 w-80 flex flex-col items-center">
+                  <div className="mb-4 text-center text-gray-800 text-base font-semibold">
+                    Are you sure you want to set Audited to <span className="font-bold">{pendingAuditedValue ? 'Audited' : 'Not Audited'}</span>?
+                  </div>
+                  <div className="flex gap-4">
+                    <button
+                      className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                      onClick={() => { setShowAuditedConfirm(false); setPendingAuditedValue(null); }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      onClick={async () => {
+                        setAuditedValue(pendingAuditedValue);
+                        setShowAuditedConfirm(false);
+                        setPendingAuditedValue(null);
+                        await saveAuditedToBackend(pendingAuditedValue);
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
         </div>
     );
 };

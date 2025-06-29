@@ -34,6 +34,7 @@ from routes.ghgRoute import router as ghg_router
 from routes.common_fields import router as common_fields_router
 from routes.notification import router as notification_router
 from routes.mcp_router import router as mcp_router
+from routes.dynamic_audit import router as dynamic_audit_router
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -317,6 +318,7 @@ app.include_router(common_fields_router)
 app.include_router(notification_router)
 # Include MCP router
 app.include_router(mcp_router)
+app.include_router(dynamic_audit_router)
 
 # Request and response models for NL to Table feature
 class NLToTableRequest(BaseModel):
