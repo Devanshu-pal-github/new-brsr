@@ -1,5 +1,11 @@
 # Table Extraction Logic for RAG
 import re
+import os
+
+# Suppress TensorFlow warnings for cleaner startup
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')  # Suppress TensorFlow info/warning logs
+os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')  # Disable oneDNN for consistent results
+
 try:
     from pint import UnitRegistry
     ureg = UnitRegistry()
@@ -12,6 +18,7 @@ import uuid
 import datetime
 import shutil
 import re
+import time
 from typing import List
 from io import BytesIO
 
@@ -43,21 +50,40 @@ GEMINI_MODEL = "gemini-2.0-flash"
 MONGODB_URL = os.getenv("MONGODB_URL")
 DB_NAME = os.getenv("DB_NAME")
 
+# Global variables for lazy loading
+_embeddings = None
+_text_splitter = None
+_genai_client = None
 
-# NOTE: Remove direct pymongo usage for FastAPI integration. Use async db from dependency injection.
+def get_embeddings():
+    """Lazy load embeddings to avoid slow startup times."""
+    global _embeddings
+    if _embeddings is None:
+        print("🔍 [RAG] Loading embeddings model (first time only)...")
+        _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        print("🔍 [RAG] Embeddings model loaded successfully")
+    return _embeddings
 
-# Embedding and text splitter setup
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+def get_text_splitter():
+    """Lazy load text splitter."""
+    global _text_splitter
+    if _text_splitter is None:
+        _text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    return _text_splitter
 
-# Gemini client
-genai_client = genai.Client(api_key=GEMINI_API_KEY_RAG)
+def get_genai_client():
+    """Lazy load Gemini client."""
+    global _genai_client
+    if _genai_client is None:
+        _genai_client = genai.Client(api_key=GEMINI_API_KEY_RAG)
+    return _genai_client
 
 async def get_file_metadata(file_id: str, db):
     return await db.rag_files.find_one({"_id": file_id})
 
 def get_vector_store(file_id: str):
     faiss_path = f"faiss_index_{file_id}"
+    embeddings = get_embeddings()  # Use lazy-loaded embeddings
     return FAISS.load_local(faiss_path, embeddings, allow_dangerous_deserialization=True)
 
 def retrieve_relevant_chunks(file_id: str, question: str, k: int = 3):
@@ -86,6 +112,7 @@ def ask_gemini_with_context(context: str, question: str) -> str:
     
     try:
         generate_content_config = types.GenerateContentConfig(response_mime_type="text/plain")
+        genai_client = get_genai_client()  # Use lazy-loaded client
         response = genai_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
@@ -99,8 +126,16 @@ def ask_gemini_with_context(context: str, question: str) -> str:
         print(f"🔍 [RAG] Gemini response: {result}")
         return result
     except Exception as e:
-        print(f"❌ [RAG] Error calling Gemini: {e}")
-        return f"Error calling Gemini: {e}"
+        error_msg = str(e)
+        print(f"❌ [RAG] Error calling Gemini: {error_msg}")
+        
+        # Check for specific API quota errors
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+            return "API_QUOTA_EXCEEDED: Please check your Gemini API quota and billing details."
+        elif "403" in error_msg or "permission" in error_msg.lower():
+            return "API_PERMISSION_ERROR: Please check your Gemini API key permissions."
+        else:
+            return f"API_ERROR: {error_msg}"
 
 def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     """Extract text from PDF, Word, or Excel files."""
@@ -155,10 +190,12 @@ async def process_file_and_store(file_bytes: bytes, filename: str, file_size: in
         raise ValueError("No text could be extracted from the file")
     
     print(f"🔍 [RAG] Creating documents from text ({len(text)} characters)")
+    text_splitter = get_text_splitter()  # Use lazy-loaded text splitter
     documents = text_splitter.create_documents([text])
     print(f"🔍 [RAG] Created {len(documents)} document chunks")
     
     # Create vector store
+    embeddings = get_embeddings()  # Use lazy-loaded embeddings
     vector_store = FAISS.from_documents(documents, embeddings)
     file_id = str(uuid.uuid4())
     faiss_path = f"faiss_index_{file_id}"
@@ -331,6 +368,18 @@ Return only the complete numeric value (including all digits). If the number has
             # Ask Gemini with enhanced prompt
             answer = ask_gemini_with_context(context, f"Extract the complete numeric value for '{param_clean}' for '{year_label}' from the table data. Return the full number including all digits (e.g., if you see 132,000 return the complete number, not just 132).")
             print(f"🔍 [RAG] Gemini answer: {answer}")
+            
+            # Check if the answer contains an error (like quota exceeded)
+            if any(error_indicator in answer for error_indicator in [
+                "API_QUOTA_EXCEEDED", "API_PERMISSION_ERROR", "API_ERROR", 
+                "Error calling Gemini:", "429 RESOURCE_EXHAUSTED", "quota exceeded"
+            ]):
+                print(f"❌ [RAG] Gemini API error detected, skipping value extraction for [{row_idx}][{col_key}]")
+                print(f"❌ [RAG] Error details: {answer}")
+                # Set empty value for API errors
+                suggested_values[str(row_idx)][col_key] = ""
+                print(f"🔍 [RAG] Final value for [{row_idx}][{col_key}]: ''")
+                continue
             
             # Try to extract value and unit from answer with multiple patterns
             value, found_unit = None, None
@@ -586,6 +635,23 @@ Return only the complete numeric value (including all digits). If the number has
             suggested_values[str(row_idx)][col_key] = final_value
             print(f"🔍 [RAG] Final value for [{row_idx}][{col_key}]: '{final_value}'")
     
-    result = {"suggested_values": suggested_values, "unit_warnings": unit_warnings}
+    # Add parameter names to the result for better display
+    parameters_info = {}
+    for row_idx in editable_row_indices:
+        row = rows[row_idx]
+        param = row.get('parameter', '')
+        unit = row.get('unit', '').strip()
+        # Clean HTML tags for display
+        param_clean = clean_html(param)
+        parameters_info[str(row_idx)] = {
+            'parameter': param_clean,
+            'unit': unit
+        }
+    
+    result = {
+        "suggested_values": suggested_values, 
+        "unit_warnings": unit_warnings,
+        "parameters_info": parameters_info
+    }
     print(f"🔍 [RAG] Final result: {result}")
     return result

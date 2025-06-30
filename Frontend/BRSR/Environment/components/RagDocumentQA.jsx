@@ -9,6 +9,8 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
     const [question, setQuestion] = useState(questionText);
     const [answer, setAnswer] = useState('');
     const [suggestedTable, setSuggestedTable] = useState(null);
+    const [parametersInfo, setParametersInfo] = useState({});
+    const [acceptedCells, setAcceptedCells] = useState({}); // Track which cells are accepted
     const [unitWarnings, setUnitWarnings] = useState([]);
     const [uploadRagDocument, { isLoading: isUploading }] = useUploadRagDocumentMutation();
     const [ragChat, { isLoading: isChatting }] = useRagChatMutation();
@@ -27,6 +29,8 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
             setError('');
             setQuestion(questionText);
             setSuggestedTable(null);
+            setParametersInfo({});
+            setAcceptedCells({});
             setUnitWarnings([]);
         }
     }, [visible, questionText]);
@@ -40,6 +44,8 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
         setAnswer('');
         setError('');
         setSuggestedTable(null);
+        setParametersInfo({});
+        setAcceptedCells({});
         setUnitWarnings([]);
         
         if (selectedFile) {
@@ -80,6 +86,8 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
     const handleExtractTable = async () => {
         setError('');
         setSuggestedTable(null);
+        setParametersInfo({});
+        setAcceptedCells({});
         setUnitWarnings([]);
         if (!fileId || !question || !tableMetadata) return;
         
@@ -96,10 +104,13 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
             console.log('🔍 [RAG Frontend] Received response:', res);
             
             setSuggestedTable(res.suggested_values);
+            setParametersInfo(res.parameters_info || {});
             setUnitWarnings(res.unit_warnings || []);
             
             console.log('🔍 [RAG Frontend] Suggested values:', res.suggested_values);
+            console.log('🔍 [RAG Frontend] Parameters info:', res.parameters_info);
             console.log('🔍 [RAG Frontend] Unit warnings:', res.unit_warnings);
+            console.log('🔍 [RAG Frontend] State after setting - parametersInfo:', res.parameters_info);
         } catch (err) {
             console.error('❌ [RAG Frontend] Error extracting table values:', err);
             setError('Failed to extract table values. Please try again.');
@@ -113,8 +124,40 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
         }
     };
 
-    // For table: accept all suggested values
-    const handleUseTable = () => {
+    // Toggle acceptance of individual cell
+    const handleToggleCellAcceptance = (rowIdx, colKey) => {
+        const cellKey = `${rowIdx}_${colKey}`;
+        setAcceptedCells(prev => ({
+            ...prev,
+            [cellKey]: !prev[cellKey]
+        }));
+    };
+
+    // For table: accept only the selected cells
+    const handleUseSelectedCells = () => {
+        if (onTableValues && suggestedTable) {
+            // Only send accepted cells
+            const acceptedValues = {};
+            Object.entries(suggestedTable).forEach(([rowIdx, rowObj]) => {
+                Object.entries(rowObj).forEach(([colKey, value]) => {
+                    const cellKey = `${rowIdx}_${colKey}`;
+                    if (acceptedCells[cellKey]) {
+                        if (!acceptedValues[rowIdx]) {
+                            acceptedValues[rowIdx] = {};
+                        }
+                        acceptedValues[rowIdx][colKey] = value;
+                    }
+                });
+            });
+            
+            console.log('🔍 [RAG Frontend] Sending accepted values:', acceptedValues);
+            onTableValues(acceptedValues);
+            if (onClose) onClose();
+        }
+    };
+
+    // For table: accept all suggested values (old behavior)
+    const handleUseAllValues = () => {
         if (onTableValues && suggestedTable) {
             onTableValues(suggestedTable);
             if (onClose) onClose();
@@ -232,38 +275,81 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                             </div>
                         </div>
                         {suggestedTable && (
-                            <div className="mt-3 mx-4 p-3 bg-[#F5F6FA] border border-[#E0E7FF] rounded text-sm text-[#1A2341] overflow-y-auto whitespace-pre-line" style={{ minHeight: '120px', maxHeight: '28vh', height: 'clamp(120px,24vh,192px)' }}>
-                                <strong className="block mb-1">Suggested Table Values:</strong>
-                                <div className="overflow-x-auto max-h-[18vh] min-h-[60px]">
-                                    <table className="min-w-full text-xs border border-gray-300">
-                                        <tbody>
-                                            {Object.entries(suggestedTable).map(([rowIdx, rowObj]) => (
-                                                <tr key={rowIdx}>
-                                                    <td className="font-semibold pr-2 text-right align-top">Row {parseInt(rowIdx, 10) + 1}:</td>
-                                                    <td>
-                                                        {Object.entries(rowObj).map(([colKey, val]) => (
-                                                            <span key={colKey} className="inline-block mr-2 mb-1 px-2 py-1 bg-gray-100 rounded border border-gray-200">{colKey}: <b>{val}</b></span>
-                                                        ))}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                            <div className="mt-3 mx-4 p-3 bg-[#F5F6FA] border border-[#E0E7FF] rounded text-sm text-[#1A2341] overflow-y-auto whitespace-pre-line" style={{ minHeight: '120px', maxHeight: '40vh', height: 'clamp(120px,35vh,300px)' }}>
+                                <strong className="block mb-2">Suggested Table Values:</strong>
+                                <div className="overflow-y-auto max-h-[30vh] min-h-[100px]">
+                                    <div className="space-y-3">
+                                        {Object.entries(suggestedTable).map(([rowIdx, rowObj]) => {
+                                            const paramInfo = parametersInfo[rowIdx] || {};
+                                            // Use the parameter name from backend, fallback to "Unknown Parameter" if not available
+                                            const paramName = paramInfo.parameter || `Unknown Parameter (Row ${parseInt(rowIdx, 10) + 1})`;
+                                            const unit = paramInfo.unit || '';
+                                            
+                                            console.log(`🔍 [RAG Frontend] Row ${rowIdx}: paramInfo =`, paramInfo, `, paramName =`, paramName);
+                                            
+                                            return (
+                                                <div key={rowIdx} className="border border-gray-200 rounded p-2 bg-white">
+                                                    <div className="font-semibold text-xs mb-2 text-[#1A2341]">
+                                                        {paramName}
+                                                        {unit && <span className="text-gray-500 ml-1">({unit})</span>}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {Object.entries(rowObj).map(([colKey, val]) => {
+                                                            const cellKey = `${rowIdx}_${colKey}`;
+                                                            const isAccepted = acceptedCells[cellKey];
+                                                            const colLabel = colKey === 'current_year' ? 'Current Year' : 
+                                                                           colKey === 'previous_year' ? 'Previous Year' : colKey;
+                                                            
+                                                            return (
+                                                                <div key={colKey} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                                                                    <div className="flex-1">
+                                                                        <span className="text-xs font-medium text-gray-600">{colLabel}:</span>
+                                                                        <span className="ml-2 font-bold text-[#1A2341]">{val || 'No value'}</span>
+                                                                    </div>
+                                                                    {val && (
+                                                                        <button
+                                                                            onClick={() => handleToggleCellAcceptance(rowIdx, colKey)}
+                                                                            className={`ml-2 px-2 py-1 rounded text-xs font-semibold transition-colors ${
+                                                                                isAccepted 
+                                                                                    ? 'bg-green-500 text-white hover:bg-green-600' 
+                                                                                    : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                                                            }`}
+                                                                        >
+                                                                            {isAccepted ? '✓ Accepted' : 'Accept'}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                                 {unitWarnings && unitWarnings.length > 0 && (
-                                    <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">
+                                    <div className="mt-3 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-2">
                                         <strong>Unit Warnings:</strong>
                                         <ul className="list-disc ml-5">
                                             {unitWarnings.map((w, i) => <li key={i}>{w}</li>)}
                                         </ul>
                                     </div>
                                 )}
-                                <button
-                                    className="mt-2 bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition"
-                                    onClick={handleUseTable}
-                                >
-                                    Use these values
-                                </button>
+                                <div className="mt-3 flex gap-2 flex-wrap">
+                                    <button
+                                        className="bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition"
+                                        onClick={handleUseSelectedCells}
+                                        disabled={Object.keys(acceptedCells).filter(key => acceptedCells[key]).length === 0}
+                                    >
+                                        Use Selected Values ({Object.keys(acceptedCells).filter(key => acceptedCells[key]).length})
+                                    </button>
+                                    <button
+                                        className="bg-gray-500 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-gray-600 transition"
+                                        onClick={handleUseAllValues}
+                                    >
+                                        Use All Values
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </>
