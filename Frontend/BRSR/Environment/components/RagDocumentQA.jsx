@@ -69,15 +69,29 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
     };
 
     if (!visible) return null;
+
+    // Close modal if click outside content
+    const backdropRef = React.useRef();
+    const handleBackdropClick = (e) => {
+        if (e.target === backdropRef.current && onClose) onClose();
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div
+            ref={backdropRef}
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4"
+            style={{ background: 'rgba(0,11,51,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={handleBackdropClick}
+        >
             <div
-                className="bg-white rounded-xl shadow-2xl p-6 w-[90vw] max-w-xl min-w-[320px] max-h-[90vh] flex flex-col relative border-1 border-[#1A2341]"
+                className="relative bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl border border-slate-200/50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300 max-h-[95vh] flex flex-col"
                 style={{ boxSizing: 'border-box' }}
             >
-                <button className="absolute top-2 right-2 text-gray-400 hover:text-[#1A2341] text-2xl font-bold" onClick={onClose}>×</button>
-                <h2 className="text-xl font-bold mb-2 text-[#1A2341]">Upload Document for Q&A</h2>
-                <div className="mb-3 text-xs text-[#1A2341] bg-[#F8FAFC] p-2 rounded border border-[#E0E7FF]">
+                <button className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 hover:bg-slate-200/50 rounded-full transition-colors duration-200 z-10 text-slate-600 hover:text-slate-800 text-2xl font-bold" onClick={onClose} aria-label="Close RAG Modal">×</button>
+                <div className="relative flex items-center gap-2 sm:gap-3 pr-8 sm:pr-0 pt-4 pb-2 px-4 sm:px-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#1A2341] truncate">Upload Document for Q&A</h2>
+                </div>
+                <div className="mb-3 text-xs text-[#1A2341] bg-[#F8FAFC] p-2 rounded border border-[#E0E7FF] mx-4">
                     Upload a PDF. After upload, you can ask questions and get answers from the document.
                 </div>
                 <input
@@ -87,19 +101,21 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                 />
-                <button
-                    className="bg-[#4F46E5] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1A2341] transition w-full mb-2 shadow"
-                    onClick={handleUploadClick}
-                    disabled={isUploading}
-                >
-                    {isUploading ? 'Uploading...' : 'Upload PDF'}
-                </button>
+                <div className="flex justify-center w-full mb-2">
+                    <button
+                        className="bg-[#4F46E5] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1A2341] transition w-full max-w-xs shadow"
+                        onClick={handleUploadClick}
+                        disabled={isUploading}
+                    >
+                        {isUploading ? 'Uploading...' : 'Upload PDF'}
+                    </button>
+                </div>
                 {file && !fileId && (
-                    <div className="text-xs text-[#1A2341] mb-2">Selected: {file.name}</div>
+                    <div className="text-xs text-[#1A2341] mb-2 mx-4">Selected: {file.name}</div>
                 )}
                 {fileId && (
                     <>
-                        <div className="mt-2">
+                        <div className="mt-2 mx-4">
                             <input
                                 type="text"
                                 placeholder="Ask a question..."
@@ -107,21 +123,25 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                                 onChange={e => setQuestion(e.target.value)}
                                 className="border border-[#4F46E5] rounded px-2 py-1 w-full mb-2 text-[#1A2341] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
                             />
-                            <button
-                                className="bg-[#1A2341] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#4F46E5] transition w-full shadow"
-                                onClick={handleAsk}
-                                disabled={isChatting || !question}
-                            >
-                                {isChatting ? 'Asking...' : 'Ask'}
-                            </button>
+                            <div className="flex justify-center w-full mb-0">
+                                <button
+                                    className="bg-[#1A2341] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#4F46E5] transition w-full max-w-xs shadow"
+                                    onClick={handleAsk}
+                                    disabled={isChatting || !question}
+                                >
+                                    {isChatting ? 'Asking...' : 'Ask'}
+                                </button>
+                            </div>
                         </div>
                         {answer && (
                             <div
-                                className="mt-3 p-3 bg-[#F5F6FA] border border-[#E0E7FF] rounded text-sm text-[#1A2341] max-h-48 overflow-y-auto whitespace-pre-line"
-                                style={{ minHeight: '96px', maxHeight: '192px' }}
+                                className="mt-3 mx-4 p-3 bg-[#F5F6FA] border border-[#E0E7FF] rounded text-sm text-[#1A2341] overflow-y-auto whitespace-pre-line"
+                                style={{ minHeight: '120px', maxHeight: '28vh', height: 'clamp(120px,24vh,192px)' }}
                             >
                                 <strong className="block mb-1">Suggested Answer:</strong>
-                                <ReactMarkdown>{answer}</ReactMarkdown>
+                                <div className="overflow-y-auto max-h-[18vh] min-h-[60px]">
+                                    <ReactMarkdown>{answer}</ReactMarkdown>
+                                </div>
                                 {onAnswerSuggested && (
                                     <button
                                         className="mt-2 bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition"
@@ -134,7 +154,7 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                         )}
                     </>
                 )}
-                {error && <div className="mt-2 text-red-500 text-xs">{error}</div>}
+                {error && <div className="mt-2 text-red-500 text-xs mx-4">{error}</div>}
             </div>
         </div>
     );

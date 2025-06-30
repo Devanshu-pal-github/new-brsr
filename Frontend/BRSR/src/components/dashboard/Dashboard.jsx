@@ -33,6 +33,7 @@ import DashboardCard from './DashboardCard';
 import CircularProgress from './charts/CircularProgress';
 import ProgressBar from './charts/ProgressBar';
 import PlantLocationMap from './charts/PlantLocationMap';
+import MCPModal from '../MCPModal';
 
 const Dashboard = ({ dynamicModules = [] }) => {
   const user = useSelector(selectCurrentUser);
@@ -300,6 +301,10 @@ const Dashboard = ({ dynamicModules = [] }) => {
   const activeReportCount = companyDetails?.active_reports?.length || 0;
   const activeReportNames = companyDetails?.active_reports?.map(r => r.report_name).join(', ');
 
+
+  // Add state for MCP modal
+  const [isMCPModalOpen, setIsMCPModalOpen] = React.useState(false);
+
   return (
     <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen">
       <div className="mb-4 flex justify-between items-center">
@@ -325,12 +330,12 @@ const Dashboard = ({ dynamicModules = [] }) => {
             <Download className="w-4 h-4" />
             <span>Generate Report</span>
           </button>
-          <button 
-            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm opacity-50 cursor-not-allowed"
-            onClick={() => {/* TODO: Implement AI chat */}}
+          <button
+            className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
+            onClick={() => setIsMCPModalOpen(true)}
           >
             <MessageSquareText className="w-4 h-4" />
-            <span>Ask AI Assistant</span>
+            <span>MCP</span>
           </button>
           <button 
             className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm opacity-50 cursor-not-allowed"
@@ -340,6 +345,10 @@ const Dashboard = ({ dynamicModules = [] }) => {
             <span>View Documentation</span>
           </button>
         </div>
+        {/* MCP Modal */}
+        {isMCPModalOpen && (
+          <MCPModal onClose={() => setIsMCPModalOpen(false)} />
+        )}
       </div>
       
       {isLoadingReports || isLoadingPlants || isLoadingEmployees || isLoadingModules ? (
