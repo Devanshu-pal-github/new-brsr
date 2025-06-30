@@ -342,23 +342,48 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
   const [ragTableModalOpen, setRagTableModalOpen] = useState(false);
   // Callback to receive RAG table values
   const handleRagTableValues = (ragValues) => {
+    console.log('🔍 [QuestionRenderer] Received RAG values:', ragValues);
+    console.log('🔍 [QuestionRenderer] Current tempData:', tempData);
+    console.log('🔍 [QuestionRenderer] Metadata rows:', metadata?.rows);
+    
     // ragValues: { rowIdx: { colKey: value, ... }, ... }
     // Only update editable fields (not auto-calculated)
-    if (!metadata?.rows) return;
+    if (!metadata?.rows) {
+      console.warn('🔍 [QuestionRenderer] No metadata rows found');
+      return;
+    }
+    
+    // More specific filtering for auto-calculated rows
+    // Only exclude rows that are explicitly marked as calculated or contain specific auto-calc keywords
     const autoCalcRows = metadata.rows
       .map((row, idx) => ({ row, idx }))
       .filter(({ row }) => {
         const param = row.parameter?.toLowerCase() || '';
-        return param.includes('total') || param.includes('intensity') || param.includes('sum') || param.includes('auto');
+        // Only exclude rows that are truly auto-calculated (like "Total energy consumption (A+B+C)")
+        return param.includes('(a+b+c)') || param.includes('total energy consumption') || 
+               param.includes('auto-calculated') || row.isCalculated === true ||
+               param.includes('total (a+b') || param.includes('sum of');
       })
       .map(({ idx }) => idx);
+    
+    console.log('🔍 [QuestionRenderer] Auto-calc rows to exclude:', autoCalcRows);
+    
     // Deep copy
     const updated = JSON.parse(JSON.stringify(tempData?.data || {}));
+    
     Object.entries(ragValues || {}).forEach(([rowIdx, rowData]) => {
-      if (!autoCalcRows.includes(Number(rowIdx))) {
+      const numericRowIdx = Number(rowIdx);
+      console.log(`🔍 [QuestionRenderer] Processing row ${rowIdx} (${numericRowIdx}):`, rowData);
+      
+      if (!autoCalcRows.includes(numericRowIdx)) {
+        console.log(`🔍 [QuestionRenderer] Updating row ${rowIdx} with:`, rowData);
         updated[rowIdx] = { ...updated[rowIdx], ...rowData };
+      } else {
+        console.log(`🔍 [QuestionRenderer] Skipping auto-calc row ${rowIdx}`);
       }
     });
+    
+    console.log('🔍 [QuestionRenderer] Final updated data:', updated);
     setTempData({ ...tempData, data: updated });
   };
 
