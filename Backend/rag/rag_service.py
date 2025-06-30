@@ -1,4 +1,10 @@
+
 # Table Extraction Logic for RAG
+import os
+
+# Directory to store all FAISS index folders
+FAISS_INDEX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'faiss_indexes')
+os.makedirs(FAISS_INDEX_DIR, exist_ok=True)
 import re
 import os
 
@@ -140,7 +146,7 @@ async def get_file_metadata(file_id: str, db):
     return await db.rag_files.find_one({"_id": file_id})
 
 def get_vector_store(file_id: str):
-    faiss_path = f"faiss_index_{file_id}"
+    faiss_path = os.path.join(FAISS_INDEX_DIR, f"faiss_index_{file_id}")
     embeddings = get_embeddings()  # Use lazy-loaded embeddings
     return FAISS.load_local(faiss_path, embeddings, allow_dangerous_deserialization=True)
 
@@ -276,10 +282,10 @@ async def process_file_and_store(file_bytes: bytes, filename: str, file_size: in
     embeddings = get_embeddings()  # Use lazy-loaded embeddings
     vector_store = FAISS.from_documents(documents, embeddings)
     file_id = str(uuid.uuid4())
-    faiss_path = f"faiss_index_{file_id}"
+    faiss_path = os.path.join(FAISS_INDEX_DIR, f"faiss_index_{file_id}")
     vector_store.save_local(faiss_path)
     print(f"🔍 [RAG] Saved vector store to: {faiss_path}")
-    
+
     # Store metadata in MongoDB
     await db.rag_files.insert_one({
         "_id": file_id,
@@ -291,7 +297,7 @@ async def process_file_and_store(file_bytes: bytes, filename: str, file_size: in
         "upload_date": datetime.datetime.now().timestamp()
     })
     print(f"🔍 [RAG] Stored metadata for file_id: {file_id}")
-    
+
     return file_id
 
 
@@ -299,7 +305,7 @@ async def delete_file_and_index(file_id: str, db) -> bool:
     file_metadata = await db.rag_files.find_one({"_id": file_id})
     if not file_metadata:
         return False
-    faiss_path = f"faiss_index_{file_id}"
+    faiss_path = os.path.join(FAISS_INDEX_DIR, f"faiss_index_{file_id}")
     try:
         shutil.rmtree(faiss_path)
     except Exception:
