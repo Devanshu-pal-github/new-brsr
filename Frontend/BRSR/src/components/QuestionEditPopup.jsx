@@ -13,39 +13,39 @@ import axios from "axios";
 
 // Fetch audited state for a question/company
 async function fetchAuditedState({ question_id, company_id, token }) {
-  try {
-    const response = await axios.get(`/dynamic-audit/audited/${question_id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: { company_id },
-    });
-    return response.data;
-  } catch (err) {
-    console.error("[AUDIT] Failed to fetch audited state", err);
-    throw err;
-  }
+    try {
+        const response = await axios.get(`/dynamic-audit/audited/${question_id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            params: { company_id },
+        });
+        return response.data;
+    } catch (err) {
+        console.error("[AUDIT] Failed to fetch audited state", err);
+        throw err;
+    }
 }
 
 const MetaBadges = ({ question }) => {
-  const meta = question.metadata || {};
-  const principle = question.principle || meta.principle || 'N/A';
-  const indicator = question.indicator || meta.indicator || 'N/A';
-  const section = question.section || meta.section || 'N/A';
-  const auditRequired = (question.audit_required !== undefined ? question.audit_required : (meta.audit_required !== undefined ? meta.audit_required : 'N/A'));
-  const audited = (question.audited !== undefined ? question.audited : (meta.audited !== undefined ? meta.audited : 'N/A'));
+    const meta = question.metadata || {};
+    const principle = question.principle || meta.principle || 'N/A';
+    const indicator = question.indicator || meta.indicator || 'N/A';
+    const section = question.section || meta.section || 'N/A';
+    const auditRequired = (question.audit_required !== undefined ? question.audit_required : (meta.audit_required !== undefined ? meta.audit_required : 'N/A'));
+    const audited = (question.audited !== undefined ? question.audited : (meta.audited !== undefined ? meta.audited : 'N/A'));
 
-  return (
-    <div className="flex flex-wrap gap-2 mb-3">
-      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
-      <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
-      <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
-      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
-      {auditRequired === true && (
-        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
-      )}
-    </div>
-  );
+    return (
+        <div className="flex flex-wrap gap-2 mb-3">
+            <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
+            <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Indicator: {indicator}</span>
+            <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-3 py-1 rounded-sm">Section: {section}</span>
+            <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audit Required: {String(auditRequired)}</span>
+            {auditRequired === true && (
+                <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-3 py-1 rounded-sm shadow-sm">Audited: {String(audited)}</span>
+            )}
+        </div>
+    );
 };
 import FormFields from "./QuestionEdit/FormFields";
 import {
@@ -74,15 +74,15 @@ const QuestionEditPopup = ({
     // Helper function to safely initialize answer data
     const safeInitializeAnswer = (answer, questionMetadata) => {
         if (!answer || !answer.rows) return answer || {};
-        
+
         // If answer has rows, ensure none are null
         const safeAnswer = { ...answer };
         if (Array.isArray(answer.rows)) {
-            safeAnswer.rows = answer.rows.map(row => 
+            safeAnswer.rows = answer.rows.map(row =>
                 row ? { ...row, cells: row.cells || [] } : { cells: [] }
             );
         }
-        
+
         return safeAnswer;
     };
 
@@ -99,49 +99,49 @@ const QuestionEditPopup = ({
     // Handler for accepting RAG table values
     const handleRagTableValues = (ragTable) => {
         console.log('🔍 [RAG] Received RAG table values:', ragTable);
-        
+
         // For dynamic modules, we need to update the rows structure properly
         if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
             // Convert RAG format {rowIdx: {colKey: value}} to dynamic module format {rows: []}
             // Deep clone the current value to avoid mutation issues
             const updatedData = JSON.parse(JSON.stringify(currentValue || {}));
-            
+
             // Initialize rows if not present
             if (!updatedData.rows || !Array.isArray(updatedData.rows)) {
                 const rowCount = question.metadata?.rows?.length || 0;
                 updatedData.rows = Array(rowCount).fill(null).map(() => ({ cells: [] }));
             } else {
                 // Ensure we have a properly cloned rows array and handle null rows
-                updatedData.rows = updatedData.rows.map(row => 
+                updatedData.rows = updatedData.rows.map(row =>
                     row ? {
                         ...row,
                         cells: row.cells ? [...row.cells] : []
                     } : { cells: [] }
                 );
-                
+
                 // Ensure we have the correct number of rows based on metadata
                 const expectedRowCount = question.metadata?.rows?.length || 0;
                 while (updatedData.rows.length < expectedRowCount) {
                     updatedData.rows.push({ cells: [] });
                 }
             }
-            
+
             // Get column keys from metadata (excluding parameter columns)
             const columnKeys = question.metadata?.columns?.map(col => col.key) || [];
-            
+
             // Update the rows with RAG values
             let updatedCellCount = 0;
             Object.entries(ragTable).forEach(([rowIdx, rowData]) => {
                 const rowIndex = parseInt(rowIdx, 10);
-                
+
                 // Safety checks: Ensure row exists, is not null, and index is valid
-                if (rowIndex >= 0 && 
-                    rowIndex < updatedData.rows.length && 
-                    updatedData.rows[rowIndex] && 
+                if (rowIndex >= 0 &&
+                    rowIndex < updatedData.rows.length &&
+                    updatedData.rows[rowIndex] &&
                     updatedData.rows[rowIndex] !== null) {
                     Object.entries(rowData).forEach(([colKey, value]) => {
                         const colIndex = columnKeys.indexOf(colKey);
-                        
+
                         // Only update if column exists
                         if (colIndex !== -1) {
                             // Ensure cells array exists and has enough elements
@@ -151,7 +151,7 @@ const QuestionEditPopup = ({
                             while (updatedData.rows[rowIndex].cells.length <= colIndex) {
                                 updatedData.rows[rowIndex].cells.push({ value: '' });
                             }
-                            
+
                             // Update the cell value - create a new object to avoid mutation
                             updatedData.rows[rowIndex].cells[colIndex] = { value: value || '' };
                             updatedCellCount++;
@@ -162,23 +162,23 @@ const QuestionEditPopup = ({
                     console.warn(`🔍 [RAG] Row at index ${rowIndex} is null, undefined, or out of bounds (total rows: ${updatedData.rows.length})`);
                 }
             });
-            
+
             console.log(`🔍 [RAG] Updated ${updatedCellCount} cells total`);
             console.log('🔍 [RAG] Final mapping complete - updated data:', JSON.stringify(updatedData, null, 2));
-            
+
             // Update state and force re-render
             setCurrentValue(updatedData);
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 ...updatedData  // Spread the entire updated data
             }));
-            
+
         } else {
             // For other formats, assume ragTable is in the correct structure
             setCurrentValue((prev) => ({ ...prev, table: ragTable }));
             setFormData((prev) => ({ ...prev, table: ragTable }));
         }
-        
+
         setIsRagModalOpen(false);
     };
 
@@ -187,7 +187,7 @@ const QuestionEditPopup = ({
     // For table questions, pass table metadata if available
     // For dynamic modules, metadata is directly in question.metadata with headers, columns, rows
     // For environment modules, it might be in question.table_metadata or question.metadata.table_metadata
-    const tableMetadata = question.metadata?.headers && question.metadata?.columns && question.metadata?.rows 
+    const tableMetadata = question.metadata?.headers && question.metadata?.columns && question.metadata?.rows
         ? question.metadata  // Dynamic module format
         : (question.table_metadata || question.metadata?.table_metadata || null); // Environment module format
     const [formData, setFormData] = useState({
@@ -685,7 +685,7 @@ interface StructuredAISuggestion {
             // Get user data for fallback values
             const userData = JSON.parse(localStorage.getItem("userData") || "{}");
             const selectedReport = JSON.parse(localStorage.getItem("selectedReport") || "{}");
-            
+
             // Ensure company_id and financial_year are set in localStorage
             let company_id = localStorage.getItem("company_id");
             if (!company_id) {
@@ -699,7 +699,7 @@ interface StructuredAISuggestion {
                     throw new Error("Company ID is required but not available");
                 }
             }
-            
+
             let financial_year = localStorage.getItem("financial_year");
             if (!financial_year) {
                 financial_year = selectedReport?.financial_year;
@@ -712,7 +712,7 @@ interface StructuredAISuggestion {
                     throw new Error("Financial year is required but not available");
                 }
             }
-            
+
             // Remove or reduce noisy/unnecessary console.logs
             // console.log("📤 [QuestionEditPopup] Context values:", {
             //     questionId: question.question_id,
@@ -742,7 +742,7 @@ interface StructuredAISuggestion {
 
             // Add a small delay to ensure localStorage is updated
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // Verify all required parameters are present
             if (!moduleId) {
                 throw new Error("Missing moduleId parameter");
@@ -750,11 +750,11 @@ interface StructuredAISuggestion {
             if (!question.question_id) {
                 throw new Error("Missing questionId parameter");
             }
-            
+
             // Get current values from localStorage for verification
             const currentCompanyId = localStorage.getItem("company_id");
             const currentFinancialYear = localStorage.getItem("financial_year");
-            
+
             // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] Final verification before API call:", {
             //     moduleId,
@@ -763,7 +763,7 @@ interface StructuredAISuggestion {
             //     financial_year: currentFinancialYear,
             //     answerData
             // });
-            
+
             // Final validation check
             if (!moduleId) {
                 throw new Error("Missing moduleId parameter");
@@ -777,14 +777,14 @@ interface StructuredAISuggestion {
             if (!currentFinancialYear) {
                 throw new Error("Missing financial_year in localStorage");
             }
-            
+
             // Remove or reduce noisy/unnecessary console.logs
             // console.log("📝 [QuestionEditPopup] All parameters validated, making API call...");
             // console.log("📝 [QuestionEditPopup] API URL will be: /module-answers/" + moduleId + "/" + currentCompanyId + "/" + currentFinancialYear);
-            
+
             // Add a small delay before making the API call
             await new Promise(resolve => setTimeout(resolve, 200));
-            
+
             const response = await submitAnswer({
                 questionId: question.question_id,
                 answerData,
@@ -814,7 +814,7 @@ interface StructuredAISuggestion {
             //     message: err?.message,
             //     stack: err?.stack
             // });
-            const errorMessage = 
+            const errorMessage =
                 err?.data?.detail ||
                 err?.data?.message ||
                 err?.message ||
@@ -835,14 +835,14 @@ interface StructuredAISuggestion {
     const handleTableCellChange = (rowId, colId, value) => {
         // Handle both currentValue.table and direct currentValue structure for dynamic modules
         const tableData = currentValue.table || currentValue;
-        
+
         if (tableData && tableData.rows) {
             const updatedTable = {
                 ...tableData,
                 rows: tableData.rows.map((row, rowIndex) => {
                     // For dynamic modules, match by index, for others match by row_id
                     const isTargetRow = row.row_id ? (row.row_id === rowId) : (rowIndex.toString() === rowId);
-                    
+
                     if (isTargetRow) {
                         return {
                             ...row,
@@ -856,7 +856,7 @@ interface StructuredAISuggestion {
                     return row;
                 }),
             };
-            
+
             // Update the structure appropriately
             if (currentValue.table) {
                 setCurrentValue({
@@ -985,25 +985,25 @@ interface StructuredAISuggestion {
 
         switch (questionType) {
             case 'subjective': {
-                    return (
-                        <SubjectiveRenderer
-                            metadata={sanitizedMetadata}
-                            data={formData}
-                            isEditing={true}
-                            onSubmit={(data) => {
-                                setFormData(data);
-                                setCurrentValue(data);
-                            }}
-                        />
-                    );
-                }
+                return (
+                    <SubjectiveRenderer
+                        metadata={sanitizedMetadata}
+                        data={formData}
+                        isEditing={true}
+                        onSubmit={(data) => {
+                            setFormData(data);
+                            setCurrentValue(data);
+                        }}
+                    />
+                );
+            }
             case 'table':
                 console.log('🔍 [TableRenderer] Rendering table with data:', currentValue);
                 console.log('🔍 [TableRenderer] Metadata:', metadata);
                 return (
-                    <TableRenderer 
-                        metadata={metadata} 
-                        data={currentValue} 
+                    <TableRenderer
+                        metadata={metadata}
+                        data={currentValue}
                         isEditing={true}
                         onSave={(data) => {
                             console.log('🔍 [TableRenderer] onSave called with:', data);
@@ -1014,9 +1014,9 @@ interface StructuredAISuggestion {
                 );
             case 'table_with_additional_rows':
                 return (
-                    <TableWithAdditionalRowsRenderer 
-                        metadata={metadata} 
-                        data={currentValue} 
+                    <TableWithAdditionalRowsRenderer
+                        metadata={metadata}
+                        data={currentValue}
                         isEditing={true}
                         onSave={(data) => {
                             setCurrentValue(data);
@@ -1102,22 +1102,7 @@ interface StructuredAISuggestion {
             aria-labelledby={`question-${question.question_id}-title`}
         >
             <div className="relative w-full max-w-[70vw] h-[80vh] flex items-center justify-center">
-                {/* RAG Upload Button */}
-                <div className="absolute top-4 right-8 z-30">
-                    <button
-                        type="button"
-                        className="bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition shadow"
-                        onClick={() => {
-                            console.log('🔍 [QuestionEditPopup] Opening RAG modal');
-                            console.log('🔍 [QuestionEditPopup] Question:', question);
-                            console.log('🔍 [QuestionEditPopup] RAG mode:', ragMode);
-                            console.log('🔍 [QuestionEditPopup] Table metadata:', tableMetadata);
-                            setIsRagModalOpen(true);
-                        }}
-                    >
-                        Upload & Extract from Document
-                    </button>
-                </div>
+                {/* RAG Upload Button moved to left panel, top, with meta badges */}
 
                 {/* RAG Modal Integration */}
                 {isRagModalOpen && (
@@ -1144,7 +1129,21 @@ interface StructuredAISuggestion {
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                         >
                             <div className="sticky top-0 z-20 bg-gray-50 pb-2 ">
-                                <MetaBadges question={question} />
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <MetaBadges question={question} />
+                                </div>
+                                {/* RAG Upload Button below Principle badge */}
+                                <div className="mb-2">
+                                    <button
+                                        type="button"
+                                        className="bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition shadow"
+                                        onClick={() => {
+                                            setIsRagModalOpen(true);
+                                        }}
+                                    >
+                                        Upload & Extract from Document
+                                    </button>
+                                </div>
                                 <h3 className="text-base font-semibold text-gray-800">
                                     {question.question}
                                 </h3>
@@ -1318,32 +1317,32 @@ interface StructuredAISuggestion {
 
             {/* Confirmation Modal for Audited Change */}
             {showAuditedConfirm && (
-              <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/40">
-                <div className="bg-white rounded-lg shadow-lg p-6 w-80 flex flex-col items-center">
-                  <div className="mb-4 text-center text-gray-800 text-base font-semibold">
-                    Are you sure you want to set Audited to <span className="font-bold">{pendingAuditedValue ? 'Audited' : 'Not Audited'}</span>?
-                  </div>
-                  <div className="flex gap-4">
-                    <button
-                      className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                      onClick={() => { setShowAuditedConfirm(false); setPendingAuditedValue(null); }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      onClick={async () => {
-                        setAuditedValue(pendingAuditedValue);
-                        setShowAuditedConfirm(false);
-                        setPendingAuditedValue(null);
-                        await saveAuditedToBackend(pendingAuditedValue);
-                      }}
-                    >
-                      Save
-                    </button>
-                  </div>
+                <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/40">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-80 flex flex-col items-center">
+                        <div className="mb-4 text-center text-gray-800 text-base font-semibold">
+                            Are you sure you want to set Audited to <span className="font-bold">{pendingAuditedValue ? 'Audited' : 'Not Audited'}</span>?
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                                onClick={() => { setShowAuditedConfirm(false); setPendingAuditedValue(null); }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                onClick={async () => {
+                                    setAuditedValue(pendingAuditedValue);
+                                    setShowAuditedConfirm(false);
+                                    setPendingAuditedValue(null);
+                                    await saveAuditedToBackend(pendingAuditedValue);
+                                }}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
                 </div>
-              </div>
             )}
         </div>
     );
