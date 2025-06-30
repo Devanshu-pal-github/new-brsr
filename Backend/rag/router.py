@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Body, Depends
-from .rag_service import process_pdf_and_store, retrieve_relevant_chunks, ask_gemini_with_context, delete_file_and_index, extract_table_values
+from .rag_service import process_file_and_store, retrieve_relevant_chunks, ask_gemini_with_context, delete_file_and_index, extract_table_values
 
 # Table Extraction Models
 from typing import Dict, Any, List, Optional
@@ -38,22 +38,34 @@ def ping():
     return {"message": "RAG module is up!"}
 
 
-# PDF upload endpoint
+# File upload endpoint
 @router.post("/upload/")
 async def upload_file(
     file: UploadFile = File(...),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    if not file.filename or not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    # Support multiple file types
+    allowed_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx']
+    file_ext = '.' + file.filename.lower().split('.')[-1] if file.filename else ''
+    
+    if not file.filename or file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Only the following file types are allowed: {', '.join(allowed_extensions)}"
+        )
+    
     if file.size is None:
         raise HTTPException(status_code=400, detail="File size is required")
+    
     try:
         file_bytes = await file.read()
-        file_id = await process_pdf_and_store(file_bytes, file.filename, file.size, db)
+        print(f"🔍 [RAG API] Uploading file: {file.filename} ({file.size} bytes)")
+        file_id = await process_file_and_store(file_bytes, file.filename, file.size, db)
+        print(f"🔍 [RAG API] File uploaded successfully with ID: {file_id}")
         return {"file_id": file_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing PDF file: {str(e)}")
+        print(f"❌ [RAG API] Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 
@@ -86,9 +98,19 @@ async def extract_table(
     Extracts table values from a document for a given table metadata and question.
     Returns a mapping of rowIdx -> {colKey: value, ...} for editable fields only.
     """
-    result = await extract_table_values(
-        file_id=request.file_id,
-        table_metadata=request.table_metadata,
-        question=request.question
-    )
-    return result
+    print(f"🔍 [RAG API] Table extraction request:")
+    print(f"🔍 [RAG API] File ID: {request.file_id}")
+    print(f"🔍 [RAG API] Question: {request.question}")
+    print(f"🔍 [RAG API] Table metadata keys: {list(request.table_metadata.keys()) if request.table_metadata else 'None'}")
+    
+    try:
+        result = await extract_table_values(
+            file_id=request.file_id,
+            table_metadata=request.table_metadata,
+            question=request.question
+        )
+        print(f"🔍 [RAG API] Extraction result: {result}")
+        return result
+    except Exception as e:
+        print(f"❌ [RAG API] Error in table extraction: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error extracting table values: {str(e)}")

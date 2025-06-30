@@ -388,10 +388,13 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
               <RagDocumentQA
                 isOpen={ragTableModalOpen}
                 onClose={() => setRagTableModalOpen(false)}
-                question={question}
+                questionText={title || ''}
                 mode="table"
                 tableMetadata={metadata}
-                onTableValues={handleRagTableValues}
+                onTableValues={(values) => {
+                  handleRagTableValues(values);
+                  setRagTableModalOpen(false);
+                }}
               />
             )}
           </>

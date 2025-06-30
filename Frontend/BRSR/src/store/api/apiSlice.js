@@ -962,6 +962,14 @@ export const apiSlice = createApi({
       }),
     }),
     
+    ragExtractTable: builder.mutation({
+      query: ({ file_id, table_metadata, question }) => ({
+        url: '/rag/extract-table',
+        method: 'POST',
+        body: { file_id, table_metadata, question },
+      }),
+    }),
+
     mcpChat: builder.mutation({
       query: ({ sessionId, message }) => ({
         url: '/api/chat',
@@ -1023,6 +1031,7 @@ export const {
   useMcpChatMutation,
   useGetCommonFieldsQuery,
   useUploadRagDocumentMutation,
-  useRagChatMutation,
+useRagChatMutation,
+useRagExtractTableMutation,
 } = apiSlice;
 export default apiSlice;
