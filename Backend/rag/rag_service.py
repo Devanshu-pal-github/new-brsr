@@ -19,6 +19,7 @@ import datetime
 import shutil
 import re
 import time
+import hashlib
 from typing import List
 from io import BytesIO
 
@@ -47,6 +48,58 @@ except ImportError:
 load_dotenv()
 GEMINI_API_KEY_RAG = os.getenv("GEMINI_API_KEY_RAG")
 GEMINI_MODEL = "gemini-2.0-flash"
+
+# Global variables for caching and rate limiting
+API_CACHE = {}
+LAST_API_CALL = {}
+MIN_API_INTERVAL = 2.0  # Minimum 2 seconds between API calls per endpoint
+CACHE_DURATION = 3600  # Cache for 1 hour
+
+def get_cache_key(content: str, question: str) -> str:
+    """Generate a cache key for the request"""
+    combined = f"{content}|{question}"
+    return hashlib.md5(combined.encode()).hexdigest()
+
+def is_api_rate_limited(endpoint: str) -> bool:
+    """Check if we need to wait before making an API call"""
+    if endpoint not in LAST_API_CALL:
+        return False
+    
+    time_since_last = time.time() - LAST_API_CALL[endpoint]
+    return time_since_last < MIN_API_INTERVAL
+
+def wait_for_rate_limit(endpoint: str):
+    """Wait if necessary to respect rate limits"""
+    if endpoint in LAST_API_CALL:
+        time_since_last = time.time() - LAST_API_CALL[endpoint]
+        if time_since_last < MIN_API_INTERVAL:
+            sleep_time = MIN_API_INTERVAL - time_since_last
+            print(f"Rate limiting: waiting {sleep_time:.2f} seconds before API call")
+            time.sleep(sleep_time)
+
+def update_last_api_call(endpoint: str):
+    """Update the timestamp of the last API call"""
+    LAST_API_CALL[endpoint] = time.time()
+
+def get_cached_response(cache_key: str):
+    """Get cached response if available and not expired"""
+    if cache_key in API_CACHE:
+        cached_data = API_CACHE[cache_key]
+        if time.time() - cached_data['timestamp'] < CACHE_DURATION:
+            print(f"Using cached response for key: {cache_key[:8]}...")
+            return cached_data['response']
+        else:
+            # Remove expired cache
+            del API_CACHE[cache_key]
+    return None
+
+def cache_response(cache_key: str, response):
+    """Cache the API response"""
+    API_CACHE[cache_key] = {
+        'response': response,
+        'timestamp': time.time()
+    }
+    print(f"Cached response for key: {cache_key[:8]}...")
 MONGODB_URL = os.getenv("MONGODB_URL")
 DB_NAME = os.getenv("DB_NAME")
 
@@ -54,6 +107,11 @@ DB_NAME = os.getenv("DB_NAME")
 _embeddings = None
 _text_splitter = None
 _genai_client = None
+
+# Cache for API responses to avoid duplicate calls
+_api_response_cache = {}
+_last_api_call_time = 0
+_min_api_call_interval = 1.0  # Minimum 1 second between API calls
 
 def get_embeddings():
     """Lazy load embeddings to avoid slow startup times."""
@@ -101,6 +159,15 @@ def retrieve_relevant_chunks(file_id: str, question: str, k: int = 3):
 
 def ask_gemini_with_context(context: str, question: str) -> str:
     print(f"🔍 [RAG] Asking Gemini with context length: {len(context)}")
+    
+    # Generate cache key
+    cache_key = get_cache_key(context, question)
+    
+    # Check cache first
+    cached_response = get_cached_response(cache_key)
+    if cached_response:
+        return cached_response
+    
     prompt = (
         "You are a chatbot that answers questions strictly based on the provided document. "
         "Do not use any external knowledge or assumptions.\n\n"
@@ -111,8 +178,15 @@ def ask_gemini_with_context(context: str, question: str) -> str:
     print(f"🔍 [RAG] Full prompt: {prompt[:500]}...")
     
     try:
+        # Apply rate limiting
+        wait_for_rate_limit("gemini_qa")
+        
         generate_content_config = types.GenerateContentConfig(response_mime_type="text/plain")
         genai_client = get_genai_client()  # Use lazy-loaded client
+        
+        # Update rate limit tracker
+        update_last_api_call("gemini_qa")
+        
         response = genai_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
@@ -124,6 +198,10 @@ def ask_gemini_with_context(context: str, question: str) -> str:
         
         result = str(response.text)
         print(f"🔍 [RAG] Gemini response: {result}")
+        
+        # Cache the successful response
+        cache_response(cache_key, result)
+        
         return result
     except Exception as e:
         error_msg = str(e)
@@ -258,10 +336,14 @@ async def extract_table_values(file_id: str, table_metadata: dict, question: str
     
     editable_row_indices = []
     for idx, row in enumerate(rows):
-        if row.get('isHeader'):
+        if row.get('isHeader') or row.get('isSectionHeader'):
             continue
-        param_clean = clean_html(row.get('parameter', '')).lower()
-        print(f"🔍 [RAG] Row {idx}: '{row.get('parameter', '')}' -> cleaned: '{param_clean}'")
+        
+        # For dynamic modules, check if row has a 'label' field (row parameter)
+        # For environment modules, check 'parameter' field
+        param = row.get('label') or row.get('parameter', '')
+        param_clean = clean_html(param).lower()
+        print(f"🔍 [RAG] Row {idx}: '{param}' -> cleaned: '{param_clean}'")
         
         # Check if it's auto-calculated (very specific checks)
         is_auto_calc = (
@@ -296,7 +378,8 @@ async def extract_table_values(file_id: str, table_metadata: dict, question: str
     
     for row_idx in editable_row_indices:
         row = rows[row_idx]
-        param = row.get('parameter', '')
+        # Handle both dynamic module format ('label') and environment module format ('parameter')
+        param = row.get('label') or row.get('parameter', '')
         expected_unit = row.get('unit', '').strip()
         print(f"🔍 [RAG] Processing row {row_idx}: {param} (unit: {expected_unit})")
         
@@ -366,7 +449,9 @@ Return only the complete numeric value (including all digits). If the number has
             print(f"🔍 [RAG] Enhanced prompt: {prompt[:200]}...")
             
             # Ask Gemini with enhanced prompt
-            answer = ask_gemini_with_context(context, f"Extract the complete numeric value for '{param_clean}' for '{year_label}' from the table data. Return the full number including all digits (e.g., if you see 132,000 return the complete number, not just 132).")
+            question = f"Extract the complete numeric value for '{param_clean}' for '{year_label}' from the table data. Return the full number including all digits (e.g., if you see 132,000 return the complete number, not just 132)."
+            print(f"🔍 [RAG] Asking Gemini for parameter: {param_clean}, Year: {year_label}")
+            answer = ask_gemini_with_context(context, question)
             print(f"🔍 [RAG] Gemini answer: {answer}")
             
             # Check if the answer contains an error (like quota exceeded)
@@ -639,7 +724,8 @@ Return only the complete numeric value (including all digits). If the number has
     parameters_info = {}
     for row_idx in editable_row_indices:
         row = rows[row_idx]
-        param = row.get('parameter', '')
+        # Handle both dynamic module format ('label') and environment module format ('parameter')
+        param = row.get('label') or row.get('parameter', '')
         unit = row.get('unit', '').strip()
         # Clean HTML tags for display
         param_clean = clean_html(param)

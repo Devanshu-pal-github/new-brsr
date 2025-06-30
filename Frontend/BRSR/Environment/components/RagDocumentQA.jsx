@@ -285,8 +285,6 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                                             const paramName = paramInfo.parameter || `Unknown Parameter (Row ${parseInt(rowIdx, 10) + 1})`;
                                             const unit = paramInfo.unit || '';
                                             
-                                            console.log(`🔍 [RAG Frontend] Row ${rowIdx}: paramInfo =`, paramInfo, `, paramName =`, paramName);
-                                            
                                             return (
                                                 <div key={rowIdx} className="border border-gray-200 rounded p-2 bg-white">
                                                     <div className="font-semibold text-xs mb-2 text-[#1A2341]">

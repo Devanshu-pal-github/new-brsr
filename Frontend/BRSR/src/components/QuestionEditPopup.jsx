@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import QuestionRagModal from "./QuestionRagModal";
 import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import {
@@ -70,6 +71,125 @@ const QuestionEditPopup = ({
     moduleId,
     isOpen, // <-- Add this prop if not already present
 }) => {
+    // Helper function to safely initialize answer data
+    const safeInitializeAnswer = (answer, questionMetadata) => {
+        if (!answer || !answer.rows) return answer || {};
+        
+        // If answer has rows, ensure none are null
+        const safeAnswer = { ...answer };
+        if (Array.isArray(answer.rows)) {
+            safeAnswer.rows = answer.rows.map(row => 
+                row ? { ...row, cells: row.cells || [] } : { cells: [] }
+            );
+        }
+        
+        return safeAnswer;
+    };
+
+    // RAG modal state
+    const [isRagModalOpen, setIsRagModalOpen] = useState(false);
+
+    // Handler for accepting RAG answer (subjective)
+    const handleRagAnswerSuggested = (ragAnswer) => {
+        setFormData((prev) => ({ ...prev, string_value: ragAnswer, response: ragAnswer }));
+        setCurrentValue((prev) => ({ ...prev, string_value: ragAnswer, response: ragAnswer }));
+        setIsRagModalOpen(false);
+    };
+
+    // Handler for accepting RAG table values
+    const handleRagTableValues = (ragTable) => {
+        console.log('🔍 [RAG] Received RAG table values:', ragTable);
+        
+        // For dynamic modules, we need to update the rows structure properly
+        if (question.question_type === "table" || question.question_type === "table_with_additional_rows") {
+            // Convert RAG format {rowIdx: {colKey: value}} to dynamic module format {rows: []}
+            // Deep clone the current value to avoid mutation issues
+            const updatedData = JSON.parse(JSON.stringify(currentValue || {}));
+            
+            // Initialize rows if not present
+            if (!updatedData.rows || !Array.isArray(updatedData.rows)) {
+                const rowCount = question.metadata?.rows?.length || 0;
+                updatedData.rows = Array(rowCount).fill(null).map(() => ({ cells: [] }));
+            } else {
+                // Ensure we have a properly cloned rows array and handle null rows
+                updatedData.rows = updatedData.rows.map(row => 
+                    row ? {
+                        ...row,
+                        cells: row.cells ? [...row.cells] : []
+                    } : { cells: [] }
+                );
+                
+                // Ensure we have the correct number of rows based on metadata
+                const expectedRowCount = question.metadata?.rows?.length || 0;
+                while (updatedData.rows.length < expectedRowCount) {
+                    updatedData.rows.push({ cells: [] });
+                }
+            }
+            
+            // Get column keys from metadata (excluding parameter columns)
+            const columnKeys = question.metadata?.columns?.map(col => col.key) || [];
+            
+            // Update the rows with RAG values
+            let updatedCellCount = 0;
+            Object.entries(ragTable).forEach(([rowIdx, rowData]) => {
+                const rowIndex = parseInt(rowIdx, 10);
+                
+                // Safety checks: Ensure row exists, is not null, and index is valid
+                if (rowIndex >= 0 && 
+                    rowIndex < updatedData.rows.length && 
+                    updatedData.rows[rowIndex] && 
+                    updatedData.rows[rowIndex] !== null) {
+                    Object.entries(rowData).forEach(([colKey, value]) => {
+                        const colIndex = columnKeys.indexOf(colKey);
+                        
+                        // Only update if column exists
+                        if (colIndex !== -1) {
+                            // Ensure cells array exists and has enough elements
+                            if (!updatedData.rows[rowIndex].cells) {
+                                updatedData.rows[rowIndex].cells = [];
+                            }
+                            while (updatedData.rows[rowIndex].cells.length <= colIndex) {
+                                updatedData.rows[rowIndex].cells.push({ value: '' });
+                            }
+                            
+                            // Update the cell value - create a new object to avoid mutation
+                            updatedData.rows[rowIndex].cells[colIndex] = { value: value || '' };
+                            updatedCellCount++;
+                            console.log(`🔍 [RAG] Updated cell [${rowIndex}][${colIndex}] = "${value || ''}"`);
+                        }
+                    });
+                } else {
+                    console.warn(`🔍 [RAG] Row at index ${rowIndex} is null, undefined, or out of bounds (total rows: ${updatedData.rows.length})`);
+                }
+            });
+            
+            console.log(`🔍 [RAG] Updated ${updatedCellCount} cells total`);
+            console.log('🔍 [RAG] Final mapping complete - updated data:', JSON.stringify(updatedData, null, 2));
+            
+            // Update state and force re-render
+            setCurrentValue(updatedData);
+            setFormData(prev => ({ 
+                ...prev, 
+                ...updatedData  // Spread the entire updated data
+            }));
+            
+        } else {
+            // For other formats, assume ragTable is in the correct structure
+            setCurrentValue((prev) => ({ ...prev, table: ragTable }));
+            setFormData((prev) => ({ ...prev, table: ragTable }));
+        }
+        
+        setIsRagModalOpen(false);
+    };
+
+    // Determine RAG mode and table metadata
+    const ragMode = (question.question_type === "table" || question.question_type === "table_with_additional_rows") ? "table" : "subjective";
+    // For table questions, pass table metadata if available
+    // For dynamic modules, metadata is directly in question.metadata with headers, columns, rows
+    // For environment modules, it might be in question.table_metadata or question.metadata.table_metadata
+    const tableMetadata = question.metadata?.headers && question.metadata?.columns && question.metadata?.rows 
+        ? question.metadata  // Dynamic module format
+        : (question.table_metadata || question.metadata?.table_metadata || null); // Environment module format
     const [formData, setFormData] = useState({
         string_value: initialAnswer?.string_value || "",
         decimal_value: initialAnswer?.decimal_value || "",
@@ -79,7 +199,7 @@ const QuestionEditPopup = ({
         has_details: initialAnswer?.has_details || false,
         justification: initialAnswer?.justification || "",
     });
-    const [currentValue, setCurrentValue] = useState(initialAnswer || {});
+    const [currentValue, setCurrentValue] = useState(() => safeInitializeAnswer(initialAnswer, question.metadata));
     const [errors, setErrors] = useState({});
     const [isVisible, setIsVisible] = useState(false);
     const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
@@ -713,52 +833,59 @@ interface StructuredAISuggestion {
     };
 
     const handleTableCellChange = (rowId, colId, value) => {
-        const updatedTable = {
-            ...currentValue.table,
-            rows: currentValue.table.rows.map((row) => {
-                if (row.row_id === rowId) {
-                    return {
-                        ...row,
-                        cells: row.cells.map((cell) =>
-                            cell.col_id === colId ? { ...cell, value } : cell
-                        ),
-                    };
-                }
-                return row;
-            }),
-        };
-        setCurrentValue({
-            ...currentValue,
-            table: updatedTable,
-        });
+        // Handle both currentValue.table and direct currentValue structure for dynamic modules
+        const tableData = currentValue.table || currentValue;
+        
+        if (tableData && tableData.rows) {
+            const updatedTable = {
+                ...tableData,
+                rows: tableData.rows.map((row, rowIndex) => {
+                    // For dynamic modules, match by index, for others match by row_id
+                    const isTargetRow = row.row_id ? (row.row_id === rowId) : (rowIndex.toString() === rowId);
+                    
+                    if (isTargetRow) {
+                        return {
+                            ...row,
+                            cells: row.cells.map((cell, colIndex) => {
+                                // For dynamic modules, match by index, for others match by col_id
+                                const isTargetCol = cell.col_id ? (cell.col_id === colId) : (colIndex.toString() === colId);
+                                return isTargetCol ? { ...cell, value } : cell;
+                            }),
+                        };
+                    }
+                    return row;
+                }),
+            };
+            
+            // Update the structure appropriately
+            if (currentValue.table) {
+                setCurrentValue({
+                    ...currentValue,
+                    table: updatedTable,
+                });
+            } else {
+                setCurrentValue(updatedTable);
+            }
+        }
     };
 
     const validateForm = (data) => {
         const errors = {};
-        console.log("🔍 [QuestionEditPopup] Validating form with data:", data);
-        console.log("🔍 [QuestionEditPopup] Question metadata:", question);
 
         // Special case for questions with has_provisions field
         if (data.has_provisions !== undefined) {
-            console.log("🔍 [QuestionEditPopup] Validating has_provisions question", {
-                has_provisions: data.has_provisions,
-                explanation: data.explanation
-            });
             // If has_provisions is true and explanation is provided, consider it valid
             if (data.has_provisions === true && data.explanation) {
-                console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is true and explanation is provided");
                 return errors; // Return empty errors object (valid)
             }
 
             // If has_provisions is true but no explanation is provided
             if (data.has_provisions === true && !data.explanation) {
-                console.log("❌ [QuestionEditPopup] Validation failed: has_provisions is true but no explanation provided");
                 errors.explanation = "Explanation is required when provisions are selected.";
             }
 
             // If has_provisions is false, no explanation is required
             if (data.has_provisions === false) {
-                console.log("✅ [QuestionEditPopup] Validation passed: has_provisions is false");
                 return errors; // Return empty errors object (valid)
             }
         }
@@ -779,7 +906,6 @@ interface StructuredAISuggestion {
             errors.note = "Note is required.";
         }
 
-        console.log("🔍 [QuestionEditPopup] Validation errors:", errors);
         return errors;
     };
 
@@ -872,12 +998,15 @@ interface StructuredAISuggestion {
                     );
                 }
             case 'table':
+                console.log('🔍 [TableRenderer] Rendering table with data:', currentValue);
+                console.log('🔍 [TableRenderer] Metadata:', metadata);
                 return (
                     <TableRenderer 
                         metadata={metadata} 
                         data={currentValue} 
                         isEditing={true}
                         onSave={(data) => {
+                            console.log('🔍 [TableRenderer] onSave called with:', data);
                             setCurrentValue(data);
                             setFormData(prev => ({ ...prev, ...data }));
                         }}
@@ -973,6 +1102,35 @@ interface StructuredAISuggestion {
             aria-labelledby={`question-${question.question_id}-title`}
         >
             <div className="relative w-full max-w-[70vw] h-[80vh] flex items-center justify-center">
+                {/* RAG Upload Button */}
+                <div className="absolute top-4 right-8 z-30">
+                    <button
+                        type="button"
+                        className="bg-[#4F46E5] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#1A2341] transition shadow"
+                        onClick={() => {
+                            console.log('🔍 [QuestionEditPopup] Opening RAG modal');
+                            console.log('🔍 [QuestionEditPopup] Question:', question);
+                            console.log('🔍 [QuestionEditPopup] RAG mode:', ragMode);
+                            console.log('🔍 [QuestionEditPopup] Table metadata:', tableMetadata);
+                            setIsRagModalOpen(true);
+                        }}
+                    >
+                        Upload & Extract from Document
+                    </button>
+                </div>
+
+                {/* RAG Modal Integration */}
+                {isRagModalOpen && (
+                    <QuestionRagModal
+                        isOpen={isRagModalOpen}
+                        onClose={() => setIsRagModalOpen(false)}
+                        question={question}
+                        tableMetadata={tableMetadata}
+                        onAnswerSuggested={ragMode === "subjective" ? handleRagAnswerSuggested : undefined}
+                        onTableValues={ragMode === "table" ? handleRagTableValues : undefined}
+                    />
+                )}
+
                 <motion.div
                     className={`bg-white rounded-2xl shadow-xl transition-all duration-700 ease-in-out flex flex-col overflow-hidden w-full h-full`}
                     initial={{ scale: 0.95, opacity: 0 }}

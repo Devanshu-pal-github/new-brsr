@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import QuestionEditPopup from '../../components/QuestionEditPopup';
 import ChatbotWindow from '../../AICHATBOT/ChatbotWindow';
@@ -27,33 +27,17 @@ const DynamicQuestionRenderer = forwardRef(({
   // Remove extraction of moduleId from question object
   // const moduleId = question.module_id;
 
-  console.log('🧩 Question:', question);
-  console.log('🧩 Using moduleId:', moduleId);
-
-  // DEBUG: Log the question object to verify what is received from backend
-  console.log('[DynamicQuestionRenderer] Rendering question:', question);
-
   useEffect(() => {
     setTempData(questionData);
   }, [questionData]);
 
-  // Log the question metadata for debugging
-  console.log('🧩 Question metadata:', question.metadata);
-  console.log('📊 Question data:', questionData);
-
   const handleDataChange = (newData) => {
-    console.log('📝 Data changed in renderer:', newData);
-    console.log('🔍 newData types:', Object.entries(newData).map(([key, value]) => `${key}: ${typeof value}`));
     setTempData(newData);
   };
 
   const handleSave = async (data) => {
-    console.log('💾 Saving data from DynamicQuestionRenderer:', data);
-    console.log('🔍 data types:', Object.entries(data).map(([key, value]) => `${key}: ${typeof value}`));
-    console.log('🔍 Using moduleId for save:', moduleId);
     try {
       await onSave(data);
-      console.log('✅ Save successful, closing modal');
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('❌ Error saving data:', error);
@@ -270,6 +254,16 @@ const DynamicQuestionRenderer = forwardRef(({
     openAIChat: handleAIClick,
   }));
 
+  // Memoize question object to prevent unnecessary re-renders
+  const memoizedQuestion = useMemo(() => ({
+    ...question,
+    question_id: question.question_id || question._id,
+    question: question.question_text || question.title || question.human_readable_id,
+    question_type: question.question_type || (question.metadata && question.metadata.headers && question.metadata.columns && question.metadata.rows ? 'table' : 'subjective'),
+    has_string_value: question.question_type === 'subjective' || (!question.question_type && !(question.metadata && question.metadata.headers)),
+    string_value_required: question.required,
+  }), [question]);
+
   return (
     <AppProvider>
       <div className="relative">
@@ -279,17 +273,12 @@ const DynamicQuestionRenderer = forwardRef(({
 
         {isEditModalOpen && (
           <QuestionEditPopup
-            question={{
-              ...question,
-              question_id: question.question_id || question._id,
-              question: question.question_text || question.title || question.human_readable_id,
-              has_string_value: question.question_type === 'subjective',
-              string_value_required: question.required,
-            }}
+            question={memoizedQuestion}
             initialAnswer={questionData || {}}
             onClose={() => setIsEditModalOpen(false)}
             onSuccess={handleSave}
             moduleId={moduleId}
+            isOpen={isEditModalOpen}
           />
         )}
 

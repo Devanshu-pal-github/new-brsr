@@ -13,20 +13,20 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave }) => {
   };
   const previousFinancialYear = getPreviousFinancialYear(currentFinancialYear);
 
-  // Update local data when the prop changes (skip while editing)
+  // Update local data when the prop changes
   useEffect(() => {
-    if (!isEditing) {
-      console.log('🔄 TableRenderer data prop changed:', data);
-      console.log('🔍 Data type:', typeof data, 'Is null?', data === null, 'Is undefined?', data === undefined);
-      setLocalData(data || {});
-    }
-  }, [data, isEditing]);
+    console.log('🔍 [TableRenderer] Data prop changed, isEditing:', isEditing, 'new data:', data);
+    
+    // Always update localData when data prop changes, regardless of editing mode
+    // This is essential for RAG updates to work
+    setLocalData(data || {});
+  }, [data]);
 
   // Debounced sync to parent to avoid UI flicker while typing
   useEffect(() => {
     if (!isEditing || !onSave) return;
     const timer = setTimeout(() => {
-      console.log('🔄 Auto-syncing table data with parent in edit mode:', localData);
+      // console.log('🔄 Auto-syncing table data with parent in edit mode:', localData);
       onSave(localData);
     }, 300);
     return () => clearTimeout(timer);
