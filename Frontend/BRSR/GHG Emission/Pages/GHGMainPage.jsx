@@ -107,43 +107,59 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
   };
 
   return (
-    <div className="min-w-full  overflow-x-hidden ">
-      {/* Breadcrumb for GHG > Scope */}
+    <div className="min-w-full h-full overflow-hidden flex flex-col">
+      {/* Breadcrumb for GHG > Scope - Fixed */}
       {!hideBreadcrumb && (
-        <div className="mb-4 ">
-          <Breadcrumb section="GHG Emission" activeTab={activeScope}  />
+        <div className="mb-4 flex-shrink-0">
+          <Breadcrumb section="GHG Emission" activeTab={activeScope} />
         </div>
       )}
-      {/* SubHeader for Scope 1, 2, 3 */}
-      <div className={`mb-6 mt-4${smallSubHeader ? ' scale-90' : ''}`}>
+      
+      {/* SubHeader for Scope 1, 2, 3 - Fixed */}
+      <div className={`mb-6 mt-4 flex-shrink-0${smallSubHeader ? ' scale-100' : ''}`}>
         <SubHeader
           tabs={GHG_SCOPES}
           activeTab={activeScope}
           onTabChange={setActiveScope}
         />
       </div>
-      {/* Table or content for the selected scope will go here */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-lg font-semibold">
-            {activeScope}
-            {reportMeta[activeScope]?.total_scope_emissions_co2e !== undefined && (
-              <span className="ml-4 text-base   font-semibold text-[#1A2341]">
-                {/* (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()}) */}
-              </span>
-            )}
-          </div>
-          <button
-            className="bg-[#1A2341] text-white px-4 py-2 rounded hover:bg-[#2c3e50]"
-            onClick={() => setAddOpen(true)}
-          >
-            + Add
-          </button>
+      
+      {/* Header with title and Add button - Fixed */}
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <div className="text-lg font-semibold">
+          {activeScope}
+          {reportMeta[activeScope]?.total_scope_emissions_co2e !== undefined && (
+            <span className="ml-4 text-base font-semibold text-[#1A2341]">
+              {/* (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()}) */}
+            </span>
+          )}
         </div>
-        <div className="bg-white rounded shadow p-4" style={{ height: tableHeight }}>
+        <button
+          className="bg-[#1A2341] text-white px-4 py-2 rounded hover:bg-[#2c3e50]"
+          onClick={() => setAddOpen(true)}
+        >
+          + Add
+        </button>
+      </div>
+      
+      {/* Table container - Scrollable with hidden scrollbar */}
+      <div className="flex-1 bg-white rounded shadow p-4 overflow-hidden">
+        <div 
+          className="h-full overflow-y-auto scrollbar-hide"
+          style={{
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* Internet Explorer 10+ */
+          }}
+        >
+          <style jsx>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none; /* Safari and Chrome */
+            }
+          `}</style>
           <GHGTable scope={activeScope} rows={ghgData[activeScope]} />
         </div>
       </div>
+      
       <GHGAddModal
         open={addOpen}
         onClose={() => setAddOpen(false)}

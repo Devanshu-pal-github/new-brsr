@@ -23,39 +23,55 @@ input:-webkit-autofill:active {
   color: white !important;
 }
 
-/* Custom Scrollbar Styles */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+/* GLOBAL SCROLLBAR HIDING - Applied to all elements */
+/* Hide scrollbar for Chrome, Safari and Opera */
+*::-webkit-scrollbar {
+  display: none;
 }
 
-*::-webkit-scrollbar {
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* Ensure scrolling functionality remains intact */
+* {
+  overflow: auto;
+}
+
+/* Optional: If you need scrollbars back for specific elements, use this class */
+.show-scrollbar::-webkit-scrollbar {
+  display: block;
   width: 9px;
   height: 9px;
 }
 
-*::-webkit-scrollbar-track {
+.show-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-*::-webkit-scrollbar-thumb {
+.show-scrollbar::-webkit-scrollbar-thumb {
   background-color: rgba(155, 155, 155, 0.5);
   border-radius: 20px;
   border: transparent;
 }
 
-*::-webkit-scrollbar-thumb:hover {
+.show-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(155, 155, 155, 0.7);
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
+.show-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* Legacy class for backward compatibility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-

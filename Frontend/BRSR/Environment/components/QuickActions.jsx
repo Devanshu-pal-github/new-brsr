@@ -34,10 +34,16 @@ const QuickActions = ({ plantId, financialYear }) => {
                 View GHG Emissions
             </button>
             <button
-                className="bg-[#4F46E5] text-white px-3 py-2 rounded text-xs font-medium hover:bg-[#2c3e50] transition mt-1"
+                className="bg-[#4F46E5] text-white px-3 py-2 rounded text-xs font-medium hover:bg-[#4338CA] transition mt-1"
                 onClick={() => setRagOpen(true)}
             >
-                Upload Document
+                Get Answers from Document
+            </button>
+            <button
+                className="w-full px-3 py-2 bg-gray-200 text-gray-500 text-sm rounded mt-1 cursor-not-allowed"
+                disabled
+            >
+                More AI Features Coming Soon
             </button>
             {ragOpen && (
                 <RagDocumentQA open={ragOpen} onClose={() => setRagOpen(false)} />

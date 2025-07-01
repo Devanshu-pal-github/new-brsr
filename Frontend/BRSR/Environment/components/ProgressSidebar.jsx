@@ -136,7 +136,7 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     const { totalQuestions, totalAnswered } = calculateOverallProgress();
 
     return (
-        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
             {/* Overall Progress Circle */}
             <div className="flex flex-col items-center mb-[0.7vh]">
                 <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>
@@ -191,35 +191,7 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
                 </div>
             </div>
 
-            {/* Category Overview */}
-            {currentSubmodule && (
-                <div className="bg-[#F8FAFC] rounded-[4px] shadow p-[0.7vw] border border-gray-100 w-full flex flex-col gap-[0.3vh]">
-                    <div className="font-semibold text-[11px] mb-[0.3vh] text-[#000D30]">Category Overview</div>
-                    <div className="flex flex-col gap-[0.15vh]">
-                        {currentSubmodule.categories.map((category, idx) => {
-                            const { totalQuestions, answeredQuestions } = calculateCategoryProgress(category);
-                            const categoryName = category.name || 'Unnamed Category';
-                            const truncatedName = categoryName.length > 15
-                                ? categoryName.substring(0, 15) + '...'
-                                : categoryName;
-
-                            return (
-                                <div key={category.id || `category-${idx}`} className="flex justify-between text-[10px]">
-                                    <span
-                                        className="hover:cursor-help truncate max-w-[120px]"
-                                        title={categoryName}
-                                    >
-                                        {truncatedName}
-                                    </span>
-                                    <span>{answeredQuestions}/{totalQuestions} questions</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* Quick Actions */}
+            {/* Quick Actions (moved to replace Category Overview) */}
             <QuickActions plantId={plantId} financialYear={financialYear} />
         </aside>
     );

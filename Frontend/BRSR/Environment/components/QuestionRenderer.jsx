@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import TableRenderer from './TableRenderer';
 import MultiTableRenderer from './MultiTableRenderer';
 import DynamicTableRenderer from './DynamicTableRenderer';
@@ -31,9 +32,11 @@ const AuditStatusBox = ({ status }) => {
   );
 };
 
-const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, question, plantId, financialYear, updateAuditStatus, refetchAuditStatus }) => {
+const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, question, plantId, financialYear, updateAuditStatus, refetchAuditStatus, metadata, ragTableModalOpen, setRagTableModalOpen, handleRagTableValues }) => {
   // Use auditStatus from audit_statuses if available, fallback to undefined
   const [localAuditStatus, setLocalAuditStatus] = useState(undefined);
+  const [smartFeaturesOpen, setSmartFeaturesOpen] = useState(false);
+
   useEffect(() => {
     if (typeof question.auditStatus !== 'undefined') {
       setLocalAuditStatus(question.auditStatus);
@@ -81,68 +84,213 @@ const EditModal = ({ isOpen, onClose, children, title, onSave, tempData, questio
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50" onClick={handleOutsideClick}>
-      <div className="bg-white rounded-lg w-11/12 max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-[#20305D]">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {children}
-          <div className="flex flex-col">
-            <div className="flex justify-end">
-              {question?.isAuditRequired && (
-                <div className="mt-4 flex items-center space-x-4 pt-4">
-                  <span className="text-sm text-gray-600">Audit Done :</span>
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`audit-status-${question.id}`}
-                      checked={localAuditStatus === true}
-                      onChange={() => handleAuditStatusClick(true)}
-                      disabled={showAuditConfirm || isAuditLoading}
-                      className="accent-green-600"
-                    />
-                    <span className="text-green-700">Yes</span>
-                  </label>
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`audit-status-${question.id}`}
-                      checked={localAuditStatus === false}
-                      onChange={() => handleAuditStatusClick(false)}
-                      disabled={showAuditConfirm || isAuditLoading}
-                      className="accent-red-600"
-                    />
-                    <span className="text-red-700">No</span>
-                  </label>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
+      onMouseDown={handleOutsideClick}
+    >
+      <div className="w-full h-full flex items-center justify-center p-4" style={{ maxWidth: '100vw', overflow: 'hidden' }}>
+        <motion.div
+          className="bg-white rounded-lg overflow-hidden flex shadow-2xl relative"
+          initial={{ width: '1024px' }}
+          animate={{ width: smartFeaturesOpen ? '1374px' : '1024px' }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          style={{ maxHeight: '90vh', minWidth: smartFeaturesOpen ? '1200px' : '1024px', maxWidth: '95vw' }}
+          onMouseDown={e => e.stopPropagation()} // Prevent modal click from closing
+        >
+          <div className="flex h-full min-h-0">
+            {/* Main Content Section */}
+            <div className="flex flex-col" style={{ width: '1024px', minWidth: '1024px' }}>
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center relative">
+                <div>
+                  {/* Principle, Indicator, and Question ID */}
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    {question.id && (
+                      <span className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">Q.No: {question.id}</span>
+                    )}
+                    {question.principle && (
+                      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-2 py-1 rounded">Principle: {question.principle}</span>
+                    )}
+                    {question.indicator && (
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${question.indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {question.indicator}</span>
+                    )}
+                  </div>
+                  {question.description && (
+                    <div className="text-sm text-gray-700 mt-1 font-semibold" dangerouslySetInnerHTML={{ __html: question.description }} />
+                  )}
                 </div>
+                <div className="flex items-center gap-2 relative z-10">
+                  <button
+                    onClick={() => setSmartFeaturesOpen(!smartFeaturesOpen)}
+                    className={`px-2 py-1 text-white text-xs rounded transition-all duration-200 flex items-center gap-1 ${smartFeaturesOpen
+                      ? 'bg-[#3730A3] hover:bg-[#312E81] shadow-md'
+                      : 'bg-[#4F46E5] hover:bg-[#4338CA]'
+                      }`}
+                    style={{ minWidth: 32, minHeight: 32, boxShadow: smartFeaturesOpen ? '0 0 0 2px #3730A3' : undefined, position: 'relative', zIndex: 10 }}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    AI
+                  </button>
+                </div>
+                {/* Close (X) button, always visible and not overlapped */}
+                <button
+                  onClick={onClose}
+                  className="absolute top-2 right-2 z-20 bg-white rounded-full p-1 shadow hover:bg-gray-100 focus:outline-none border border-gray-200"
+                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  aria-label="Close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="min-w-0">
+                  {children}
+                </div>
+                <div className="flex flex-col">
+                  <div className="">
+                    {question?.isAuditRequired && (
+                      <div className="mt-4 flex items-center space-x-4 pt-4">
+                        <span className="text-sm text-gray-600">Audit Done :</span>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`audit-status-${question.id}`}
+                            checked={localAuditStatus === true}
+                            onChange={() => handleAuditStatusClick(true)}
+                            disabled={showAuditConfirm || isAuditLoading}
+                            className="accent-green-600"
+                          />
+                          <span className="text-green-700">Yes</span>
+                        </label>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`audit-status-${question.id}`}
+                            checked={localAuditStatus === false}
+                            onChange={() => handleAuditStatusClick(false)}
+                            disabled={showAuditConfirm || isAuditLoading}
+                            className="accent-red-600"
+                          />
+                          <span className="text-red-700">No</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <button
+                      onClick={onClose}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => onSave(tempData)}
+                      className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Smart AI Features Section */}
+            <AnimatePresence mode="wait">
+              {smartFeaturesOpen && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0, x: 50 }}
+                  animate={{ width: '350px', opacity: 1, x: 0 }}
+                  exit={{ width: 0, opacity: 0, x: 50 }}
+                  transition={{
+                    duration: 0.4,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                    opacity: { duration: 0.3 }
+                  }}
+                  className="border-l border-gray-200 bg-gray-50 overflow-hidden flex-shrink-0"
+                  style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}
+                >
+                  <div className="p-4 h-full flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">Smart AI Features</h3>
+                      <button
+                        onClick={() => setSmartFeaturesOpen(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 flex-1">
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.3 }}
+                        className="bg-white rounded-lg p-3 shadow-sm"
+                      >
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Document Analysis</h4>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Extract answers from your uploaded documents
+                        </p>
+                        <button
+                          className="w-full px-3 py-2 bg-[#4F46E5] text-white text-sm rounded hover:bg-[#4338CA] transition-colors flex items-center justify-center gap-2"
+                          onClick={() => {
+                            setRagTableModalOpen(true);
+                          }}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Get Values from Document
+                        </button>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.3 }}
+                        className="bg-white rounded-lg p-3 shadow-sm"
+                      >
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">More AI Tools</h4>
+                        <p className="text-xs text-gray-500 mb-3">Additional AI-powered features coming soon</p>
+                        <button
+                          className="w-full px-3 py-2 bg-gray-200 text-gray-500 text-sm rounded cursor-not-allowed"
+                          disabled
+                        >
+                          Coming Soon
+                        </button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
               )}
-            </div>
-            <div className="mt-4 flex justify-end space-x-2">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => onSave(tempData)}
-                className="px-4 py-2 bg-[#20305D] text-white rounded hover:bg-[#162442]"
-              >
-                Save Changes
-              </button>
-            </div>
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </div>
+
+      {/* RAG Table Modal */}
+      {ragTableModalOpen && (
+        <RagDocumentQA
+          isOpen={ragTableModalOpen}
+          onClose={() => setRagTableModalOpen(false)}
+          questionText={question.description || ''}
+          mode={metadata?.type === 'table' ? 'table' : 'text'}
+          tableMetadata={metadata?.type === 'table' ? metadata : null}
+          onTableValues={(values) => {
+            if (metadata?.type === 'table') {
+              handleRagTableValues(values);
+            }
+            setRagTableModalOpen(false);
+          }}
+        />
+      )}
+
       {/* Audit Status Confirmation Modal */}
       {showAuditConfirm && (
         <div
@@ -345,14 +493,14 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
     console.log('🔍 [QuestionRenderer] Received RAG values:', ragValues);
     console.log('🔍 [QuestionRenderer] Current tempData:', tempData);
     console.log('🔍 [QuestionRenderer] Metadata rows:', metadata?.rows);
-    
+
     // ragValues: { rowIdx: { colKey: value, ... }, ... }
     // Only update editable fields (not auto-calculated)
     if (!metadata?.rows) {
       console.warn('🔍 [QuestionRenderer] No metadata rows found');
       return;
     }
-    
+
     // More specific filtering for auto-calculated rows
     // Only exclude rows that are explicitly marked as calculated or contain specific auto-calc keywords
     const autoCalcRows = metadata.rows
@@ -360,21 +508,21 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
       .filter(({ row }) => {
         const param = row.parameter?.toLowerCase() || '';
         // Only exclude rows that are truly auto-calculated (like "Total energy consumption (A+B+C)")
-        return param.includes('(a+b+c)') || param.includes('total energy consumption') || 
-               param.includes('auto-calculated') || row.isCalculated === true ||
-               param.includes('total (a+b') || param.includes('sum of');
+        return param.includes('(a+b+c)') || param.includes('total energy consumption') ||
+          param.includes('auto-calculated') || row.isCalculated === true ||
+          param.includes('total (a+b') || param.includes('sum of');
       })
       .map(({ idx }) => idx);
-    
+
     console.log('🔍 [QuestionRenderer] Auto-calc rows to exclude:', autoCalcRows);
-    
+
     // Deep copy
     const updated = JSON.parse(JSON.stringify(tempData?.data || {}));
-    
+
     Object.entries(ragValues || {}).forEach(([rowIdx, rowData]) => {
       const numericRowIdx = Number(rowIdx);
       console.log(`🔍 [QuestionRenderer] Processing row ${rowIdx} (${numericRowIdx}):`, rowData);
-      
+
       if (!autoCalcRows.includes(numericRowIdx)) {
         console.log(`🔍 [QuestionRenderer] Updating row ${rowIdx} with:`, rowData);
         updated[rowIdx] = { ...updated[rowIdx], ...rowData };
@@ -382,7 +530,7 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
         console.log(`🔍 [QuestionRenderer] Skipping auto-calc row ${rowIdx}`);
       }
     });
-    
+
     console.log('🔍 [QuestionRenderer] Final updated data:', updated);
     setTempData({ ...tempData, data: updated });
   };
@@ -391,38 +539,13 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
     switch (metadata?.type) {
       case 'table':
         return (
-          <>
-            <div className="flex justify-end mb-2">
-              <button
-                className="px-3 py-1 bg-[#4F46E5] text-white text-sm rounded hover:bg-[#4338CA] transition-colors flex items-center gap-1"
-                onClick={() => setRagTableModalOpen(true)}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                Get Values from Document
-              </button>
-            </div>
-            <TableRenderer
-              metadata={metadata}
-              data={tempData?.data || {}}
-              isEditing={true}
-              onSave={(newData) => setTempData({ ...tempData, data: newData })}
-              turnover={turnover}
-            />
-            {/* RAG Table Modal */}
-            {ragTableModalOpen && (
-              <RagDocumentQA
-                isOpen={ragTableModalOpen}
-                onClose={() => setRagTableModalOpen(false)}
-                questionText={title || ''}
-                mode="table"
-                tableMetadata={metadata}
-                onTableValues={(values) => {
-                  handleRagTableValues(values);
-                  setRagTableModalOpen(false);
-                }}
-              />
-            )}
-          </>
+          <TableRenderer
+            metadata={metadata}
+            data={tempData?.data || {}}
+            isEditing={true}
+            onSave={(newData) => setTempData({ ...tempData, data: newData })}
+            turnover={turnover}
+          />
         );
       case 'multi-table':
         return (
@@ -465,7 +588,7 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
           <SubjectiveQuestionRenderer
             question={question}
             answer={questionData}
-            onAnswerChange={() => {}}
+            onAnswerChange={() => { }}
             isReadOnly={true}
           />
         );
@@ -512,9 +635,9 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
 
   return (
     <AppProvider>
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="bg-white rounded-lg p-4 mb-6">
         {/* Principle and Indicator display */}
-        {(question.principle || question.indicator) && (
+        {/* {(question.principle || question.indicator) && (
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {question.principle && (
               <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-2 py-1 rounded">Principle: {question.principle}</span>
@@ -523,10 +646,25 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
               <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${question.indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {question.indicator}</span>
             )}
           </div>
-        )}
+        )} */}
+
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
-            {/* <div className="font-semibold text-base text-[#20305D]">{title}</div> */}
+            {/* Principle, Indicator, and Question ID */}
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+
+              {question.id && (
+                <span className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">Q.No: {question.id}</span>
+              )}
+
+              {question.principle && (
+                <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-2 py-1 rounded">Principle: {question.principle}</span>
+              )}
+              {question.indicator && (
+                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${question.indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {question.indicator}</span>
+              )}
+
+            </div>
             {description && (
               <div
                 className="text-sm font-semibold text-gray-700 mb-2"
@@ -591,6 +729,10 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
             financialYear={financialYear}
             updateAuditStatus={updateAuditStatus}
             refetchAuditStatus={refetchAuditStatus}
+            metadata={metadata}
+            ragTableModalOpen={ragTableModalOpen}
+            setRagTableModalOpen={setRagTableModalOpen}
+            handleRagTableValues={handleRagTableValues}
           >
             {renderEditableContent()}
           </EditModal>
