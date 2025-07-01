@@ -382,349 +382,241 @@ async def extract_table_values(file_id: str, table_metadata: dict, question: str
     suggested_values = {}
     unit_warnings = []
     
+    # A.1 Initialize context cache to avoid redundant chunk retrievals
+    context_cache = {}
+    
+    # A.2 Get document context once for the entire table extraction
+    print(f"🔍 [RAG] Retrieving document context for table extraction...")
+    main_context_queries = [
+        question,  # Use the user's question
+        "emissions air pollutants",  # Generic search for emissions data
+        "NOx SOx PM VOC POP HAP",  # Search for specific pollutants
+        "kg/year g/year",  # Search by units
+    ]
+    
+    # Build comprehensive context from all queries
+    all_docs = []
+    for search_query in main_context_queries:
+        cache_key = f"{file_id}_{search_query}"
+        if cache_key not in context_cache:
+            docs = retrieve_relevant_chunks(file_id, search_query, k=3)
+            context_cache[cache_key] = docs
+        else:
+            docs = context_cache[cache_key]
+        all_docs.extend(docs)
+    
+    # Remove duplicates and get unique content
+    unique_content = []
+    seen_content = set()
+    for doc in all_docs:
+        if doc.page_content not in seen_content:
+            unique_content.append(doc.page_content)
+            seen_content.add(doc.page_content)
+    
+    # Use the same context for all cells to avoid redundant API calls
+    shared_context = "\n".join(unique_content)
+    print(f"🔍 [RAG] Built shared context: {len(shared_context)} chars from {len(unique_content)} unique chunks")
+    print(f"🔍 [RAG] Context preview: {shared_context[:300]}...")
+    
+    # Initialize suggested_values structure
     for row_idx in editable_row_indices:
-        row = rows[row_idx]
-        # Handle both dynamic module format ('label') and environment module format ('parameter')
-        param = row.get('label') or row.get('parameter', '')
-        expected_unit = row.get('unit', '').strip()
-        print(f"🔍 [RAG] Processing row {row_idx}: {param} (unit: {expected_unit})")
-        
         suggested_values[str(row_idx)] = {}
         for col_key in year_col_keys:
-            print(f"🔍 [RAG] Processing cell [{row_idx}][{col_key}]")
-            
-            # Compose a more specific prompt for this cell
-            # Clean parameter name for better search
-            param_clean = clean_html(param)
-            
-            # Create multiple search strategies
-            search_queries = [
-                param_clean,  # Direct parameter name
-                f"{param_clean} {col_key}",  # Parameter with column
-                "energy intensity per ton",  # Specific search for energy intensity per ton
-                "energy intensity production",  # Alternative search
-                f"{param_clean} FY",  # Parameter with financial year
-                "per ton production",  # Direct search for per ton values
-                "GJ/ton",  # Search by unit
-            ]
-            
-            # Try multiple searches and combine results
-            all_docs = []
-            for search_query in search_queries[:4]:  # Use more queries for better coverage
-                docs = retrieve_relevant_chunks(file_id, search_query, k=2)
-                all_docs.extend(docs)
-            
-            # Remove duplicates and get unique content
-            unique_content = []
-            seen_content = set()
-            for doc in all_docs:
-                if doc.page_content not in seen_content:
-                    unique_content.append(doc.page_content)
-                    seen_content.add(doc.page_content)
-            
-            context = "\n".join(unique_content)
-            print(f"🔍 [RAG] Retrieved {len(all_docs)} total docs, {len(unique_content)} unique chunks")
-            print(f"🔍 [RAG] Context length: {len(context)}")
-            print(f"🔍 [RAG] Context preview: {context[:300]}...")
-            
-            # Create a more targeted prompt
-            year_mapping = {
-                'current_year': 'FY 2024-2025',
-                'previous_year': 'FY 2023-2024'
-            }
-            year_label = year_mapping.get(col_key, col_key)
-            
-            prompt = f"""From the document, find the exact numeric value for "{param_clean}" for the year "{year_label}".
+            suggested_values[str(row_idx)][col_key] = ""
+    
+    # C. SINGLE API CALL APPROACH - Extract all cell values in one go
+    print(f"🔍 [RAG] Making single API call to extract all table cell values...")
+    print(f"🔍 [RAG] This replaces {len(editable_row_indices)} * {len(year_col_keys)} = {len(editable_row_indices) * len(year_col_keys)} individual API calls with just 1 call!")
+    
+    # Build comprehensive question for all parameter-column combinations
+    all_params = []
+    all_columns = []
+    cell_combinations = []
+    
+    for row_idx in editable_row_indices:
+        row = rows[row_idx]
+        param = row.get('label') or row.get('parameter', '')
+        param_clean = clean_html(param)
+        all_params.append(param_clean)
+        print(f"🔍 [RAG] Parameter {len(all_params)}: {param_clean}")
+    
+    for col in columns:
+        if col.get('key') in year_col_keys:
+            all_columns.append({
+                'key': col.get('key'),
+                'label': col.get('label', ''),
+            })
+            print(f"🔍 [RAG] Column: {col.get('key')} - {col.get('label', '')}")
+    
+    # Create all parameter-column combinations
+    for param_idx, param in enumerate(all_params):
+        for col in all_columns:
+            cell_combinations.append({
+                'param_idx': param_idx,
+                'param': param,
+                'col_key': col['key'],
+                'col_label': col['label']
+            })
+    
+    print(f"🔍 [RAG] Total cell combinations to extract: {len(cell_combinations)}")
+    
+    # Create a single comprehensive question that asks for all cell values
+    comprehensive_question = f"""From the document, extract the specific values for each parameter-column combination in this retirement benefits table.
 
-Look for a table with energy consumption data. The table should have columns for different years (FY 2024-2025, FY 2023-2024) and rows for different energy metrics.
+The table has the following structure:
+Parameters (rows): {', '.join(all_params)}
+Columns: {', '.join([f"{col['key']} ({col['label']})" for col in all_columns])}
 
-Find the row that contains "{param_clean}" or similar text like:
-- Energy intensity per ton
-- Energy intensity per ton of production  
-- GJ/ton values
+Please extract the value for each cell by finding the intersection of parameter and column. Return the values in this exact format:
 
-Extract the numeric value from the column for "{year_label}".
+"""
+    
+    # Add each cell combination to the question
+    for i, combo in enumerate(cell_combinations):
+        comprehensive_question += f"{i+1}. {combo['param']} x {combo['col_label']}: [value]\n"
+    
+    comprehensive_question += f"""
+Instructions:
+- Look for the table structure in the document showing retirement benefits data
+- Find the intersection value for each parameter (row) and column combination
+- If a cell shows "Y", return "Y"
+- If a cell shows "N" or "N.A.", return "N"
+- If a cell shows a percentage like "95%", return just the number "95"
+- If a cell is empty or not found, return an empty line
+- Return exactly {len(cell_combinations)} values, one per line, in the order listed above
 
-The value should be a complete number (including any digits after commas) in {expected_unit or 'the appropriate unit'}.
-
-Document content:
-{context}
-
-Return only the complete numeric value (including all digits). If the number has commas (like 132,000), include the full number."""
-
-            print(f"🔍 [RAG] Enhanced prompt: {prompt[:200]}...")
+Example format:
+95
+90
+Y
+95
+90
+Y
+100
+95
+Y
+100
+95
+Y
+..."""
+    
+    print(f"🔍 [RAG] Making single comprehensive API call...")
+    print(f"🔍 [RAG] Question preview: {comprehensive_question[:800]}...")
+    
+    # SINGLE API CALL for all cell combinations
+    answer = ask_gemini_with_context(shared_context, comprehensive_question)
+    print(f"🔍 [RAG] ✅ Single API call completed!")
+    print(f"🔍 [RAG] Raw answer: {answer}")
+    
+    # Check if the answer contains an error
+    if any(error_indicator in answer for error_indicator in [
+        "API_QUOTA_EXCEEDED", "API_PERMISSION_ERROR", "API_ERROR", 
+        "Error calling Gemini:", "429 RESOURCE_EXHAUSTED", "quota exceeded"
+    ]):
+        print(f"❌ [RAG] Gemini API error detected in comprehensive call")
+        print(f"❌ [RAG] Error details: {answer}")
+        print(f"❌ [RAG] All table values will remain empty due to API error")
+        # Keep all values empty if API fails (already initialized above)
+    else:
+        # Parse the comprehensive answer
+        print(f"🔍 [RAG] Parsing comprehensive answer...")
+        answer_lines = answer.strip().split('\n')
+        
+        # Extract all values from the answer
+        extracted_values = []
+        for i, line in enumerate(answer_lines):
+            line = line.strip()
+            print(f"🔍 [RAG] Parsing line {i+1}: '{line}'")
             
-            # Ask Gemini with enhanced prompt
-            question = f"Extract the complete numeric value for '{param_clean}' for '{year_label}' from the table data. Return the full number including all digits (e.g., if you see 132,000 return the complete number, not just 132)."
-            print(f"🔍 [RAG] Asking Gemini for parameter: {param_clean}, Year: {year_label}")
-            answer = ask_gemini_with_context(context, question)
-            print(f"🔍 [RAG] Gemini answer: {answer}")
-            
-            # Check if the answer contains an error (like quota exceeded)
-            if any(error_indicator in answer for error_indicator in [
-                "API_QUOTA_EXCEEDED", "API_PERMISSION_ERROR", "API_ERROR", 
-                "Error calling Gemini:", "429 RESOURCE_EXHAUSTED", "quota exceeded"
-            ]):
-                print(f"❌ [RAG] Gemini API error detected, skipping value extraction for [{row_idx}][{col_key}]")
-                print(f"❌ [RAG] Error details: {answer}")
-                # Set empty value for API errors
-                suggested_values[str(row_idx)][col_key] = ""
-                print(f"🔍 [RAG] Final value for [{row_idx}][{col_key}]: ''")
+            if not line:
+                extracted_values.append("")
+                print(f"🔍 [RAG] Empty line -> empty value")
                 continue
             
-            # Try to extract value and unit from answer with multiple patterns
-            value, found_unit = None, None
-            
-            # Special handling for energy intensity per ton - look for the specific values mentioned
-            if "energy intensity per ton" in answer.lower() or ("GJ/ton" in (expected_unit or "") and "per ton" in param_clean.lower()):
-                print(f"🔍 [RAG] Special handling for GJ/ton field")
+            # Look for values in brackets first [95], [Yes], [N.A.], etc.
+            bracket_match = re.search(r'\[([^\]]+)\]', line)
+            if bracket_match:
+                bracket_value = bracket_match.group(1).strip()
+                print(f"🔍 [RAG] Found bracketed value: '{bracket_value}'")
                 
-                # Pattern 1: Look for "energy intensity per ton of production" followed by value
-                intensity_match = re.search(r"energy intensity per ton of production[^0-9]*?is\s+([\d,]+\.?\d*)\s*([A-Za-z\s⁻¹−]*)", answer, re.IGNORECASE)
-                if not intensity_match:
-                    # Pattern 2: Look for "per ton of production" followed by value
-                    intensity_match = re.search(r"per ton of production[^0-9]*?is\s+([\d,]+\.?\d*)\s*([A-Za-z\s⁻¹−]*)", answer, re.IGNORECASE)
-                if not intensity_match:
-                    # Pattern 3: Look for "energy intensity per ton" followed by value (broader)
-                    intensity_match = re.search(r"energy intensity per ton[^0-9]*?is\s+([\d,]+\.?\d*)\s*([A-Za-z\s⁻¹−]*)", answer, re.IGNORECASE)
-                if not intensity_match:
-                    # Pattern 4: Look for "per ton" followed by value, but check sentence context to avoid rupee confusion
-                    sentences = answer.split('.')
-                    for sentence in sentences:
-                        if 'per ton' in sentence.lower() and 'per rupee' not in sentence.lower() and 'rupee' not in sentence.lower():
-                            per_ton_match = re.search(r"per ton[^0-9]*?is\s+([\d,]+\.?\d*)\s*([A-Za-z\s⁻¹−]*)", sentence, re.IGNORECASE)
-                            if not per_ton_match:
-                                per_ton_match = re.search(r"per ton[^0-9]*?([\d,]+\.?\d*)\s*([A-Za-z\s⁻¹−]*)", sentence, re.IGNORECASE)
-                            if per_ton_match:
-                                intensity_match = per_ton_match
-                                break
-                
-                # Pattern 5: If still not found, look for values with GJ and 't' units (per-ton indicators)
-                if not intensity_match:
-                    ton_unit_matches = re.finditer(r"([\d,]+\.?\d*)\s*([A-Za-z]*\s*[t][\s⁻¹−]+)", answer, re.IGNORECASE)
-                    for match in ton_unit_matches:
-                        # Check the context to ensure this is a per-ton value, not per-rupee
-                        match_start = match.start()
-                        match_end = match.end()
-                        context_before = answer[max(0, match_start-100):match_start].lower()
-                        context_after = answer[match_end:match_end+50].lower()
-                        
-                        # Skip if this is clearly in a per-rupee context
-                        if any(phrase in context_before + context_after for phrase in ["per rupee", "rupee", "₹"]):
-                            continue
-                        
-                        # Accept if it has per-ton context or if it's the only reasonable value
-                        if any(phrase in context_before for phrase in ["per ton", "ton of production", "energy intensity"]):
-                            intensity_match = match
-                            break
-                
-                if intensity_match:
-                    potential_value = intensity_match.group(1).replace(',', '')
-                    potential_unit = intensity_match.group(2).strip() if intensity_match.group(2) else "GJ/ton"
-                    
-                    # Additional validation: make sure this isn't from a "per rupee" context
-                    match_context = answer[max(0, intensity_match.start()-100):intensity_match.end()+100]
-                    rupee_indicators = ['per rupee', 'per ₹', 'rupee', '₹']
-                    ton_indicators = ['per ton', 'ton of production', 'energy intensity per ton']
-                    
-                    has_rupee_context = any(indicator in match_context.lower() for indicator in rupee_indicators)
-                    has_ton_context = any(indicator in match_context.lower() for indicator in ton_indicators)
-                    
-                    # Only accept if it's clearly a per-ton value or has no rupee context
-                    if has_ton_context or not has_rupee_context:
-                        value = potential_value
-                        found_unit = potential_unit
-                        print(f"🔍 [RAG] Found and validated energy intensity per ton: {value} {found_unit}")
-                    else:
-                        print(f"🔍 [RAG] Rejected potential per-ton value due to rupee context: {potential_value}")
-                
-                # Special fallback for GJ/ton fields: if year_label is provided, look for year-specific per-ton values
-                if not value and year_label:
-                    year_pattern = str(year_label).replace("FY ", "")  # "2024-2025" or "2023-2024"
-                    
-                    # Look for year-specific per-ton patterns
-                    year_ton_patterns = [
-                        rf"for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)\s*([A-Za-z]*\s*[t][\s⁻¹−]*)",  # "for FY 2023-2024 is 8.00 GJ t−1"
-                        rf"per ton[^0-9]*?for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)",  # "per ton ... for FY 2023-2024 is 8.00"
-                    ]
-                    
-                    for pattern in year_ton_patterns:
-                        year_match = re.search(pattern, answer, re.IGNORECASE)
-                        if year_match:
-                            # Validate this is in a per-ton context, not per-rupee
-                            match_context = answer[max(0, year_match.start()-100):year_match.end()+50]
-                            if 'per ton' in match_context.lower() and 'per rupee' not in match_context.lower():
-                                value = year_match.group(1).replace(',', '')
-                                found_unit = year_match.group(2).strip() if len(year_match.groups()) > 1 and year_match.group(2) else "GJ/ton"
-                                print(f"🔍 [RAG] Found year-specific per-ton value: {value} {found_unit}")
-                                break
-            
-            # If not found above, try specific year-based extraction
-            if not value and year_label:
-                # Look for year-specific patterns like "for FY 2023-2024 is 8.00"
-                year_pattern = str(year_label).replace("FY ", "")  # "2024-2025" or "2023-2024"
-                
-                # First try to find specifically "per ton" values for this year
-                year_match = re.search(rf"per ton[^0-9]*?for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)", answer, re.IGNORECASE)
-                if not year_match:
-                    # Try "for FY ... is X.XX GJ t−1" pattern
-                    year_match = re.search(rf"for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)\s*([A-Za-z]+[⁻¹−\s]*[t][⁻¹−\s]*)", answer, re.IGNORECASE)
-                if not year_match:
-                    # Try the general pattern
-                    year_match = re.search(rf"for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)", answer, re.IGNORECASE)
-                if not year_match:
-                    year_match = re.search(rf"{re.escape(year_pattern)}[^0-9]*?([\d,]+\.?\d*)\s*([A-Za-z]+[⁻¹−\s]*)", answer, re.IGNORECASE)
-                if year_match:
-                    potential_value = year_match.group(1).replace(',', '')
-                    potential_unit = year_match.group(2).strip() if len(year_match.groups()) > 1 and year_match.group(2) else None
-                    
-                    # For GJ/ton fields, prefer values that have 't' in the unit or are at the end of the sentence
-                    if expected_unit and "ton" in expected_unit.lower():
-                        if potential_unit and 't' in potential_unit.lower():
-                            value = potential_value
-                            found_unit = potential_unit
-                            print(f"🔍 [RAG] Found year-specific per-ton value: {value} {found_unit}")
-                        elif not potential_unit:  # Value at end of sentence, likely the per-ton value
-                            value = potential_value
-                            print(f"🔍 [RAG] Found year-specific value at end: {value}")
-                    else:
-                        value = potential_value
-                        found_unit = potential_unit
-                        print(f"🔍 [RAG] Found year-specific value: {value} {found_unit}")
-            
-            # If not found above, try general patterns
-            if not value:
-                # Multiple regex patterns to catch different formats
-                patterns = [
-                    r"([\d,]+\.?\d*)\s*([A-Za-z]+[⁻¹−]?)",  # 132,000 GJt⁻¹ or 7.64 GJt⁻¹
-                    r"([\d,]+\.?\d*)\s*([A-Za-z/()]+)",     # 132,000 GJ/t or 7.64 GJ/t
-                    r"([\d,]+\.?\d*)",                      # Just number: 132,000 or 7.64
-                ]
-                
-                for pattern in patterns:
-                    match = re.search(pattern, answer)
-                    if match:
-                        value = match.group(1).replace(',', '')  # Remove commas from the number
-                        found_unit = match.group(2) if len(match.groups()) > 1 else None
-                        break
-            
-            print(f"🔍 [RAG] Extracted value: {value}, unit: {found_unit}")
-            
-            # If no numeric value found, try to extract from a broader search
-            if not value:
-                # For energy intensity, try to extract the specific mentioned values
-                if ("GJ/ton" in (expected_unit or "").lower() or "per ton" in param_clean.lower()) and "energy intensity" in param_clean.lower():
-                    print(f"🔍 [RAG] Fallback search for GJ/ton energy intensity field")
-                    # Look for year-specific values in the response
-                    year_pattern = str(year_label).replace("FY ", "") if year_label else ""  # "2024-2025" or "2023-2024"
-                    
-                    # Try multiple patterns to find the value for this specific year, but only per-ton values
-                    patterns_to_try = [
-                        rf"for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)\s*([A-Za-z]*\s*[t][\s⁻¹−]*)",  # "for FY 2023-2024 is 8.00 GJ t−1"
-                        rf"{re.escape(year_pattern)}[^0-9]*?([\d,]+\.?\d*)\s*([A-Za-z]*\s*[t][\s⁻¹−]*)",  # "2023-2024 ... 8.00 GJ t−1"
-                        rf"(?:is\s+)?([\d,]+\.?\d*)[^0-9]*?([A-Za-z]*\s*[t][\s⁻¹−]*)[^0-9]*?{re.escape(year_pattern)}",  # "is 8.00 GJ t−1 ... 2023-2024"
-                    ]
-                    
-                    for pattern in patterns_to_try:
-                        year_value_match = re.search(pattern, answer, re.IGNORECASE)
-                        if year_value_match:
-                            # Make sure this is not in a per-rupee context
-                            match_context = answer[max(0, year_value_match.start()-100):year_value_match.end()+50]
-                            if ('per ton' in match_context.lower() or 'energy intensity' in match_context.lower()) and 'per rupee' not in match_context.lower():
-                                value = year_value_match.group(1).replace(',', '')
-                                found_unit = year_value_match.group(2).strip() if len(year_value_match.groups()) > 1 and year_value_match.group(2) else None
-                                print(f"🔍 [RAG] Found year-specific per-ton value with fallback pattern: {value} {found_unit}")
-                                break
-                    
-                    # Final fallback: Look for values followed by GJ t or similar patterns (per-ton indicators)
-                    if not value:
-                        ton_values = re.findall(r"([\d,]*\.?\d+)\s*[A-Za-z]*\s*[t][\s⁻¹−]*", answer, re.IGNORECASE)
-                        if ton_values:
-                            # Filter out very small values that might be per-rupee (e.g., 0.3030)
-                            valid_ton_values = [v.replace(',', '') for v in ton_values if float(v.replace(',', '')) > 1.0]
-                            if valid_ton_values:
-                                value = valid_ton_values[-1]  # Take the last valid ton-related value
-                                print(f"🔍 [RAG] Final fallback extracted ton-specific value: {value}")
-                            else:
-                                print(f"🔍 [RAG] All ton values were too small (likely per-rupee), skipping: {ton_values}")
-                        else:
-                            # Look for decimal numbers first (like 7.64, 8.00) but exclude small ones that might be per-rupee
-                            decimal_numbers = re.findall(r"[\d,]*\.\d+", answer)
-                            valid_decimals = [d.replace(',', '') for d in decimal_numbers if float(d.replace(',', '')) > 1.0]
-                            if valid_decimals:
-                                value = valid_decimals[-1]  # Take the last valid decimal number
-                                print(f"🔍 [RAG] Fallback extracted valid decimal value: {value}")
-                            else:
-                                print(f"🔍 [RAG] All decimal values were too small (likely per-rupee), skipping: {decimal_numbers}")
+                # Handle different value types
+                if bracket_value.upper() in ['Y', 'YES']:
+                    extracted_values.append("Y")
+                    print(f"🔍 [RAG] Converted to: Y")
+                elif bracket_value.upper() in ['N', 'NO', 'N.A.', 'NA']:
+                    extracted_values.append("N")
+                    print(f"🔍 [RAG] Converted to: N")
                 else:
-                    # For other fields, use normal logic
-                    year_pattern = str(year_label).replace("FY ", "") if year_label else ""  # "2024-2025" or "2023-2024"
-                    
-                    # Try year-specific patterns first
-                    if year_pattern:
-                        patterns_to_try = [
-                            rf"for\s+FY\s+{re.escape(year_pattern)}\s+is\s+([\d,]+\.?\d*)",  # "for FY 2023-2024 is 8.00"
-                            rf"{re.escape(year_pattern)}[^0-9]*?([\d,]+\.?\d*)\s*GJ",  # "2023-2024 ... 8.00 GJ"
-                            rf"(?:is\s+)?([\d,]+\.?\d*)[^0-9]*?{re.escape(year_pattern)}",  # "is 8.00 ... 2023-2024"
-                            rf"{re.escape(year_pattern)}[^0-9]*?([\d,]+\.?\d*)",  # fallback
-                        ]
-                        
-                        for pattern in patterns_to_try:
-                            year_value_match = re.search(pattern, answer, re.IGNORECASE)
-                            if year_value_match:
-                                value = year_value_match.group(1).replace(',', '')
-                                print(f"🔍 [RAG] Found year-specific value with pattern '{pattern}': {value}")
-                                break
-                    
-                    # General fallback if no year-specific value found
-                    if not value:
-                        decimal_numbers = re.findall(r"[\d,]*\.\d+", answer)
-                        if decimal_numbers:
-                            value = decimal_numbers[-1].replace(',', '')  # Take the last decimal number
-                            print(f"🔍 [RAG] Fallback extracted decimal value: {value}")
+                    # Try to extract number from bracketed value
+                    numbers = re.findall(r'[\d,]+(?:\.[\d]+)?', bracket_value)
+                    if numbers:
+                        value = numbers[0].replace(',', '')
+                        try:
+                            float(value)  # Validate it's a number
+                            extracted_values.append(value)
+                            print(f"🔍 [RAG] Converted to number: {value}")
+                        except ValueError:
+                            extracted_values.append("")
+                            print(f"🔍 [RAG] Invalid number format -> empty value")
+                    else:
+                        # Check for nil/zero indicators in bracket
+                        if any(word in bracket_value.lower() for word in ['nil', 'zero', 'not applicable', 'n/a', 'none']):
+                            extracted_values.append("0")
+                            print(f"🔍 [RAG] Found nil/zero indicator -> 0")
                         else:
-                            numbers = re.findall(r"[\d,]+", answer)
-                            if numbers:
-                                value = numbers[-1].replace(',', '')  # Take the last number
-                                print(f"🔍 [RAG] Fallback extracted integer value: {value}")
+                            extracted_values.append("")
+                            print(f"🔍 [RAG] No recognizable value in brackets -> empty value")
+                continue
+            
+            # Fallback: Handle different value types without brackets
+            if line.upper() in ['Y', 'YES']:
+                extracted_values.append("Y")
+                print(f"🔍 [RAG] Found Y/Yes -> Y")
+            elif line.upper() in ['N', 'NO', 'N.A.', 'NA']:
+                extracted_values.append("N")
+                print(f"🔍 [RAG] Found N/No/N.A. -> N")
+            else:
+                # Find numbers in the line (avoid line numbers at the beginning)
+                # Look for numbers that are not at the very start of the line
+                numbers = re.findall(r'(?:^|\s)(\d+(?:\.\d+)?)(?:\s|$|%)', line)
+                if not numbers:
+                    # If no spaced numbers found, try any numbers
+                    numbers = re.findall(r'[\d,]+(?:\.[\d]+)?', line)
                 
-                if not value:
-                    print(f"🔍 [RAG] No numeric value found in answer: {answer}")
-            
-            # Clean up the value
-            if value:
-                try:
-                    # Ensure it's a valid number
-                    float(value)
-                except ValueError:
-                    value = None
-                    print(f"🔍 [RAG] Invalid numeric value, setting to None")
-            
-            # Unit conversion if needed
-            if value and expected_unit and found_unit and ureg:
-                try:
-                    val = float(value)
-                    # Handle special unit formats
-                    expected_clean = expected_unit.replace('t⁻¹', '/t').replace('₹', 'rupee').split()[0]
-                    found_clean = found_unit.replace('t⁻¹', '/t').replace('₹', 'rupee') if found_unit else expected_unit
-                    
-                    q = val * ureg(found_clean)
-                    val_converted = q.to(ureg(expected_clean)).magnitude
-                    converted_value = str(round(val_converted, 4))
-                    
-                    if found_unit != expected_unit:
-                        unit_warnings.append(f"Converted '{param}' for '{col_key}' from {found_unit} to {expected_unit}.")
-                    print(f"🔍 [RAG] Unit conversion: {val} {found_unit} -> {converted_value} {expected_unit}")
-                    value = converted_value
-                except Exception as e:
-                    if found_unit and found_unit != expected_unit.split()[0]:
-                        unit_warnings.append(f"Could not convert '{param}' for '{col_key}' from {found_unit} to {expected_unit}: {e}")
-                    print(f"🔍 [RAG] Unit conversion failed: {e}")
-            
-            # Final value assignment
-            final_value = value if value is not None else ""
-            suggested_values[str(row_idx)][col_key] = final_value
-            print(f"🔍 [RAG] Final value for [{row_idx}][{col_key}]: '{final_value}'")
+                if numbers:
+                    # Take the last number found (more likely to be the value, not line number)
+                    value = numbers[-1].replace(',', '')
+                    try:
+                        float(value)  # Validate it's a number
+                        extracted_values.append(value)
+                        print(f"🔍 [RAG] Found number: {value}")
+                    except ValueError:
+                        extracted_values.append("")
+                        print(f"🔍 [RAG] Invalid number format -> empty value")
+                else:
+                    # Check for nil/zero indicators
+                    if any(word in line.lower() for word in ['nil', 'zero', 'not applicable', 'n/a', 'none']):
+                        extracted_values.append("0")
+                        print(f"🔍 [RAG] Found nil/zero indicator -> 0")
+                    else:
+                        extracted_values.append("")
+                        print(f"🔍 [RAG] No recognizable value -> empty value")
+        
+        print(f"🔍 [RAG] Final extracted values: {extracted_values}")
+        
+        # Assign extracted values to the specific cells
+        for i, combo in enumerate(cell_combinations):
+            if i < len(extracted_values):
+                value = extracted_values[i]
+                param_idx = combo['param_idx']
+                row_idx = editable_row_indices[param_idx]
+                col_key = combo['col_key']
+                
+                print(f"🔍 [RAG] Assigning value '{value}' to [{row_idx}][{col_key}] (Parameter: {combo['param']}, Column: {combo['col_label']})")
+                suggested_values[str(row_idx)][col_key] = value
+            else:
+                print(f"🔍 [RAG] No value available for combination {i+1}")
+                # Values already initialized as empty above
     
     # Add parameter names to the result for better display
     parameters_info = {}
