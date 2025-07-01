@@ -53,7 +53,7 @@ const CreatePlantModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={modalRef}
         className="bg-white rounded-xl w-[80%] md:w-[70%] lg:w-[60%] max-w-[800px] max-h-[90vh] h-auto overflow-y-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"

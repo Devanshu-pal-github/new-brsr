@@ -48,7 +48,7 @@ const SubjectiveQuestionRenderer = ({
                         </svg>
                     </div>
                 )}
-                {!isReadOnly && (
+                {/* {!isReadOnly && (
                     <button
                         className="mb-2 px-2 py-1 bg-[#4F46E5] text-white text-xs rounded hover:bg-[#4338CA] transition-colors"
                         type="button"
@@ -56,7 +56,7 @@ const SubjectiveQuestionRenderer = ({
                     >
                         Get Answer from Document
                     </button>
-                )}
+                )} */}
                 <textarea
                     className={`w-full p-3 border rounded-md transition-colors ${
                         isReadOnly 

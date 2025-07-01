@@ -35,9 +35,10 @@ input:-webkit-autofill:active {
   scrollbar-width: none;     /* Firefox */
 }
 
-/* Ensure scrolling functionality remains intact */
-* {
-  overflow: auto;
+/* Remove the conflicting overflow: auto rule to prevent scrollbars from reappearing */
+html, body {
+  overflow: hidden; /* Apply to html and body to prevent scrolling at root level */
+  height: 100%;
 }
 
 /* Optional: If you need scrollbars back for specific elements, use this class */

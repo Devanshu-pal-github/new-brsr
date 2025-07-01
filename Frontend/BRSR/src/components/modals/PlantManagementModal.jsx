@@ -156,7 +156,7 @@ const PlantManagementModal = ({ onClose }) => {
 
   if (plantsLoading) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
         <div className="bg-white rounded-xl p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]"></div>
         </div>
@@ -167,7 +167,8 @@ const PlantManagementModal = ({ onClose }) => {
   if (plantsError) {
     return (
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+        className="fixed inset-0 z-[9999] flex items-center justify-center"
+        style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
         onClick={onClose} // Close popup when clicking outside
       >
         <div
@@ -187,7 +188,7 @@ const PlantManagementModal = ({ onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm ">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={popupRef}
         className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"

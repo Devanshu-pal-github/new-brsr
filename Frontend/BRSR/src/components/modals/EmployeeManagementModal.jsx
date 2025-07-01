@@ -195,7 +195,8 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
   if (employeesError) {
     return (
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+        className="fixed inset-0 z-[9999] flex items-center justify-center"
+        style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
         onClick={onClose} // Close popup when clicking outside
       >
         <div
@@ -215,7 +216,7 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={popupRef}
         className="bg-white rounded-xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import QuickActions from '../../../Environment/components/QuickActions';
 
 // Helper: list of static module names/ids (add more as needed)
 const STATIC_MODULES = [
@@ -131,11 +132,17 @@ const DynamicProgressSidebar = ({ submodules = [], currentSubmodule = null, modu
         );
     }
 
+    // Determine if this is the Environment module (for GHG Emissions quick action)
+    const isEnvironmentModule = module && (
+        (module.name && module.name.toLowerCase().includes('environment')) ||
+        (module.id && module.id.toLowerCase().includes('environment'))
+    );
+
     return (
-        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
             {/* Module Progress */}
-            <div className="flex flex-col items-center mb-2">
-                <div className="font-semibold text-[13px] mb-1 text-[#000D30]">Module Progress</div>
+            <div className="flex flex-col items-center mb-[0.7vh]">
+                <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>
                 <svg className="w-[6vw] h-[6vw] max-w-[80px] max-h-[80px]" viewBox="0 0 120 120">
                     <circle cx="60" cy="60" r="50" fill="none" stroke="#E5E7EB" strokeWidth="8" />
                     <circle
@@ -150,15 +157,15 @@ const DynamicProgressSidebar = ({ submodules = [], currentSubmodule = null, modu
                         strokeLinecap="round"
                     />
                 </svg>
-                <div className="mt-1 text-gray-700 font-semibold text-[11px]">
+                <div className="mt-[0.7vh] text-gray-700 font-semibold text-[11px]">
                     {moduleProgress.answered} of {moduleProgress.total} questions completed
                 </div>
             </div>
 
             {/* Submodules Progress */}
-            <div className="bg-[#F8FAFC] rounded-[4px] shadow p-2 border border-gray-100 w-full flex flex-col gap-1">
-                <div className="font-semibold text-[11px] mb-1 text-[#000D30]">Submodules Progress</div>
-                <div className="flex flex-col gap-1">
+            <div className="bg-[#F8FAFC] rounded-[4px] shadow p-[0.7vw] border border-gray-100 w-full flex flex-col gap-[0.7vh]">
+                <div className="font-semibold text-[11px] mb-[0.3vh] text-[#000D30]">Submodules Progress</div>
+                <div className="flex flex-col gap-[0.3vh]">
                     {submoduleProgress.map(sm => {
                         const completion = sm.total > 0 ? (sm.answered / sm.total) * 100 : 0;
                         return (
@@ -194,6 +201,13 @@ const DynamicProgressSidebar = ({ submodules = [], currentSubmodule = null, modu
                     </div>
                 </div>
             )}
+
+            {/* Quick Actions (GHG Emissions only for Environment module) */}
+            <QuickActions
+                plantId={module?.plantId}
+                financialYear={financialYear}
+                hideGHG={!isEnvironmentModule}
+            />
         </aside>
     );
 };

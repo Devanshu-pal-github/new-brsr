@@ -1,9 +1,31 @@
-
 import React, { useState, useRef, useEffect } from 'react';
+import { FaCloud, FaFileAlt, FaRobot } from 'react-icons/fa';
 import GHGMainPage from '../../GHG Emission/Pages/GHGMainPage';
 import RagDocumentQA from './RagDocumentQA';
 
-const QuickActions = ({ plantId, financialYear }) => {
+const actions = [
+    {
+        label: 'View GHG Emissions',
+        icon: <FaCloud size={28} className="text-[#1A2341]" />,
+        onClick: 'openGHG',
+        bg: 'bg-[#EEF2FF]',
+    },
+    {
+        label: 'Get Answers from Document',
+        icon: <FaFileAlt size={28} className="text-[#4F46E5]" />,
+        onClick: 'openRag',
+        bg: 'bg-[#F0FDF4]',
+    },
+    {
+        label: 'More AI Features Coming Soon',
+        icon: <FaRobot size={28} className="text-gray-400" />,
+        onClick: null,
+        bg: 'bg-gray-100',
+        disabled: true,
+    },
+];
+
+const QuickActions = ({ plantId, financialYear, hideGHG = false }) => {
     const [open, setOpen] = useState(false);
     const [ragOpen, setRagOpen] = useState(false);
     const [totalCO2e, setTotalCO2e] = useState(null);
@@ -24,31 +46,45 @@ const QuickActions = ({ plantId, financialYear }) => {
     // Callback to get total CO2e from GHGMainPage
     const handleTotalCO2e = (value) => setTotalCO2e(value);
 
+    // Card click handlers
+    const handleAction = (action) => {
+        if (action === 'openGHG') setOpen(true);
+        if (action === 'openRag') setRagOpen(true);
+    };
+
+    // Filter actions based on hideGHG flag
+    const filteredActions = hideGHG
+        ? actions.filter(a => a.onClick !== 'openGHG')
+        : actions;
+
     return (
         <div className="bg-[#F8FAFC] rounded-[4px] shadow p-[0.7vw] border border-gray-100 w-full flex flex-col gap-2 mt-2">
-            <div className="font-semibold text-[11px] mb-[0.3vh] text-[#000D30]">Quick Actions</div>
-            <button
-                className="bg-[#1A2341] text-white px-3 py-2 rounded text-xs font-medium hover:bg-[#2c3e50] transition"
-                onClick={() => setOpen(true)}
-            >
-                View GHG Emissions
-            </button>
-            <button
-                className="bg-[#4F46E5] text-white px-3 py-2 rounded text-xs font-medium hover:bg-[#4338CA] transition mt-1"
-                onClick={() => setRagOpen(true)}
-            >
-                Get Answers from Document
-            </button>
-            <button
-                className="w-full px-3 py-2 bg-gray-200 text-gray-500 text-sm rounded mt-1 cursor-not-allowed"
-                disabled
-            >
-                More AI Features Coming Soon
-            </button>
+            <div className="font-semibold text-[11px] mb-[0.3vh] text-[#000D30]">Quick Actions Buttons</div>
+            <div className="flex flex-wrap gap-x-3 gap-y-2 justify-center w-full px-2">
+                {filteredActions.map((action, idx) => (
+                    <div
+                        key={action.label}
+                        className={`
+                            flex flex-col items-center justify-center 
+                            ${action.bg} rounded-[6px] shadow-sm px-2 py-2 min-w-[82px] max-w-[98px] cursor-pointer
+                            transition-all duration-300
+                            ${action.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:-translate-y-1 hover:shadow-md'}
+                        `}
+                        onClick={() => !action.disabled && handleAction(action.onClick)}
+                        style={{ boxShadow: action.disabled ? 'none' : undefined }}
+                    >
+                        {/* Smaller icon */}
+                        <div className="flex items-center justify-center">
+                            {React.cloneElement(action.icon, { size: 17 })}
+                        </div>
+                        <span className="mt-1 text-[9px] font-medium text-center text-[#1A2341] leading-tight">{action.label}</span>
+                    </div>
+                ))}
+            </div>
             {ragOpen && (
                 <RagDocumentQA open={ragOpen} onClose={() => setRagOpen(false)} />
             )}
-            {open && (
+            {open && !hideGHG && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div ref={popupRef} className="bg-white rounded-lg shadow-xl p-0 w-[99vw] max-w-[1200px] md:max-w-[90vw] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px] relative animate-fade-in overflow-hidden">
                         <button

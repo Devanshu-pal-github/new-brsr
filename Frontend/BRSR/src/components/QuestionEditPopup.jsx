@@ -1096,7 +1096,8 @@ interface StructuredAISuggestion {
 
     return (
         <div
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`question-${question.question_id}-title`}
@@ -1317,7 +1318,7 @@ interface StructuredAISuggestion {
 
             {/* Confirmation Modal for Audited Change */}
             {showAuditedConfirm && (
-                <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/40">
+                <div className="fixed inset-0 z-[20000] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
                     <div className="bg-white rounded-lg shadow-lg p-6 w-80 flex flex-col items-center">
                         <div className="mb-4 text-center text-gray-800 text-base font-semibold">
                             Are you sure you want to set Audited to <span className="font-bold">{pendingAuditedValue ? 'Audited' : 'Not Audited'}</span>?

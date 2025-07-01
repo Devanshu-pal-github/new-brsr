@@ -176,12 +176,12 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
         <div
             ref={backdropRef}
             className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4"
-            style={{ background: 'rgba(0,11,51,0.6)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
             onClick={handleBackdropClick}
         >
             <div
-                className="relative bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl border border-slate-200/50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300 max-h-[95vh] flex flex-col"
-                style={{ boxSizing: 'border-box' }}
+                className="relative bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl border border-slate-200/50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300 max-h-[95vh] flex flex-col"
+                style={{ boxSizing: 'border-box', minHeight: '520px', height: 'clamp(520px,60vh,700px)' }}
             >
                 <button className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 hover:bg-slate-200/50 rounded-full transition-colors duration-200 z-10 text-slate-600 hover:text-slate-800 text-2xl font-bold" onClick={onClose} aria-label="Close RAG Modal">×</button>
                 <div className="relative flex items-center gap-2 sm:gap-3 pr-8 sm:pr-0 pt-4 pb-2 px-4 sm:px-6">
@@ -194,6 +194,7 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                         ? 'Upload a PDF/Word/Excel. After upload, extract and review suggested table values.'
                         : 'Upload a PDF. After upload, you can ask questions and get answers from the document.'}
                 </div>
+                {/* Enhanced drag-and-drop upload area */}
                 <input
                     type="file"
                     accept={mode === 'table' ? '.pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf'}
@@ -202,17 +203,33 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                     style={{ display: 'none' }}
                 />
                 <div className="flex justify-center w-full mb-2">
-                    <button
-                        className="bg-[#4F46E5] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1A2341] transition w-full max-w-xs shadow"
+                    <div
+                        className="w-full max-w-xs flex flex-col items-center justify-center border-2 border-dashed border-[#4F46E5] bg-[#F8FAFC] rounded-lg py-3 px-3 cursor-pointer transition hover:bg-[#EEF2FF] hover:border-[#1A2341]"
                         onClick={handleUploadClick}
-                        disabled={isUploading}
+                        onDrop={e => {
+                            e.preventDefault();
+                            if (isUploading) return;
+                            const droppedFile = e.dataTransfer.files[0];
+                            if (droppedFile) {
+                                const event = { target: { files: [droppedFile] } };
+                                handleFileChange(event);
+                            }
+                        }}
+                        onDragOver={e => e.preventDefault()}
                     >
-                        {isUploading ? 'Uploading...' : (mode === 'table' ? 'Upload Document' : 'Upload PDF')}
-                    </button>
+                        {/* Cloud upload icon (FontAwesome) */}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#4F46E5] mb-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 16v-4h-2v4h-2l3 3 3-3h-2zm-4-8c-2.21 0-4 1.79-4 4 0 .34.04.67.09.99C5.36 13.36 4 15.03 4 17c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4 0-1.97-1.36-3.64-3.09-4.01.05-.32.09-.65.09-.99 0-2.21-1.79-4-4-4zm0-2c3.31 0 6 2.69 6 6 0 .34-.03.67-.08.99C20.36 13.36 22 15.03 22 17c0 2.76-2.24 5-5 5H7c-2.76 0-5-2.24-5-5 0-1.97 1.64-3.64 3.08-4.01C5.03 10.67 5 10.34 5 10c0-3.31 2.69-6 6-6z"/>
+                        </svg>
+                        <span className="text-xs text-[#1A2341] font-medium text-center">Drag & drop your document here<br/>or <span className="underline text-[#4F46E5]">click to upload</span></span>
+                        {file && !fileId && (
+                            <span className="mt-2 text-xs text-[#1A2341]">Selected: {file.name}</span>
+                        )}
+                        {isUploading && (
+                            <span className="mt-2 text-xs text-[#4F46E5]">Uploading...</span>
+                        )}
+                    </div>
                 </div>
-                {file && !fileId && (
-                    <div className="text-xs text-[#1A2341] mb-2 mx-4">Selected: {file.name}</div>
-                )}
                 {fileId && mode !== 'table' && (
                     <>
                         <div className="mt-2 mx-4">

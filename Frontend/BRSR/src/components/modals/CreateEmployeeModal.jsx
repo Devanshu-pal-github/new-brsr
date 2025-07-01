@@ -63,7 +63,8 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-[99999] transition-opacity duration-300 backdrop-blur-sm"
+      className="fixed inset-0 flex items-center justify-center z-[99999] transition-opacity duration-300"
+      style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
       onClick={(e) => e.stopPropagation()}
     >
       <div 
