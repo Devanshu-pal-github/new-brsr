@@ -29,24 +29,27 @@ const ModuleRenderer = ({ module, answers, financialYear }) => {
   }, [activeSubmodule, module]);
 
   return (
-    <div className="min-h-screen p-2 md:p-3 w-[78%]">
-      <div className="mb-4">
-        <DynamicBreadcrumb 
-          moduleName={module.name}
-          activeSubmodule={currentSubmodule}
-        />
+    <div className="module-layout min-h-screen w-[78%] relative flex flex-col">
+      {/* Sticky Header Container (Breadcrumb + SubHeader) */}
+      <div className="sticky top-0 z-30 bg-white">
+        <div className="mb-4 px-2 md:px-3 pt-4">
+          <DynamicBreadcrumb 
+            moduleName={module.name}
+            activeSubmodule={currentSubmodule}
+          />
+        </div>
+        <div className="mx-2 pb-4">
+          <DynamicSubHeader 
+            submodules={module.submodules || []} 
+            activeSubmodule={activeSubmodule}
+            setActiveSubmodule={setActiveSubmodule}
+          />
+        </div>
       </div>
 
-      <div className="mt-4 mx-2">
-        <div className="w-full">
-          <div className="mb-4">
-            <DynamicSubHeader 
-              submodules={module.submodules || []} 
-              activeSubmodule={activeSubmodule}
-              setActiveSubmodule={setActiveSubmodule}
-            />
-          </div>
-          
+      {/* Scrollable Content Container */}
+      <div className="flex-1">
+        <div className="mt-4 mx-2 w-[99%]">
           <div className="mt-4">
             {currentSubmodule ? (
               <SubmoduleContent submodule={currentSubmodule} moduleId={module.id} answers={answers} financialYear={financialYear} />

@@ -44,43 +44,47 @@ const EnvironmentContent = ({
 
   // Main inner content so we don't duplicate JSX
   const innerContent = (
-    <>
-      <div className="">
-        <div className="mb-4">
+    <div className="relative w-full h-full flex flex-col">
+      {/* Sticky Header Container (not fixed, so it stays within content area) */}
+      <div className="sticky top-0 z-20  bg-white">
+        <div className="mb-4 px-2 md:px-3 pt-4">
           <Breadcrumb section={moduleData.name} activeTab={activeSubmodule} />
+        </div>
+        <div className="mx-2 pb-4">
+          <SubHeader
+            tabs={moduleData.submodules.map((sm) => sm.name)}
+            activeTab={activeSubmodule}
+            onTabChange={setActiveSubmodule}
+          />
         </div>
       </div>
 
-      <div className="mt-4 mx-2">
-        <div className="w-full">
-          <div className="mb-4">
-            <SubHeader
-              tabs={moduleData.submodules.map((sm) => sm.name)}
-              activeTab={activeSubmodule}
-              onTabChange={setActiveSubmodule}
-            />
-          </div>
-          <div className="mt-4">
-            {currentSubmodule && (
-              <div className="space-y-4">
-                {currentSubmodule.categories.map((category) => (
-                  <QuestionCategory
-                    key={category.id}
-                    category={category}
-                    financialYear={financialYear}
-                    plantId={plantId}
-                    environmentReports={environmentReports}
-                    turnover={turnover}
-                    onAnswerUpdate={(questionId, answer) => {
-                      setAnswers((prev) => ({
-                        ...prev,
-                        [questionId]: answer,
-                      }));
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+      {/* Scrollable Content Container */}
+      <div className="flex-1">
+        <div className="mt-4 mx-2">
+          <div className="w-full">
+            <div className="mt-4">
+              {currentSubmodule && (
+                <div className="space-y-4">
+                  {currentSubmodule.categories.map((category) => (
+                    <QuestionCategory
+                      key={category.id}
+                      category={category}
+                      financialYear={financialYear}
+                      plantId={plantId}
+                      environmentReports={environmentReports}
+                      turnover={turnover}
+                      onAnswerUpdate={(questionId, answer) => {
+                        setAnswers((prev) => ({
+                          ...prev,
+                          [questionId]: answer,
+                        }));
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -126,8 +130,8 @@ const EnvironmentContent = ({
             className="w-full h-full absolute top-0 left-0 bg-black/30"
             onClick={() => setAiChatOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
-            <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
+          <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up" >
+            <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200" >
               <ChatbotWindow
                 onClose={() => setAiChatOpen(false)}
                 initialMode={chatbotInitialMode}
@@ -136,13 +140,13 @@ const EnvironmentContent = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
   return (
     <AppProvider>
       {renderBare ? (
-        <div className="module-layout min-h-screen p-2 md:p-3 w-[78%]">
+        <div className="module-layout min-h-screen w-[78%] relative">
           {innerContent}
         </div>
       ) : (

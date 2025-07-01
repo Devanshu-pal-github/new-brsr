@@ -115,8 +115,20 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
         </div>
       )}
       
+      {/* Main Page Header - Minimalistic */}
+      <div className="mb-6 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-[#1A2341]">
+            GHG Emissions
+          </h1>
+          <div className="text-sm text-gray-600">
+            Financial Year: <span className="font-medium text-[#1A2341]">{financialYear}</span>
+          </div>
+        </div>
+      </div>
+      
       {/* SubHeader for Scope 1, 2, 3 - Fixed */}
-      <div className={`mb-6 mt-4 flex-shrink-0${smallSubHeader ? ' scale-100' : ''}`}>
+      <div className={`mb-6 flex-shrink-0${smallSubHeader ? ' scale-100' : ''}`}>
         <SubHeader
           tabs={GHG_SCOPES}
           activeTab={activeScope}
@@ -124,16 +136,11 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
         />
       </div>
       
-      {/* Header with title and Add button - Fixed */}
-      <div className="flex items-center justify-between mb-2 flex-shrink-0">
-        <div className="text-lg font-semibold">
+      {/* Section Header with title and Add button - Fixed */}
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+        <h2 className="text-lg font-semibold text-[#1A2341]">
           {activeScope}
-          {reportMeta[activeScope]?.total_scope_emissions_co2e !== undefined && (
-            <span className="ml-4 text-base font-semibold text-[#1A2341]">
-              {/* (Total CO₂e: {reportMeta[activeScope].total_scope_emissions_co2e.toLocaleString()}) */}
-            </span>
-          )}
-        </div>
+        </h2>
         <button
           className="bg-[#1A2341] text-white px-4 py-2 rounded hover:bg-[#2c3e50]"
           onClick={() => setAddOpen(true)}
@@ -143,7 +150,7 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
       </div>
       
       {/* Table container - Scrollable with hidden scrollbar */}
-      <div className="flex-1 bg-white rounded shadow p-4 overflow-hidden">
+      <div className="flex-1 bg-white rounded-xl shadow border border-gray-200 p-4 overflow-hidden">
         <div 
           className="h-full overflow-y-auto scrollbar-hide"
           style={{
@@ -170,4 +177,4 @@ const GHGMainPage = ({ hideBreadcrumb = false, smallSubHeader = false, plantId: 
   );
 };
 
-export default GHGMainPage;
+export default GHGMainPage; 

@@ -152,50 +152,56 @@ const Plants = ({ renderBare = false, onPlantSelect = null }) => {
   );
 
   /* ──────────────────────────── RENDERING ─────────────────────────────── */
+  // Height of header (Breadcrumb + SubHeader) for sticky offset
   const Content = (
-    <div className="module-layout min-h-screen p-2 md:p-3">
-      <div className="w-full mb-4">
-        <Breadcrumb section="Environment" activeTab="Plants" />
-      </div>
-
-      <div className="mt-4 mx-2 w-full">
-        <div className="mb-4">
+    <div className="module-layout min-h-screen w-[98%] relative flex flex-col">
+      {/* Sticky Header Container (not fixed, so it stays within content area) */}
+      <div className="sticky top-0 z-30 bg-white">
+        <div className="mb-4 px-2 md:px-3 pt-4">
+          <Breadcrumb section="Environment" activeTab="Plants" />
+        </div>
+        <div className="mx-2 pb-4">
           <SubHeader
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />
         </div>
+      </div>
 
-        <div className="mt-4">
-          {plantsLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000D30]" />
-            </div>
-          ) : plantsError ? (
-            <ErrorMessage />
-          ) : (
-            <div className="space-y-8">
-              {activeTab === 'Main Facilities' ? (
-                mainPlants.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mainPlants.map((plant) => (
+      {/* Scrollable Content Container */}
+      <div className="flex-1">
+        <div className="mt-4 mx-2 w-[99%]">
+          <div className="mt-4">
+            {plantsLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000D30]" />
+              </div>
+            ) : plantsError ? (
+              <ErrorMessage />
+            ) : (
+              <div className="space-y-8">
+                {activeTab === 'Main Facilities' ? (
+                  mainPlants.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {mainPlants.map((plant) => (
+                        <PlantCard key={plant.id} plant={plant} />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState type="Main Facilities" />
+                  )
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CreatePlantCard />
+                    {otherPlants.map((plant) => (
                       <PlantCard key={plant.id} plant={plant} />
                     ))}
                   </div>
-                ) : (
-                  <EmptyState type="Main Facilities" />
-                )
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <CreatePlantCard />
-                  {otherPlants.map((plant) => (
-                    <PlantCard key={plant.id} plant={plant} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

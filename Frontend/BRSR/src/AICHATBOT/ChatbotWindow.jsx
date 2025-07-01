@@ -1357,7 +1357,7 @@ return (
     {/* Backdrop blur for mobile */}
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden" />
     
-    <div className="fixed inset-x-0 bottom-0 w-full h-[75vh] z-50 sm:static sm:max-w-md sm:h-[80vh] sm:max-h-[700px] sm:z-auto bg-white border border-gray-200 sm:rounded-xxl shadow-lg sm:shadow-xl flex flex-col overflow-hidden">
+    <div className="fixed inset-x-0 bottom-0 w-full h-[75vh] z-50 sm:static sm:max-w-md sm:h-[80vh] sm:max-h-[700px] sm:z-auto bg-white border border-gray-200 sm:rounded-xxl shadow-lg sm:shadow-xl flex flex-col overflow-hidden" >
       <div className="relative flex flex-col h-full">
         <ChatbotHeader
           onClose={onClose}

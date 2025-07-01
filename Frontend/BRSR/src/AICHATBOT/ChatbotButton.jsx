@@ -16,12 +16,12 @@ const ChatbotButton = () => {
                 <FaRobot className="text-white text-2xl" />
             </button>
             {isChatOpen && (
-                <div className="fixed inset-0 z-[110] flex items-end justify-end bg-black bg-opacity-50 transition-opacity duration-300">
+                <div className="fixed inset-0 z-[110] flex items-end justify-end bg-black bg-opacity-50 transition-opacity duration-300" >
                     <div
                         className="absolute inset-0"
                         onClick={() => setIsChatOpen(false)}
                     />
-                    <div className="relative z-10 w-full max-w-lg m-4 md:m-6 animate-slide-up">
+                    <div className="relative z-10 w-full max-w-lg m-4 md:m-6 animate-slide-up" >
                         <ChatbotWindow
                             onClose={() => setIsChatOpen(false)}
                             onEdit={(question) => setEditModalQuestion(question)}

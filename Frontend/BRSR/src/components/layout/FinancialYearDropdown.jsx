@@ -52,7 +52,7 @@ const FinancialYearDropdown = ({ company }) => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative ml-1" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 text-sm border border-white rounded-md px-2 py-1 bg-[#000D30] text-white hover:scale-102 hover:bg-[#001A60] transition-transform transition-colors duration-300"

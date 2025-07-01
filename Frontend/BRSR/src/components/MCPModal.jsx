@@ -63,7 +63,8 @@ const MCPModal = ({ onClose }) => {
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4">
       {/* Enhanced backdrop with your colors */}
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-[#000B33]/60 via-[#000B33]/40 to-[#000B33]/80 backdrop-blur-md"
+        className="absolute inset-0"
+        style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}
         onClick={onClose}
       />
       

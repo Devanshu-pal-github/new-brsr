@@ -59,7 +59,7 @@ const QuickActions = ({ plantId, financialYear, hideGHG = false }) => {
 
     return (
         <div className="bg-[#F8FAFC] rounded-[4px] shadow p-[0.7vw] border border-gray-100 w-full flex flex-col gap-2 mt-2">
-            <div className="font-semibold text-[11px] mb-[0.3vh] text-[#000D30]">Quick Actions Buttons</div>
+            <div className="font-semibold text-[12px] mb-[0.3vh] text-[#000D30] text-center">Quick Actions Buttons</div>
             <div className="flex flex-wrap gap-x-3 gap-y-2 justify-center w-full px-2">
                 {filteredActions.map((action, idx) => (
                     <div
@@ -73,11 +73,11 @@ const QuickActions = ({ plantId, financialYear, hideGHG = false }) => {
                         onClick={() => !action.disabled && handleAction(action.onClick)}
                         style={{ boxShadow: action.disabled ? 'none' : undefined }}
                     >
-                        {/* Smaller icon */}
+                        {/* Icon remains the same size for balance */}
                         <div className="flex items-center justify-center">
                             {React.cloneElement(action.icon, { size: 17 })}
                         </div>
-                        <span className="mt-1 text-[9px] font-medium text-center text-[#1A2341] leading-tight">{action.label}</span>
+                        <span className="mt-2 text-[11px] font-semibold text-center text-[#1A2341] leading-tight">{action.label}</span>
                     </div>
                 ))}
             </div>
@@ -88,7 +88,7 @@ const QuickActions = ({ plantId, financialYear, hideGHG = false }) => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div ref={popupRef} className="bg-white rounded-lg shadow-xl p-0 w-[99vw] max-w-[1200px] md:max-w-[90vw] lg:max-w-[1100px] xl:max-w-[1300px] 2xl:max-w-[1500px] relative animate-fade-in overflow-hidden">
                         <button
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-lg font-bold"
+                            className="absolute  right-2 text-gray-500 hover:text-gray-800 text-lg font-bold"
                             onClick={() => setOpen(false)}
                             aria-label="Close"
                         >
