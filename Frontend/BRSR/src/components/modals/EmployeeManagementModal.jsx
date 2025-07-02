@@ -219,8 +219,8 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"
-        
+        className="bg-white rounded-2xl shadow-2xl w-[80%] md:w-[75%] lg:w-[70%] max-w-[1000px] h-[80vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
+        style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18), 0 2px 8px rgba(0,0,0,0.10)' }}
       >
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-2">
@@ -378,7 +378,7 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
           }}
         >
           <div
-            className="bg-white rounded-xl shadow-lg p-6 min-w-[320px] max-w-[90vw] border-1 border-[#1A2341] flex flex-col items-center"
+            className="bg-white rounded-xl shadow-lg p-6 min-w-[320px] max-w-[90vw] flex flex-col items-center"
             style={{ position: 'relative' }}
           >
             <div className="text-lg font-semibold text-[#1A2341] mb-2">Confirm Deletion</div>
@@ -418,7 +418,7 @@ const EmployeeManagementModal = ({ onClose, plantId, financialYear }) => {
           }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-[98vw] w-full sm:w-[450px] md:w-[520px] border-1 border-[#1A2341] flex flex-col items-center relative animate-fadeIn"
+            className="bg-white rounded-2xl shadow-2xl p-8 min-w-[400px] max-w-[98vw] w-full sm:w-[450px] md:w-[520px] flex flex-col items-center relative animate-fadeIn"
             style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18)' }}
             onClick={e => e.stopPropagation()} // Prevent modal close when clicking inside
           >

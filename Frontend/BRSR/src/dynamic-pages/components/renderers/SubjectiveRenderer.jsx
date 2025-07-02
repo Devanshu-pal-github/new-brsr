@@ -107,13 +107,14 @@ const SubjectiveRenderer = ({
                 }
               />
             ) : (
-              <div className="p-2 rounded whitespace-pre-line text-gray-900">
-                {fieldValue || (
-                  <span className="text-gray-400 italic">
-                    No response provided
-                  </span>
-                )}
-              </div>
+              <textarea
+                className="w-full p-3 border rounded-md transition-colors bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200"
+                value={fieldValue}
+                disabled
+                rows={6}
+                placeholder="No response provided"
+                style={{ resize: 'none' }}
+              />
             )}
           </div>
         );

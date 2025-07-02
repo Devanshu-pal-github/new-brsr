@@ -69,7 +69,8 @@ const CreateEmployeeModal = ({ isOpen, onClose, plantId }) => {
     >
       <div 
         ref={modalRef}
-        className="bg-white rounded-lg p-8 w-[80%] max-w-[800px] transform transition-transform duration-300 scale-100 border-1 border-[#1A2341]"
+        className="bg-white rounded-2xl shadow-2xl p-8 w-[80%] max-w-[800px] transform transition-transform duration-300 scale-100"
+        style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18), 0 2px 8px rgba(0,0,0,0.10)' }}
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-[#1A2341]">Create New Employee</h2>

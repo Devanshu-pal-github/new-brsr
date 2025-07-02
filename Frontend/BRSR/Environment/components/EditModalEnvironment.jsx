@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Brain } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import RagDocumentQA from './RagDocumentQA';
 
@@ -148,9 +149,7 @@ const EditModalEnvironment = ({ isOpen, onClose, children, title, onSave, tempDa
                                         }}
                                         aria-label="Smart AI Features"
                                     >
-                                        <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
+                                        <Brain className="w-5 h-5 mr-1" />
                                         <span className="text-xs font-semibold">AI</span>
                                     </button>
                                     <button
@@ -279,7 +278,7 @@ const EditModalEnvironment = ({ isOpen, onClose, children, title, onSave, tempDa
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                    Get Values from Document
+                                                    Get Answers from Document
                                                 </button>
                                             </motion.div>
                                             <motion.div

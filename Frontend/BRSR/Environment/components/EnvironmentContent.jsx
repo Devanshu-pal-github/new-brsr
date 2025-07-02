@@ -46,7 +46,7 @@ const EnvironmentContent = ({
   const innerContent = (
     <div className="relative w-full h-full flex flex-col">
       {/* Sticky Header Container (not fixed, so it stays within content area) */}
-      <div className="sticky top-0 z-20  bg-white">
+      <div className="sticky top-0 z-20 bg-white">
         <div className="mb-4 px-2 md:px-3 pt-4">
           <Breadcrumb section={moduleData.name} activeTab={activeSubmodule} />
         </div>
@@ -59,10 +59,11 @@ const EnvironmentContent = ({
         </div>
       </div>
 
-      {/* Scrollable Content Container */}
+      {/* Scrollable Content Container - Fixed width accounting for Progress Sidebar */}
       <div className="flex-1">
         <div className="mt-4 mx-2">
-          <div className="w-full">
+          {/* Main content container with responsive width calculation */}
+          <div className="w-full lg:max-w-[calc(100vw-16vw-4rem)] max-w-full">
             <div className="mt-4">
               {currentSubmodule && (
                 <div className="space-y-4">
@@ -130,8 +131,8 @@ const EnvironmentContent = ({
             className="w-full h-full absolute top-0 left-0 bg-black/30"
             onClick={() => setAiChatOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up" >
-            <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200" >
+          <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
+            <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
               <ChatbotWindow
                 onClose={() => setAiChatOpen(false)}
                 initialMode={chatbotInitialMode}
@@ -146,7 +147,7 @@ const EnvironmentContent = ({
   return (
     <AppProvider>
       {renderBare ? (
-        <div className="module-layout min-h-screen w-[78%] relative">
+        <div className="module-layout min-h-screen w-[100%] relative">
           {innerContent}
         </div>
       ) : (

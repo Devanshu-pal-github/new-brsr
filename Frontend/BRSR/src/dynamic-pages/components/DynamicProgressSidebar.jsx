@@ -124,7 +124,14 @@ const DynamicProgressSidebar = ({ submodules = [], currentSubmodule = null, modu
     // If no submodules, show placeholder
     if (!submodules.length) {
         return (
-            <aside className="hidden lg:flex flex-col mt-[15vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500">
+            <aside
+                className="hidden lg:flex flex-col gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[220px] max-w-[340px] w-[16vw] fixed right-4 mr-[1%] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto"
+                style={{
+                    top: 'calc(var(--subheader-sticky-top, 6.5rem))',
+                    height: 'calc(100vh - var(--subheader-sticky-top, 6.5rem) - 2vh)',
+                    alignSelf: 'flex-start',
+                }}
+            >
                 <div className="flex flex-col items-center justify-center h-full w-full text-gray-500">
                     <p className="text-sm">No progress data available</p>
                 </div>
@@ -139,7 +146,14 @@ const DynamicProgressSidebar = ({ submodules = [], currentSubmodule = null, modu
     );
 
     return (
-        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside
+            className="hidden lg:flex flex-col gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[220px] max-w-[340px] w-[16vw] fixed right-4 mr-[1%] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto"
+            style={{
+                top: 'calc(var(--subheader-sticky-top, 6.5rem))',
+                height: 'calc(100vh - var(--subheader-sticky-top, 6.5rem) - 2vh)',
+                alignSelf: 'flex-start',
+            }}
+        >
             {/* Module Progress */}
             <div className="flex flex-col items-center mb-[0.7vh]">
                 <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>

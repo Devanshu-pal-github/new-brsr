@@ -130,17 +130,40 @@ const DynamicQuestionRenderer = forwardRef(({
   const auditRequired = getFieldValue('audit_required', 'audit_required');
   const audited = getFieldValue('audited', 'audited');
 
-  const renderMetaBadges = () => (
-    <div className="flex flex-wrap gap-2 mb-2">
-      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm shadow-sm">Principle: {principle}</span>
-      <span className={`inline-block px-4 py-1 rounded-sm text-xs font-semibold ${indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {indicator}</span>
-      <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-4 py-1 rounded-sm">Section: {section}</span>
-      <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-4 py-1 rounded-sm">Audit Required: {String(auditRequired)}</span>
-      {auditRequired === true && (
-        <span className="inline-block bg-[#DCFCE7] text-[#166534] text-xs font-semibold px-4 py-1 rounded-sm">Audited: {String(audited)}</span>
-      )}
-    </div>
-  );
+  // Capsule for question number
+  const renderQuestionNumber = () => {
+    const qNum = question.question_number || question.human_readable_id || question.question_id || question._id;
+    if (!qNum) return null;
+    return (
+      <span className="inline-block bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded">Q.No: {qNum}</span>
+    );
+  };
+
+  // Audit badges (right-aligned, Environment style)
+  const renderAuditBadges = () => {
+    // Audit Required capsule
+    let auditRequiredCapsule = null;
+    if (auditRequired === true) {
+      auditRequiredCapsule = <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded">Audit Required</span>;
+    } else if (auditRequired === false) {
+      auditRequiredCapsule = <span className="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-1 rounded">No Audit Required</span>;
+    }
+    // Audited status capsule
+    let auditedCapsule = null;
+    if (auditRequired === true) {
+      if (audited === true) {
+        auditedCapsule = <span className="inline-block bg-green-100 text-green-800 border border-green-400 text-xs font-semibold px-2 py-1 rounded ml-2">Audited</span>;
+      } else if (audited === false) {
+        auditedCapsule = <span className="inline-block bg-red-100 text-red-700 border border-red-400 text-xs font-semibold px-2 py-1 rounded ml-2">Not Audited</span>;
+      }
+    }
+    return (
+      <div className="flex items-center gap-2 ml-2">
+        {auditRequiredCapsule}
+        {auditedCapsule}
+      </div>
+    );
+  };
 
   const renderEditableContent = () => {
     const metadata = question.metadata;
@@ -151,7 +174,10 @@ const DynamicQuestionRenderer = forwardRef(({
     return (
       <>
         {renderMetaBadges()}
-        <div className="mb-1 text-base font-semibold text-gray-900">{question.question_text || question.title || question.human_readable_id}</div>
+        <div
+          className="text-sm font-semibold text-gray-700 mb-2 break-words"
+          dangerouslySetInnerHTML={{ __html: question.question_text || question.title || question.human_readable_id }}
+        />
         {(() => {
           switch (questionType) {
             case 'subjective':
@@ -196,12 +222,23 @@ const DynamicQuestionRenderer = forwardRef(({
     const questionType = question.question_type || (metadata && metadata.type);
     return (
       <>
-        {renderMetaBadges()}
-        <div className="flex justify-between items-start gap-4 mb-1">
-          <span className="text-base font-semibold text-gray-900 break-words flex-1 min-w-0">
-            {question.question_text || question.title || question.human_readable_id}
-          </span>
-          <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap justify-between items-start gap-4 mb-1">
+          {/* Left: Question number and meta badges */}
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            {renderQuestionNumber()}
+            {principle && (
+              <span className="inline-block bg-[#E0E7FF] text-[#3730A3] text-xs font-semibold px-2 py-1 rounded">Principle: {principle}</span>
+            )}
+            {indicator && (
+              <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${indicator === 'Essential' ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF9C3] text-[#92400E]'}`}>Indicator: {indicator}</span>
+            )}
+            {section && (
+              <span className="inline-block bg-[#E5E7EB] text-gray-800 text-xs font-semibold px-2 py-1 rounded">Section: {section}</span>
+            )}
+          </div>
+          {/* Right: Audit badges and action buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            {renderAuditBadges()}
             <button
               className="bg-[#4F46E5] text-white font-medium px-2 py-1 rounded-[4px] text-xs shadow-sm focus:outline-none transition-all duration-200 hover:bg-[#4338CA] flex items-center gap-1"
               onClick={handleAIClick}
@@ -220,6 +257,14 @@ const DynamicQuestionRenderer = forwardRef(({
               {isSaving ? 'Saving...' : 'Edit Response'}
             </button>
           </div>
+        </div>
+        {/* Question text */}
+        <div className="flex-1">
+          <div
+            className="text-sm font-semibold text-gray-700 mb-2 break-words mt-2"
+            style={{ maxWidth: '80%' }}
+            dangerouslySetInnerHTML={{ __html: question.question_text || question.title || question.human_readable_id }}
+          />
         </div>
         {/* Answer/response area */}
         {(!questionData || Object.keys(questionData).length === 0) ? (

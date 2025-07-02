@@ -52,39 +52,41 @@ const DynamicPageRenderer = ({ reportId, moduleId, module }) => {
 
   // Defensive: always pass moduleId to ModuleRenderer
   return (
-    <div className="relative flex">
-      <div className="flex-1  rounded-lg ">
-        {isLoading ? (
-          <LoadingState message="Loading module data..." />
-        ) : error ? (
-          <ErrorState message={error?.data?.detail || 'Failed to fetch module data'} />
-        ) : selectedModule ? (
-          <>
-            <div className="flex justify-between items-center ">
-              {/* <h1 className="text-2xl font-bold text-gray-800">
-                {selectedModule.name}
-              </h1> */}
-              {/* <div className="text-sm text-gray-500">
-                Module: {selectedModule.name}
-              </div> */}
+    <div className="relative w-full min-h-screen">
+      <div className="flex w-full">
+        {/* Main Content */}
+        <div className="flex-1 min-w-full max-w-full lg:max-w-[calc(100vw-16vw-4rem)]   rounded-lg">
+          {isLoading ? (
+            <LoadingState message="Loading module data..." />
+          ) : error ? (
+            <ErrorState message={error?.data?.detail || 'Failed to fetch module data'} />
+          ) : selectedModule ? (
+            <>
+              <div className="flex justify-between items-center ">
+                {/* <h1 className="text-2xl font-bold text-gray-800">
+                  {selectedModule.name}
+                </h1> */}
+                {/* <div className="text-sm text-gray-500">
+                  Module: {selectedModule.name}
+                </div> */}
+              </div>
+              <ModuleRenderer module={{...selectedModule, id: selectedModule.id || selectedModule._id}} answers={answers} financialYear={financialYear} />
+            </>
+          ) : (
+            <div className="text-center text-gray-600 ">
+              No module found with ID: {actualModuleId}
             </div>
-            <ModuleRenderer module={{...selectedModule, id: selectedModule.id || selectedModule._id}} answers={answers} financialYear={financialYear} />
-          </>
-        ) : (
-          <div className="text-center text-gray-600 ">
-            No module found with ID: {actualModuleId}
-          </div>
-        )}
+          )}
+        </div>
+        {/* Progress Sidebar (fixed, right-aligned, responsive) */}
+        <DynamicProgressSidebar 
+          submodules={selectedModule?.submodules || []}
+          currentSubmodule={currentSubmodule}
+          module={selectedModule}
+          answers={answers}
+          financialYear={financialYear}
+        />
       </div>
-      
-      {/* Progress Sidebar */}
-      <DynamicProgressSidebar 
-        submodules={selectedModule?.submodules || []}
-        currentSubmodule={currentSubmodule}
-        module={selectedModule}
-        answers={answers}
-        financialYear={financialYear}
-      />
     </div>
   );
 };

@@ -6,7 +6,7 @@ import QuickActions from './QuickActions';
 const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
     const [searchParams] = useSearchParams();
     const financialYear = searchParams.get('financialYear') || '2024-2025';
-    
+
     // Update query to include plantId like CategoryRenderer
     const { data: reports = [], isLoading, error } = useGetCompanyReportsQuery(
         plantId ? { plantId, financialYear } : undefined,
@@ -63,9 +63,9 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
         }
 
         // For any other type of answer, check if data exists
-        const isAnswered = answer.data !== undefined && 
-               answer.data !== null && 
-               ((typeof answer.data === 'object' && Object.keys(answer.data).length > 0) || (typeof answer.data !== 'object' && answer.data !== ''));
+        const isAnswered = answer.data !== undefined &&
+            answer.data !== null &&
+            ((typeof answer.data === 'object' && Object.keys(answer.data).length > 0) || (typeof answer.data !== 'object' && answer.data !== ''));
         console.debug(`Other type question ${questionId} answered:`, isAnswered);
         return isAnswered;
     };
@@ -135,8 +135,20 @@ const ProgressSidebar = ({ submodules, currentSubmodule, plantId }) => {
 
     const { totalQuestions, totalAnswered } = calculateOverallProgress();
 
+    // Calculate the top offset for sticky alignment with SubHeader
+    // This should match the sticky header's height in EnvironmentContent
+    // You may need to tweak this value to match your header height exactly
+    const stickyTop = 'calc(4rem + 1.5rem)'; // 4rem (pt-4+mb-4+SubHeader) + 1.5rem (padding/margin fudge)
+
     return (
-        <aside className="hidden lg:flex flex-col mt-[11vh] mr-[30px] gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[14vw] max-w-[16vw] w-full fixed right-4 top-0 h-[82vh] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto">
+        <aside
+            className="hidden lg:flex flex-col gap-2 px-2 pt-3 pb-3 bg-white border-t border-l border-gray-200 shadow-lg min-w-[220px] max-w-[340px] w-[16vw] fixed right-4 mr-[1%] z-20 items-center justify-start rounded-[4px] transition-all duration-500 overflow-y-auto"
+            style={{
+                top: 'calc(var(--subheader-sticky-top, 6.5rem))',
+                height: 'calc(100vh - var(--subheader-sticky-top, 6.5rem) - 2vh)',
+                alignSelf: 'flex-start',
+            }}
+        >
             {/* Overall Progress Circle */}
             <div className="flex flex-col items-center mb-[0.7vh]">
                 <div className="font-semibold text-[13px] mb-[1vh] text-[#000D30]">Module Progress</div>

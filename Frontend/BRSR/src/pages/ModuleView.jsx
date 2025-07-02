@@ -8,7 +8,7 @@ import {
 } from "../store/slices/authSlice";
 import Navbar from "../components/layout/ReportNavbar";
 import { useGetReportModulesQuery, useGetCommonFieldsQuery } from "../store/api/apiSlice";
-import { Loader2,Factory } from "lucide-react";
+import { Loader2, Factory } from "lucide-react";
 import DynamicPageRenderer from "../dynamic-pages";
 import Plants from "../../../BRSR/Environment/Pages/Plants";
 import EnvironmentContent from "../../../BRSR/Environment/components/EnvironmentContent";
@@ -127,7 +127,7 @@ const ModuleView = () => {
     }
   }, [reportModules, userRole]);
 
-  console.log("filteredModules",filteredModules);
+  console.log("filteredModules", filteredModules);
 
   // Function to get icon component based on module name
   const getModuleIcon = (moduleName) => {
@@ -191,7 +191,6 @@ const ModuleView = () => {
             <div className="h-full flex flex-col">
               {/* Header */}
               <div className="flex items-center gap-3 pl-5 py-3">
-
                 <h2
                   className={`text-[1rem] font-bold text-[#E5E7EB] transition-opacity duration-300
                   ${isSidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"}`}
@@ -203,10 +202,6 @@ const ModuleView = () => {
               {/* Navigation - Scrollable */}
               <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-300">
                 <ul className="space-y-1 flex flex-col items-start pl-0">
-                  
-              
-
-
                   {/* Dashboard */}
                   <li className="w-full">
                     <button
@@ -236,21 +231,6 @@ const ModuleView = () => {
                       <span className="text-left">Environment</span>
                     </button>
                   </li>
-
-                  {/* Greenhouse Gases Emission Module */}
-                  {/* <li className="w-full">
-                    <button
-                      onClick={() => handleModuleClick("ghg")}
-                      className={`flex items-center gap-3 w-full h-[32px] text-[0.92rem] font-medium pl-10 rounded-none transition-colors justify-start
-                        ${selectedModuleId === "ghg"
-                          ? "bg-[#20305D] text-white"
-                          : "text-[#E5E7EB] hover:bg-[#20305D] hover:text-white"
-                        }`}
-                    >
-                      <Factory className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-left">GHG Emissions</span>
-                    </button>
-                  </li> */}
 
                   {/* Module List */}
                   {isLoading ? (
@@ -283,8 +263,8 @@ const ModuleView = () => {
                     ))
                   )}
                 </ul>
-              {/* Logout Button */}
               </nav>
+              {/* Logout Button */}
               <div className="p-5 border-t border-gray-700">
                 <button
                   onClick={handleLogout}
@@ -301,10 +281,14 @@ const ModuleView = () => {
             </div>
           </div>
 
-          {/* Main Content - Scrollable */}
+          {/* Main Content - Scrollable with proper width calculation */}
           <div
-            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden  
-            ${isSidebarOpen ? "ml-55"  : "ml-0 lg:ml-16"}`}
+            className={`flex-1 transition-all duration-300 ease-in-out overflow-x-hidden
+            ${isSidebarOpen ? "ml-55" : "ml-0 lg:ml-16"}
+            ${selectedModuleId === "environment" && selectedPlantData 
+              ? "lg:mr-[19vw]" // Reserve space for progress sidebar on large screens
+              : ""
+            }`}
           >
             {selectedModuleId === "dashboard" ? (
               <div className="h-[calc(100vh-48px)] overflow-y-auto">
@@ -312,7 +296,7 @@ const ModuleView = () => {
               </div>
             ) : selectedModuleId === "environment" ? (
               selectedPlantData ? (
-                <div className="h-[calc(100vh-48px)] overflow-y-auto ">
+                <div className="h-[calc(100vh-48px)] overflow-y-auto">
                   <EnvironmentContent
                     renderBare
                     plantId={selectedPlantData.plantId}
@@ -394,7 +378,7 @@ const ModuleView = () => {
         {aiChatOpen && (
           <>
             {/* Dark overlay for background */}
-            <div className="fixed inset-0 z-[999]  bg-black/30 bg-opacity-60  transition-opacity duration-300" />
+            <div className="fixed inset-0 z-[999] bg-black/30 bg-opacity-60 transition-opacity duration-300" />
             <div className="fixed inset-0 z-[1000] flex items-end justify-end transition-opacity duration-300">
               <div
                 className="w-full h-full absolute top-0 left-0"

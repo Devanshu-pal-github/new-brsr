@@ -116,7 +116,7 @@ const GHGAddModal = ({ open, onClose, onAdd, scope }) => {
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
             <div
                 ref={modalRef}
                 className="bg-white rounded-xl max-w-3xl w-full p-8 shadow-2xl border border-gray-200 transform transition-all duration-300 ease-in-out"

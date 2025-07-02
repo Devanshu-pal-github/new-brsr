@@ -56,7 +56,8 @@ const CreatePlantModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={modalRef}
-        className="bg-white rounded-xl w-[80%] md:w-[70%] lg:w-[60%] max-w-[800px] max-h-[90vh] h-auto overflow-y-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"
+        className="bg-white rounded-2xl shadow-2xl w-[80%] md:w-[70%] lg:w-[60%] max-w-[800px] max-h-[90vh] h-auto overflow-y-auto p-3 sm:p-4 md:p-5 relative scrollbar-none"
+        style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18), 0 2px 8px rgba(0,0,0,0.10)' }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-[#1A2341]">Create New Plant</h2>

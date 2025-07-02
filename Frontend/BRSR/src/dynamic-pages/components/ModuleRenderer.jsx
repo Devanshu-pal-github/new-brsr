@@ -31,7 +31,7 @@ const ModuleRenderer = ({ module, answers, financialYear }) => {
   return (
     <div className="module-layout min-h-screen w-[78%] relative flex flex-col">
       {/* Sticky Header Container (Breadcrumb + SubHeader) */}
-      <div className="sticky top-0 z-30 bg-white">
+      <div className="sticky top-0 z-20 bg-white">
         <div className="mb-4 px-2 md:px-3 pt-4">
           <DynamicBreadcrumb 
             moduleName={module.name}

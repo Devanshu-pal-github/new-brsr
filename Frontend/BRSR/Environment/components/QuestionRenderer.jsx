@@ -75,9 +75,11 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
   const [pendingAuditStatus, setPendingAuditStatus] = useState(null);
 
   // Create an activeQuestion object for the chatbot
+  // Send the full question description (not just the title) as question_text
   const activeQuestion = {
     question_id: question.id,
-    question_text: title,
+    question_text: description || title || '', // Use full description for specificity
+    question_title: title || '', // Optionally keep the title as a separate field
     guidance_text: description || 'No guidance provided',
     metadata: metadata,
     type: metadata?.type,

@@ -1,4 +1,17 @@
 import React, { useState } from 'react';
+// Custom loader for upload
+function ESGUploadLoader() {
+  return (
+    <div className="flex flex-col items-center justify-center py-4">
+      <div className="relative flex items-center justify-center">
+        <span className="sr-only">Uploading...</span>
+        <span className="block w-10 h-10 border-4 border-[#4F46E5] border-t-transparent rounded-full animate-spin"></span>
+        <span className="absolute w-5 h-5 bg-[#4F46E5] rounded-full opacity-70 animate-pulse"></span>
+      </div>
+      <span className="mt-2 text-[#4F46E5] text-xs font-semibold">Uploading document...</span>
+    </div>
+  );
+}
 import ReactMarkdown from 'react-markdown';
 import { useUploadRagDocumentMutation, useRagChatMutation, useRagExtractTableMutation } from '../../src/store/api/apiSlice';
 
@@ -183,7 +196,7 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                 className="relative bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl border border-slate-200/50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300 max-h-[95vh] flex flex-col"
                 style={{ boxSizing: 'border-box', minHeight: '520px', height: 'clamp(520px,60vh,700px)' }}
             >
-                <button className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 hover:bg-slate-200/50 rounded-full transition-colors duration-200 z-10 text-slate-600 hover:text-slate-800 text-2xl font-bold" onClick={onClose} aria-label="Close RAG Modal">×</button>
+                <button className="absolute top-1 right-3 sm:top-2 sm:right-4 p-1.5 sm:p-2 hover:bg-slate-200/50 rounded-full transition-colors duration-200 z-10 text-slate-600 hover:text-slate-800 text-2xl font-bold" onClick={onClose} aria-label="Close RAG Modal">×</button>
                 <div className="relative flex items-center gap-2 sm:gap-3 pr-8 sm:pr-0 pt-4 pb-2 px-4 sm:px-6">
                     <h2 className="text-lg sm:text-xl font-bold text-[#1A2341] truncate">
                         {mode === 'table' ? 'Upload Document for Table Extraction' : 'Upload Document for Q&A'}
@@ -226,7 +239,7 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                             <span className="mt-2 text-xs text-[#1A2341]">Selected: {file.name}</span>
                         )}
                         {isUploading && (
-                            <span className="mt-2 text-xs text-[#4F46E5]">Uploading...</span>
+                            <ESGUploadLoader />
                         )}
                     </div>
                 </div>

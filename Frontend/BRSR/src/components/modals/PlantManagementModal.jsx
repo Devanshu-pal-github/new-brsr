@@ -158,7 +158,7 @@ const PlantManagementModal = ({ onClose }) => {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
         <div className="bg-white rounded-xl p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A2341]"></div>
+          <div className="animate-spin rounded-full h-8 w-8"></div>
         </div>
       </div>
     );
@@ -191,7 +191,8 @@ const PlantManagementModal = ({ onClose }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }}>
       <div
         ref={popupRef}
-        className="bg-white rounded-xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none border-1 border-[#1A2341]"
+        className="bg-white rounded-2xl shadow-2xl w-[95%] md:w-[90%] lg:w-[85%] max-w-[1200px] h-[90vh] overflow-auto p-3 sm:p-4 md:p-5 relative scrollbar-none "
+        style={{ boxShadow: '0 8px 32px rgba(26,35,65,0.18), 0 2px 8px rgba(0,0,0,0.10)' }}
       >
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-2">
@@ -298,7 +299,7 @@ const PlantManagementModal = ({ onClose }) => {
             onClick={handleDeleteCancel}
           >
             <div
-              className="bg-white rounded-xl p-6 max-w-md w-[90%] mx-4 shadow-2xl border-1 border-[#1A2341]"
+              className="bg-white rounded-xl p-6 max-w-md w-[90%] mx-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the popup
             >
               <div className="flex flex-col gap-4">
