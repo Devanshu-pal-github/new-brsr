@@ -10,7 +10,7 @@ const DashboardCard = ({
   return (
     <div 
       className={`
-        bg-white rounded-xl border border-slate-100 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-slate-200 hover:scale-[1.02]
+        bg-slate-50 rounded-xl border border-slate-100 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-slate-200 hover:scale-[1.02]
         ${fullWidth ? 'col-span-full' : 'col-span-1'} 
         ${className}
       `}

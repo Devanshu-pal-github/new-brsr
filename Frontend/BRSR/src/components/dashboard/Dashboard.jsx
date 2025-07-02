@@ -306,7 +306,7 @@ const Dashboard = ({ dynamicModules = [] }) => {
   const [isMCPModalOpen, setIsMCPModalOpen] = React.useState(false);
 
   return (
-    <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-5 bg-white min-h-screen ">
       <div className="mb-4 flex justify-between items-center">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold text-[#1A2341] tracking-tight">Dashboard Overview</h1>

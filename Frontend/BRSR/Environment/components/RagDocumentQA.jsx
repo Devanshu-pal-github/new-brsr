@@ -310,15 +310,22 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                                 <div className="overflow-y-auto max-h-[30vh] min-h-[100px]">
                                     <div className="space-y-3">
                                         {Object.entries(suggestedTable).map(([rowIdx, rowObj]) => {
-                                            const paramInfo = parametersInfo[rowIdx] || {};
-                                            // Use the parameter name from backend, fallback to "Unknown Parameter" if not available
-                                            const paramName = paramInfo.parameter || `Unknown Parameter (Row ${parseInt(rowIdx, 10) + 1})`;
-                                            const unit = paramInfo.unit || '';
-                                            
+                                            // Try to get parameter name and unit from parametersInfo, fallback to tableMetadata.rows if needed
+                                            let paramName = '';
+                                            let unit = '';
+                                            if (parametersInfo[rowIdx] && parametersInfo[rowIdx].parameter) {
+                                                paramName = parametersInfo[rowIdx].parameter;
+                                                unit = parametersInfo[rowIdx].unit || '';
+                                            } else if (tableMetadata && tableMetadata.rows && tableMetadata.rows[parseInt(rowIdx, 10)]) {
+                                                paramName = tableMetadata.rows[parseInt(rowIdx, 10)].parameter || `Row ${parseInt(rowIdx, 10) + 1}`;
+                                                unit = tableMetadata.rows[parseInt(rowIdx, 10)].unit || '';
+                                            } else {
+                                                paramName = `Unknown Parameter (Row ${parseInt(rowIdx, 10) + 1})`;
+                                            }
                                             return (
                                                 <div key={rowIdx} className="border border-gray-200 rounded p-2 bg-white">
                                                     <div className="font-semibold text-xs mb-2 text-[#1A2341]">
-                                                        {paramName}
+                                                        <span dangerouslySetInnerHTML={{__html: paramName}} />
                                                         {unit && <span className="text-gray-500 ml-1">({unit})</span>}
                                                     </div>
                                                     <div className="grid grid-cols-1 gap-2">
@@ -327,7 +334,6 @@ const RagDocumentQA = ({ isOpen, open, onClose, questionText = '', mode, tableMe
                                                             const isAccepted = acceptedCells[cellKey];
                                                             const colLabel = colKey === 'current_year' ? 'Current Year' : 
                                                                            colKey === 'previous_year' ? 'Previous Year' : colKey;
-                                                            
                                                             return (
                                                                 <div key={colKey} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
                                                                     <div className="flex-1">
