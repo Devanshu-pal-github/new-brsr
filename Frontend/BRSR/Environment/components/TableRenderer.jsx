@@ -2,12 +2,59 @@ import React, { useState, useEffect } from 'react';
 import { useCurrentFinancialYear } from '../../src/components/layout/FinancialYearDropdown';
 
 const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) => {
-  const [localData, setLocalData] = useState(data || {});
+  const [localData, setLocalData] = useState({});
+  const [extraFieldsData, setExtraFieldsData] = useState({});
+  
+  // Initialize data when component mounts or data changes
   useEffect(() => {
     console.log('[TableRenderer] data prop:', data);
-    console.log('[TableRenderer] localData state:', localData);
+    
+    if (!data) {
+      setLocalData({});
+      setExtraFieldsData({});
+      return;
+    }
+
+    // Separate extra fields from table data
+    const tableData = {};
+    const extraFields = {};
+
+    Object.entries(data).forEach(([key, value]) => {
+      // Check if this entry contains extra field data
+      if (value && typeof value === 'object' && metadata?.extraFields) {
+        const hasExtraFields = metadata.extraFields.some(field => field.key in value);
+        const hasTableData = ['current_year', 'previous_year'].some(col => col in value);
+        
+        if (hasExtraFields && !hasTableData) {
+          // This is pure extra fields data
+          Object.assign(extraFields, value);
+        } else if (hasTableData) {
+          // This is table row data (may also contain extra fields, so extract them)
+          const rowData = { ...value };
+          metadata.extraFields.forEach(field => {
+            if (field.key in rowData) {
+              extraFields[field.key] = rowData[field.key];
+              delete rowData[field.key];
+            }
+          });
+          // Only add to table data if there's actual table content
+          if (Object.keys(rowData).length > 0) {
+            tableData[key] = rowData;
+          }
+        }
+      } else {
+        // Regular table data
+        tableData[key] = value;
+      }
+    });
+
+    console.log('[TableRenderer] Separated table data:', tableData);
+    console.log('[TableRenderer] Separated extra fields:', extraFields);
     console.log('[TableRenderer] turnover prop:', turnover);
-  }, [data, localData, turnover]);
+    
+    setLocalData(tableData);
+    setExtraFieldsData(extraFields);
+  }, [data, metadata]);
   const currentFY = useCurrentFinancialYear();
   // Calculate previous FY (assume format '2024-25' or '2024')
   let prevFY = '';
@@ -25,30 +72,52 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
   // Auto-calculate total energy consumption and energy intensity per rupee of turnover
   useEffect(() => {
     if (!metadata?.rows) return;
-    // Find indices for relevant rows
-    const totalEnergyIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumption (A+B+C)'));
-    const energyIntensityIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Energy intensity per rupee of turnover'));
-    if (totalEnergyIdx === -1 || energyIntensityIdx === -1) {
-      setLocalData(data || {});
-      return;
-    }
     // Deep copy
     const updated = JSON.parse(JSON.stringify(data || {}));
-    ['current_year', 'previous_year'].forEach(yearKey => {
-      // Remove commas and parse as float
-      const a = parseFloat((updated[0]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
-      const b = parseFloat((updated[1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
-      const c = parseFloat((updated[2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
-      const total = a + b + c;
-      if (!updated[totalEnergyIdx]) updated[totalEnergyIdx] = {};
-      updated[totalEnergyIdx][yearKey] = total !== 0 ? total : '';
-      if (!updated[energyIntensityIdx]) updated[energyIntensityIdx] = {};
-      if (turnover && total) {
-        updated[energyIntensityIdx][yearKey] = (total / turnover).toFixed(4);
-      } else {
-        updated[energyIntensityIdx][yearKey] = '';
-      }
-    });
+    // --- EC-1 logic (Total energy consumption (A+B+C)) ---
+    const totalEnergyIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumption (A+B+C)'));
+    const energyIntensityIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Energy intensity per rupee of turnover'));
+    if (totalEnergyIdx !== -1 && energyIntensityIdx !== -1) {
+      ['current_year', 'previous_year'].forEach(yearKey => {
+        const a = parseFloat((updated[0]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const b = parseFloat((updated[1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const c = parseFloat((updated[2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const total = a + b + c;
+        if (!updated[totalEnergyIdx]) updated[totalEnergyIdx] = {};
+        updated[totalEnergyIdx][yearKey] = total !== 0 ? total : '';
+        if (!updated[energyIntensityIdx]) updated[energyIntensityIdx] = {};
+        if (turnover && total) {
+          updated[energyIntensityIdx][yearKey] = (total / turnover).toFixed(4);
+        } else {
+          updated[energyIntensityIdx][yearKey] = '';
+        }
+      });
+    }
+
+    // --- LEC-1 logic (Total energy consumed from renewable sources (A+B+C)) ---
+    const lec1RenewIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumed from renewable sources (A+B+C)'));
+    if (lec1RenewIdx !== -1) {
+      ['current_year', 'previous_year'].forEach(yearKey => {
+        const a = parseFloat((updated[lec1RenewIdx-3]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const b = parseFloat((updated[lec1RenewIdx-2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const c = parseFloat((updated[lec1RenewIdx-1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const total = a + b + c;
+        if (!updated[lec1RenewIdx]) updated[lec1RenewIdx] = {};
+        updated[lec1RenewIdx][yearKey] = total !== 0 ? total : '';
+      });
+    }
+    // --- LEC-1 logic (Total energy consumed from non-renewable sources (D+E+F)) ---
+    const lec1NonRenewIdx = metadata.rows.findIndex(row => row.parameter && row.parameter.includes('Total energy consumed from non-renewable sources (D+E+F)'));
+    if (lec1NonRenewIdx !== -1) {
+      ['current_year', 'previous_year'].forEach(yearKey => {
+        const d = parseFloat((updated[lec1NonRenewIdx-3]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const e = parseFloat((updated[lec1NonRenewIdx-2]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const f = parseFloat((updated[lec1NonRenewIdx-1]?.[yearKey] || '').toString().replace(/,/g, '')) || 0;
+        const total = d + e + f;
+        if (!updated[lec1NonRenewIdx]) updated[lec1NonRenewIdx] = {};
+        updated[lec1NonRenewIdx][yearKey] = total !== 0 ? total : '';
+      });
+    }
     setLocalData(updated);
   }, [data, metadata, turnover]);
 
@@ -81,11 +150,100 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
         }
       });
     }
+
+    // LEC-2 Table: If editing withdrawal rows (1-5), recalculate total withdrawal
+    if (isLEC2Table && withdrawalSumRowIndices.includes(rowIndex) && withdrawalTotalRowIdx !== -1) {
+      ['current_year', 'previous_year'].forEach(yearKey => {
+        let sum = 0;
+        withdrawalSumRowIndices.forEach(idx => {
+          const val = (idx === rowIndex && columnKey === yearKey) ? value : (updatedData[idx]?.[yearKey] || '');
+          const num = parseFloat((val || '').toString().replace(/,/g, ''));
+          if (!isNaN(num)) sum += num;
+        });
+        if (!updatedData[withdrawalTotalRowIdx]) updatedData[withdrawalTotalRowIdx] = {};
+        updatedData[withdrawalTotalRowIdx][yearKey] = sum !== 0 ? sum : '';
+      });
+    }
+
+    // LEC-2 Table: If editing discharge sub-rows, recalculate main rows and total
+    if (isLEC2Table) {
+      // Check if the edited row is a discharge sub-row
+      let isDischargeSubRow = false;
+      let parentMainRowIdx = -1;
+      
+      Object.keys(lec2SubRowMap).forEach(mainIdx => {
+        if (lec2SubRowMap[mainIdx].includes(rowIndex)) {
+          isDischargeSubRow = true;
+          parentMainRowIdx = parseInt(mainIdx);
+        }
+      });
+
+      if (isDischargeSubRow && parentMainRowIdx !== -1) {
+        ['current_year', 'previous_year'].forEach(yearKey => {
+          // Recalculate parent main row
+          const subIndices = lec2SubRowMap[parentMainRowIdx] || [];
+          let mainSum = 0;
+          subIndices.forEach(subIdx => {
+            const val = (subIdx === rowIndex && columnKey === yearKey) ? value : (updatedData[subIdx]?.[yearKey] || '');
+            const num = parseFloat((val || '').toString().replace(/,/g, ''));
+            if (!isNaN(num)) mainSum += num;
+          });
+          if (!updatedData[parentMainRowIdx]) updatedData[parentMainRowIdx] = {};
+          updatedData[parentMainRowIdx][yearKey] = mainSum !== 0 ? mainSum : '';
+
+          // Recalculate total discharge row
+          if (lec2TotalRowIdx !== -1) {
+            let totalSum = 0;
+            lec2MainRowIndices.forEach(mainIdx => {
+              const val = updatedData[mainIdx]?.[yearKey] || '';
+              const num = parseFloat((val || '').toString().replace(/,/g, ''));
+              if (!isNaN(num)) totalSum += num;
+            });
+            if (!updatedData[lec2TotalRowIdx]) updatedData[lec2TotalRowIdx] = {};
+            updatedData[lec2TotalRowIdx][yearKey] = totalSum !== 0 ? totalSum : '';
+          }
+        });
+      }
+    }
     // Update local state
     setLocalData(updatedData);
-    // Call the parent onSave if provided
+    
+    // Call the parent onSave if provided, including extra fields
     if (onSave) {
-      onSave(updatedData);
+      // Create a combined data structure that includes extra fields
+      const combinedData = { ...updatedData };
+      
+      // Add extra fields as a separate row if they exist
+      if (Object.keys(extraFieldsData).length > 0) {
+        const rowIndices = Object.keys(updatedData).map(k => parseInt(k)).filter(k => !isNaN(k));
+        const maxRowIndex = rowIndices.length > 0 ? Math.max(...rowIndices) : -1;
+        const extraFieldsRowIndex = maxRowIndex + 1;
+        combinedData[extraFieldsRowIndex] = extraFieldsData;
+      }
+      
+      onSave(combinedData);
+    }
+  };
+
+  const handleExtraFieldChange = (fieldKey, value) => {
+    const updatedExtraFields = { ...extraFieldsData, [fieldKey]: value };
+    setExtraFieldsData(updatedExtraFields);
+    
+    // Call the parent onSave if provided with combined data
+    // The backend expects extra fields to be part of the main data structure
+    if (onSave) {
+      // Create a combined data structure
+      const combinedData = { ...localData };
+      
+      // Find the highest row index to add extra fields at the end
+      const rowIndices = Object.keys(localData).map(k => parseInt(k)).filter(k => !isNaN(k));
+      const maxRowIndex = rowIndices.length > 0 ? Math.max(...rowIndices) : -1;
+      const extraFieldsRowIndex = maxRowIndex + 1;
+      
+      // Add extra fields as a separate row
+      combinedData[extraFieldsRowIndex] = updatedExtraFields;
+      
+      onSave(combinedData);
     }
   };
 
@@ -119,6 +277,8 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
   const isDischargeTable = metadata.rows.some(row => row.parameter && row.parameter.match(/^\(i\) To Surface water/));
   // Water Withdrawal: has header 'Water withdrawal by source' and total row with 'total volume of water withdrawal'
   const isWithdrawalTable = metadata.rows.some(row => row.parameter && row.parameter.toLowerCase().includes('water withdrawal by source'));
+  // LEC-2 Table: has both water withdrawal and water discharge sections
+  const isLEC2Table = metadata.rows.some(row => row.parameter && row.parameter.includes('Water discharge by destination and level of treatment'));
   // --- Waste Management Table logic ---
   // Detect if this is the new waste management table by looking for the total row
   const isWasteManagementTable = metadata.rows.some(row => row.parameter && row.parameter.includes('Total (A+B+C+D+E+F+G+H)'));
@@ -181,6 +341,52 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
     });
   }
 
+  // --- LEC-2 Water Discharge logic ---
+  let lec2MainRowIndices = [], lec2SubRowMap = {}, lec2TotalRowIdx = -1;
+  if (isLEC2Table) {
+    lec2MainRowIndices = [];
+    lec2SubRowMap = {};
+    lec2TotalRowIdx = -1;
+    let inLEC2DischargeSection = false;
+    metadata.rows.forEach((row, idx) => {
+      // Start of discharge section
+      if (row.parameter && row.parameter.includes('Water discharge by destination and level of treatment')) {
+        inLEC2DischargeSection = true;
+        return;
+      }
+      
+      if (inLEC2DischargeSection) {
+        // Main discharge rows - (i) Into Surface water, (ii) Into Groundwater, etc.
+        if (row.parameter && row.parameter.match(/^\(i\) Into|^\(ii\) Into|^\(iii\) Into|^\(iv\) Sent|^\(v\) Others/)) {
+          lec2MainRowIndices.push(idx);
+          lec2SubRowMap[idx] = [];
+        }
+        // Total row
+        if (row.parameter && row.parameter.toLowerCase().includes('total water discharged')) {
+          lec2TotalRowIdx = idx;
+        }
+      }
+    });
+    
+    // Map sub-rows to main rows for LEC-2
+    let lastLEC2MainIdx = null;
+    let inLEC2DischargeSectionForSub = false;
+    metadata.rows.forEach((row, idx) => {
+      if (row.parameter && row.parameter.includes('Water discharge by destination and level of treatment')) {
+        inLEC2DischargeSectionForSub = true;
+        return;
+      }
+      
+      if (inLEC2DischargeSectionForSub) {
+        if (lec2MainRowIndices.includes(idx)) {
+          lastLEC2MainIdx = idx;
+        } else if (lastLEC2MainIdx !== null && row.parameter && (row.parameter.includes('No treatment') || row.parameter.includes('With treatment'))) {
+          lec2SubRowMap[lastLEC2MainIdx].push(idx);
+        }
+      }
+    });
+  }
+
   // --- Water Withdrawal logic ---
   let withdrawalTotalRowIdx = -1, withdrawalSumRowIndices = [];
   if (isWithdrawalTable) {
@@ -215,8 +421,58 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
     return sumSubRows(subIndices, columnKey);
   };
 
+  // --- LEC-2 Helpers ---
+  const sumLEC2SubRows = (subIndices, columnKey) => {
+    let sum = 0;
+    subIndices.forEach(idx => {
+      const val = localData[idx]?.[columnKey];
+      const num = parseFloat(val);
+      if (!isNaN(num)) sum += num;
+    });
+    return sum !== 0 ? sum : '';
+  };
+  const sumLEC2MainRows = (mainIndices, columnKey) => {
+    let sum = 0;
+    mainIndices.forEach(idx => {
+      const val = getLEC2MainRowValue(idx, columnKey);
+      const num = parseFloat(val);
+      if (!isNaN(num)) sum += num;
+    });
+    return sum !== 0 ? sum : '';
+  };
+  const getLEC2MainRowValue = (mainIdx, columnKey) => {
+    const subIndices = lec2SubRowMap[mainIdx] || [];
+    return sumLEC2SubRows(subIndices, columnKey);
+  };
+
   return (
     <div className="overflow-x-auto">
+      {/* Render extra fields if they exist */}
+      {metadata?.extraFields && metadata.extraFields.length > 0 && (
+        <div className="mb-4 space-y-4">
+          {metadata.extraFields.map((field, idx) => (
+            <div key={idx} className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                {field.label}
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                  value={extraFieldsData[field.key] || ''}
+                  onChange={(e) => handleExtraFieldChange(field.key, e.target.value)}
+                  placeholder={`Enter ${field.label.toLowerCase()}`}
+                />
+              ) : (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm">
+                  {extraFieldsData[field.key] || '-'}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      
       <table className="min-w-full border border-gray-300">
         <thead>
           <tr>
@@ -255,7 +511,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       }
                       if (columnKey === 'unit') {
                         return (
-                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                         );
                       }
                       // Show sum of sub-rows
@@ -279,7 +535,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       }
                       if (columnKey === 'unit') {
                         return (
-                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                         );
                       }
                       // Show sum of main rows
@@ -308,7 +564,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       return (
                         <td 
                           key={colIdx} 
-                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 "
                         >
                           {row.unit || ''}
                         </td>
@@ -342,7 +598,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
               if (row.isHeader) {
                 return (
                   <tr key={rowIdx} className="bg-gray-50">
-                    <td colSpan={columnsWithUnits.length} className="border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                    <td colSpan={columnsWithUnits.length} className="border border-gray-300 px-4 py-2 text-sm  text-gray-900" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
                   </tr>
                 );
               }
@@ -353,12 +609,12 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       const columnKey = column.key || `col${colIdx}`;
                       if (columnKey === 'parameter') {
                         return (
-                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm " dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
                         );
                       }
                       if (columnKey === 'unit') {
                         return (
-                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                         );
                       }
                       let sum = 0;
@@ -368,7 +624,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                         if (!isNaN(num)) sum += num;
                       });
                       return (
-                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100">{sum !== 0 ? sum : ''}</td>
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm  bg-gray-100">{sum !== 0 ? sum : ''}</td>
                       );
                     })}
                   </tr>
@@ -399,7 +655,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                         return (
                           <td 
                             key={colIdx} 
-                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic bg-gray-100"
+                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600  bg-gray-100"
                           >
                             {row.unit || ''}
                           </td>
@@ -443,7 +699,220 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       return (
                         <td 
                           key={colIdx} 
-                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 "
+                        >
+                          {row.unit || ''}
+                        </td>
+                      );
+                    }
+                    const cellValue = localData[rowIdx]?.[columnKey] || '';
+                    return (
+                      <td 
+                        key={colIdx} 
+                        className="border border-gray-300 px-4 py-2 text-sm"
+                      >
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full p-1 border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                            value={cellValue}
+                            onChange={(e) => handleCellChange(rowIdx, columnKey, e.target.value)}
+                            placeholder="Enter value"
+                          />
+                        ) : (
+                          <div>{cellValue}</div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            }
+            // --- LEC-2 Table (Water withdrawal + discharge) ---
+            if (isLEC2Table) {
+              // Handle headers
+              if (row.isHeader) {
+                return (
+                  <tr key={rowIdx} className="bg-gray-50">
+                    <td colSpan={columnsWithUnits.length} className="border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                  </tr>
+                );
+              }
+
+              // Handle water withdrawal total row (sum of withdrawal rows 1-5)
+              if (rowIdx === withdrawalTotalRowIdx) {
+                return (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {columnsWithUnits.map((column, colIdx) => {
+                      const columnKey = column.key || `col${colIdx}`;
+                      if (columnKey === 'parameter') {
+                        return (
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold" dangerouslySetInnerHTML={{ __html: row.parameter || '' }} />
+                        );
+                      }
+                      if (columnKey === 'unit') {
+                        return (
+                          <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600">{row.unit || ''}</td>
+                        );
+                      }
+                      let sum = 0;
+                      withdrawalSumRowIndices.forEach(idx => {
+                        const val = localData[idx]?.[columnKey];
+                        const num = parseFloat(val);
+                        if (!isNaN(num)) sum += num;
+                      });
+                      return (
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100">{sum !== 0 ? sum : ''}</td>
+                      );
+                    })}
+                  </tr>
+                );
+              }
+
+              // Handle water intensity per rupee of turnover row (read-only, auto-calculated)
+              if (row.parameter && row.parameter.toLowerCase().includes('water intensity per rupee of turnover')) {
+                const totalConsumptionIdx = metadata.rows.findIndex(r => r.parameter && r.parameter.toLowerCase().includes('total volume of water consumption'));
+                return (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {columnsWithUnits.map((column, colIdx) => {
+                      const columnKey = column.key || `col${colIdx}`;
+                      if (columnKey === 'parameter') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                            dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                          />
+                        );
+                      }
+                      if (columnKey === 'unit') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600 bg-gray-100"
+                          >
+                            {row.unit || ''}
+                          </td>
+                        );
+                      }
+                      let intensity = '';
+                      if (totalConsumptionIdx !== -1 && turnover) {
+                        const totalVal = localData[totalConsumptionIdx]?.[columnKey];
+                        const totalNum = parseFloat((totalVal || '').toString().replace(/,/g, ''));
+                        if (!isNaN(totalNum) && totalNum && turnover) {
+                          intensity = (totalNum / turnover).toFixed(4);
+                        }
+                      }
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm bg-gray-100"
+                        >
+                          <div>{intensity}</div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              }
+
+              // Handle water discharge main rows (auto-calculated from sub-rows)
+              if (lec2MainRowIndices.includes(rowIdx)) {
+                return (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {columnsWithUnits.map((column, colIdx) => {
+                      const columnKey = column.key || `col${colIdx}`;
+                      if (columnKey === 'parameter') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                            dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                          />
+                        );
+                      }
+                      if (columnKey === 'unit') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600 bg-gray-100"
+                          >
+                            {row.unit || ''}
+                          </td>
+                        );
+                      }
+                      const calculatedValue = getLEC2MainRowValue(rowIdx, columnKey);
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                        >
+                          {calculatedValue}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              }
+
+              // Handle water discharge total row (sum of main discharge rows)
+              if (rowIdx === lec2TotalRowIdx) {
+                return (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {columnsWithUnits.map((column, colIdx) => {
+                      const columnKey = column.key || `col${colIdx}`;
+                      if (columnKey === 'parameter') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                            dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                          />
+                        );
+                      }
+                      if (columnKey === 'unit') {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            className="border border-gray-300 px-4 py-2 text-sm text-gray-600 bg-gray-100"
+                          >
+                            {row.unit || ''}
+                          </td>
+                        );
+                      }
+                      const totalValue = sumLEC2MainRows(lec2MainRowIndices, columnKey);
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-100"
+                        >
+                          {totalValue}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              }
+
+              // All other rows (editable - mainly sub-rows and regular withdrawal rows)
+              return (
+                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {columnsWithUnits.map((column, colIdx) => {
+                    const columnKey = column.key || `col${colIdx}`;
+                    if (columnKey === 'parameter') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm"
+                          dangerouslySetInnerHTML={{ __html: row.parameter || '' }}
+                        />
+                      );
+                    }
+                    if (columnKey === 'unit') {
+                      return (
+                        <td 
+                          key={colIdx} 
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600"
                         >
                           {row.unit || ''}
                         </td>
@@ -486,7 +955,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                     }
                     if (columnKey === 'unit') {
                       return (
-                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                       );
                     }
                     // Sum A-H rows for this column
@@ -517,7 +986,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                     }
                     if (columnKey === 'unit') {
                       return (
-                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                       );
                     }
                     // Sum recovery rows for this column
@@ -548,7 +1017,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                     }
                     if (columnKey === 'unit') {
                       return (
-                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic">{row.unit || ''}</td>
+                        <td key={colIdx} className="border border-gray-300 px-4 py-2 text-sm text-gray-600 ">{row.unit || ''}</td>
                       );
                     }
                     // Sum disposal rows for this column
@@ -600,7 +1069,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       return (
                         <td 
                           key={colIdx} 
-                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic bg-gray-100"
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600  bg-gray-100"
                         >
                           {row.unit || ''}
                         </td>
@@ -659,7 +1128,7 @@ const TableRenderer = ({ metadata, data, isEditing = false, onSave, turnover }) 
                       return (
                         <td 
                           key={colIdx} 
-                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 italic"
+                          className="border border-gray-300 px-4 py-2 text-sm text-gray-600 "
                         >
                           {row.unit || ''}
                         </td>

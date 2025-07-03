@@ -304,10 +304,28 @@ const QuestionRenderer = ({ question, financialYear, plantId, turnover }) => {
         // Patch: If data is an array, convert to object for TableRenderer
         let tableData = questionData?.data || {};
         if (Array.isArray(tableData)) {
-          // Convert array to object with row indices as keys
+          // Convert array to object with proper handling of row_index and extra fields
           const objData = {};
           tableData.forEach((row, idx) => {
-            objData[idx] = row;
+            if (row && typeof row === 'object') {
+              // If row has row_index, use it as the key
+              if ('row_index' in row && !isNaN(row.row_index)) {
+                const { row_index, ...rowData } = row;
+                objData[row_index] = rowData;
+              } 
+              // If row has extra fields but no row_index (or NaN row_index), handle specially
+              else if (metadata?.extraFields && metadata.extraFields.some(field => field.key in row)) {
+                // This is extra fields data, add it to the last position
+                const maxIndex = Math.max(-1, ...Object.keys(objData).map(k => parseInt(k)).filter(k => !isNaN(k)));
+                objData[maxIndex + 1] = row;
+              }
+              // Fallback: use array index
+              else {
+                objData[idx] = row;
+              }
+            } else {
+              objData[idx] = row;
+            }
           });
           tableData = objData;
         }

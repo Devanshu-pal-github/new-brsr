@@ -144,7 +144,7 @@ const DynamicQuestionRenderer = forwardRef(({
     // Audit Required capsule
     let auditRequiredCapsule = null;
     if (auditRequired === true) {
-      auditRequiredCapsule = <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded">Audit Required</span>;
+      auditRequiredCapsule = <span className="inline-block bg-blue-100 text-blue-800 text-xs  px-3 py-1 rounded">Audit Required</span>;
     } else if (auditRequired === false) {
       auditRequiredCapsule = <span className="inline-block bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-1 rounded">No Audit Required</span>;
     }
@@ -329,7 +329,7 @@ const DynamicQuestionRenderer = forwardRef(({
 
         {aiChatOpen && (
           <div className="fixed inset-0 z-[1000] flex items-end justify-end bg-opacity-50 transition-opacity duration-300">
-            <div className="w-full h-full absolute top-0 left-0" onClick={() => setAiChatOpen(false)} />
+            <div className="w-full h-full absolute top-0 left-0 bg-black/30" onClick={() => setAiChatOpen(false)} />
             <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
               <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">
                 <ChatbotWindow

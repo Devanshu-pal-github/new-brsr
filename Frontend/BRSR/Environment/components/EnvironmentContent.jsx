@@ -130,6 +130,7 @@ const EnvironmentContent = ({
           <div
             className="w-full h-full absolute top-0 left-0 bg-black/30"
             onClick={() => setAiChatOpen(false)}
+            
           />
           <div className="relative z-10 w-full max-w-md m-4 md:m-8 animate-slide-up">
             <div className="bg-white rounded-lg shadow-2xl p-0 overflow-hidden border border-gray-200">

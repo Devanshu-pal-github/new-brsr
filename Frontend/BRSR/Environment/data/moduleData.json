@@ -22,31 +22,257 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
                   }
                 ],
                 "rows": [
-                  { "parameter": "Total electricity consumption (A)", "unit": "GJ (Gigajoules)" },
-                  { "parameter": "Total fuel consumption (B)", "unit": "GJ (Gigajoules)" },
-                  { "parameter": "Energy consumption through other sources (C)", "unit": "GJ (Gigajoules)" },
-                  { "parameter": "<b>Total energy consumption (A+B+C)</b>", "unit": "GJ (Gigajoules)" },
-                  { "parameter": "Energy intensity per rupee of turnover<br/><i>(Total energy consumption/ turnover in rupees)</i>", "unit": "GJ/₹" },
-                  { "parameter": "Energy intensity (optional) – the relevant metric may be selected by the entity", "unit": "GJ/ton" }
+                  {
+                    "parameter": "Total electricity consumption (A)",
+                    "unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Total fuel consumption (B)",
+                    "unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Energy consumption through other sources (C)",
+                    "unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "<b>Total energy consumption (A+B+C)</b>",
+                    "unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Energy intensity per rupee of turnover<br/><i>(Total energy consumption/ turnover in rupees)</i>",
+                    "unit": "GJ/₹"
+                  },
+                  {
+                    "parameter": "Energy intensity (optional) – the relevant metric may be selected by the entity",
+                    "unit": "GJ/ton"
+                  }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               },
               "principle": "Principle 6",
               "indicator": "Essential"
+            }
+          ]
+        },
+        {
+          "name": "Leadership Indicators",
+          "id": "leadership-energy-indicators",
+          "questions": [
+            {
+              "id": "LEC-1",
+              "type": "Leadership",
+              "title": "Break-up of Total Energy Consumed from Renewable and Non-renewable Sources",
+              "description": "Provide break-up of the total energy consumed (in Joules or multiples) from renewable and non-renewable sources, in the following format:",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "table",
+                "columns": [
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
+                    "key": "current_year",
+                    "dynamicYear": true
+                  },
+                  {
+                    "label": "Previous Financial Year",
+                    "key": "previous_year",
+                    "dynamicYear": true,
+                    "isPrevious": true
+                  }
+                ],
+                "rows": [
+                  {
+                    "parameter": "From renewable sources",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "Total electricity consumption (A)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Total fuel consumption (B)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Energy consumption through other sources (C)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Total energy consumed from renewable sources (A+B+C)",
+                    "unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "From non-renewable sources",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "Total electricity consumption (D)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Total fuel consumption (E)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Energy consumption through other sources (F)","unit": "GJ (Gigajoules)"
+                  },
+                  {
+                    "parameter": "Total energy consumed from non-renewable sources (D+E+F)",
+                    "unit": "GJ (Gigajoules)"
+                  }
+                ],
+                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
+            },
+            {
+              "id": "LEC-2",
+              "type": "Leadership",
+              "title": "Water withdrawal, consumption and discharge in areas of water stress (in kilolitres)",
+              "description": "For each facility / plant located in areas of water stress, provide the following information: (i) Name of the area (ii) Nature of operations (iii) Water withdrawal, consumption and discharge in the following format:",
+              "isAuditRequired": true,
+              "metadata": {
+                "type": "table",
+                "extraFields": [
+                  { "label": "Name of the area", "key": "area_name" },
+                  { "label": "Nature of operations", "key": "operations" }
+                ],
+                "columns": [
+                  { "label": "Parameter", "key": "parameter" },
+                  { "label": "Current Financial Year", "key": "current_year", "dynamicYear": true },
+                  { "label": "Previous Financial Year", "key": "previous_year", "dynamicYear": true, "isPrevious": true }
+                ],
+                "rows": [
+                  {
+                    "parameter": "<b>Water withdrawal by source (in kilolitres)</b>",
+                    "isHeader": true,
+                    "unit": ""
+                  },
+                  {
+                    "parameter": "(i) Surface water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(ii) Groundwater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iii) Third party water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iv) Seawater / desalinated water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(v) Others",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Total volume of water consumption (in kilolitres)</b>",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>",
+                    "unit": "KL/₹"
+                  },
+                  {
+                    "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity",
+                    "unit": "KL/unit"
+                  },
+                  {
+                    "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "(i) Into Surface water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(ii) Into Groundwater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iii) Into Seawater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iv) Sent to third-parties",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(v) Others",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Total water discharged (in kilolitres)</b>",
+                    "unit": "KL (Kilolitres)"
+                  }
+                ],
+                "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
+              },
+              "principle": "Principle 6",
+              "indicator": "Leadership"
             }
           ]
         },
@@ -86,30 +312,64 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
                   }
                 ],
                 "rows": [
-                  { "parameter": "<b>Water withdrawal by source (in kilolitres)</b>", "isHeader": true, "unit": "" },
-                  { "parameter": "(i) Surface water", "unit": "KL (Kilolitres)" },
-                  { "parameter": "(ii) Groundwater", "unit": "KL (Kilolitres)" },
-                  { "parameter": "(iii) Third party water", "unit": "KL (Kilolitres)" },
-                  { "parameter": "(iv) Seawater / desalinated water", "unit": "KL (Kilolitres)" },
-                  { "parameter": "(v) Others", "unit": "KL (Kilolitres)" },
-                  { "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>", "unit": "KL (Kilolitres)" },
-                  { "parameter": "<b>Total volume of water consumption (in kilolitres)</b>", "unit": "KL (Kilolitres)" },
-                  { "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>", "unit": "KL/₹" },
-                  { "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity", "unit": "KL/unit" }
+                  {
+                    "parameter": "<b>Water withdrawal by source (in kilolitres)</b>",
+                    "isHeader": true,
+                    "unit": ""
+                  },
+                  {
+                    "parameter": "(i) Surface water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(ii) Groundwater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iii) Third party water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iv) Seawater / desalinated water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(v) Others",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b><i>Total volume of water withdrawal (in kilolitres) (i + ii + iii + iv + v)</i></b>",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Total volume of water consumption (in kilolitres)</b>",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Water intensity per rupee of turnover</b><br/><i>(Water consumed / turnover)</i>",
+                    "unit": "KL/₹"
+                  },
+                  {
+                    "parameter": "<b>Water intensity (optional)</b> – the relevant metric may be selected by the entity",
+                    "unit": "KL/unit"
+                  }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               },
@@ -143,37 +403,91 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
                   }
                 ],
                 "rows": [
-                  { "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>", "isHeader": true },
-                  { "parameter": "(i) To Surface water" , "unit": "KL (Kilolitres)" },
-                  { "parameter": "- No treatment" , "unit": "KL (Kilolitres)" },
-                  { "parameter": "- With treatment – please specify level of treatment", "unit": "KL (Kilolitres)" },
-                  { "parameter": "(ii) To Groundwater","unit": "KL (Kilolitres)" },
-                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "(iii) To Seawater","unit": "KL (Kilolitres)" },
-                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "(iv) Sent to third-parties","unit": "KL (Kilolitres)" },
-                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "(v) Others","unit": "KL (Kilolitres)" },
-                  { "parameter": "- No treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "- With treatment – please specify level of treatment","unit": "KL (Kilolitres)" },
-                  { "parameter": "<b>Total water discharged (in kilolitres)</b>","unit": "KL (Kilolitres)" }
+                  {
+                    "parameter": "<b>Water discharge by destination and level of treatment (in kilolitres)</b>",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "(i) To Surface water",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(ii) To Groundwater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iii) To Seawater",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(iv) Sent to third-parties",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "(v) Others",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- No treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "- With treatment – please specify level of treatment",
+                    "unit": "KL (Kilolitres)"
+                  },
+                  {
+                    "parameter": "<b>Total water discharged (in kilolitres)</b>",
+                    "unit": "KL (Kilolitres)"
+                  }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               },
@@ -200,27 +514,51 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
                   }
                 ],
                 "rows": [
-                  { "parameter": "NOx", "unit": "kg/year" },
-                  { "parameter": "SOx", "unit": "kg/year" },
-                  { "parameter": "Particulate matter (PM)", "unit": "kg/year" },
-                  { "parameter": "Persistent organic pollutants (POP)", "unit": "kg/year" },
-                  { "parameter": "Volatile organic compounds (VOC)", "unit": "kg/year" },
-                  { "parameter": "Hazardous air pollutants (HAP)", "unit": "g/year" },
-                  { "parameter": "Others – please specify", "unit": "" }
+                  {
+                    "parameter": "NOx",
+                    "unit": "kg/year"
+                  },
+                  {
+                    "parameter": "SOx",
+                    "unit": "kg/year"
+                  },
+                  {
+                    "parameter": "Particulate matter (PM)",
+                    "unit": "kg/year"
+                  },
+                  {
+                    "parameter": "Persistent organic pollutants (POP)",
+                    "unit": "kg/year"
+                  },
+                  {
+                    "parameter": "Volatile organic compounds (VOC)",
+                    "unit": "kg/year"
+                  },
+                  {
+                    "parameter": "Hazardous air pollutants (HAP)",
+                    "unit": "g/year"
+                  },
+                  {
+                    "parameter": "Others – please specify",
+                    "unit": ""
+                  }
                 ],
                 "note": "Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               },
@@ -242,14 +580,17 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
@@ -287,14 +628,17 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { 
-                    "label": "Current Financial Year", 
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
                     "key": "current_year",
                     "dynamicYear": true
                   },
-                  { 
-                    "label": "Previous Financial Year", 
+                  {
+                    "label": "Previous Financial Year",
                     "key": "previous_year",
                     "dynamicYear": true,
                     "isPrevious": true
@@ -371,32 +715,104 @@
               "metadata": {
                 "type": "table",
                 "columns": [
-                  { "label": "Parameter", "key": "parameter" },
-                  { "label": "Current Financial Year", "key": "current_year" },
-                  { "label": "Previous Financial Year", "key": "previous_year" },
-                  { "label": "Unit", "key": "unit" }
+                  {
+                    "label": "Parameter",
+                    "key": "parameter"
+                  },
+                  {
+                    "label": "Current Financial Year",
+                    "key": "current_year"
+                  },
+                  {
+                    "label": "Previous Financial Year",
+                    "key": "previous_year"
+                  },
+                  {
+                    "label": "Unit",
+                    "key": "unit"
+                  }
                 ],
                 "rows": [
-                  { "parameter": "Total Waste generated (in metric tonnes)", "isHeader": true },
-                  { "parameter": "Plastic waste (A)", "unit": "MT" },
-                  { "parameter": "E-waste (B)", "unit": "MT" },
-                  { "parameter": "Bio-medical waste (C)", "unit": "MT" },
-                  { "parameter": "Construction and demolition waste (D)", "unit": "MT" },
-                  { "parameter": "Battery waste (E)", "unit": "MT" },
-                  { "parameter": "Radioactive waste (F)", "unit": "MT" },
-                  { "parameter": "Other Hazardous waste. Please specify, if any. (G)", "unit": "MT" },
-                  { "parameter": "Other Non-hazardous waste generated (H). Please specify, if any.", "unit": "MT" },
-                  { "parameter": "Total (A+B+C+D+E+F+G+H)", "unit": "MT" },
-                  { "parameter": "For each category of waste generated, total waste recovered through recycling, re-using or other recovery operations (in metric tonnes)", "isHeader": true },
-                  { "parameter": "(i) Recycled", "unit": "MT" },
-                  { "parameter": "(ii) Re-used", "unit": "MT" },
-                  { "parameter": "(iii) Other recovery operations", "unit": "MT" },
-                  { "parameter": "Total", "unit": "MT" },
-                  { "parameter": "For each category of waste generated, total waste disposed by nature of disposal method (in metric tonnes)", "isHeader": true },
-                  { "parameter": "(i) Incineration", "unit": "MT" },
-                  { "parameter": "(ii) Landfilling", "unit": "MT" },
-                  { "parameter": "(iii) Other disposal operations", "unit": "MT" },
-                  { "parameter": "Total", "unit": "MT" }
+                  {
+                    "parameter": "Total Waste generated (in metric tonnes)",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "Plastic waste (A)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "E-waste (B)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Bio-medical waste (C)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Construction and demolition waste (D)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Battery waste (E)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Radioactive waste (F)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Other Hazardous waste. Please specify, if any. (G)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Other Non-hazardous waste generated (H). Please specify, if any.",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Total (A+B+C+D+E+F+G+H)",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "For each category of waste generated, total waste recovered through recycling, re-using or other recovery operations (in metric tonnes)",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "(i) Recycled",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "(ii) Re-used",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "(iii) Other recovery operations",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Total",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "For each category of waste generated, total waste disposed by nature of disposal method (in metric tonnes)",
+                    "isHeader": true
+                  },
+                  {
+                    "parameter": "(i) Incineration",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "(ii) Landfilling",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "(iii) Other disposal operations",
+                    "unit": "MT"
+                  },
+                  {
+                    "parameter": "Total",
+                    "unit": "MT"
+                  }
                 ],
                 "note": "Note: Indicate if any independent assessment/ evaluation/assurance has been carried out by an external agency? (Y/N) If yes, name of the external agency."
               },
@@ -423,10 +839,22 @@
               "metadata": {
                 "type": "dynamic-table",
                 "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Location of operations/offices", "key": "location" },
-                  { "label": "Type of operations", "key": "type_of_operations" },
-                  { "label": "Whether the conditions of environmental approval / clearance are being complied with? (Y/N)<br/>If no, the reasons thereof and corrective action taken, if any.", "key": "compliance" }
+                  {
+                    "label": "S. No.",
+                    "key": "s_no"
+                  },
+                  {
+                    "label": "Location of operations/offices",
+                    "key": "location"
+                  },
+                  {
+                    "label": "Type of operations",
+                    "key": "type_of_operations"
+                  },
+                  {
+                    "label": "Whether the conditions of environmental approval / clearance are being complied with? (Y/N)<br/>If no, the reasons thereof and corrective action taken, if any.",
+                    "key": "compliance"
+                  }
                 ],
                 "note": "Add a row for each location/operation as applicable."
               },
@@ -460,13 +888,34 @@
               "metadata": {
                 "type": "dynamic-table",
                 "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Name and brief details of project", "key": "project_details" },
-                  { "label": "EIA Notification No.", "key": "eia_notification_no" },
-                  { "label": "Date", "key": "date" },
-                  { "label": "Whether conducted by independent external agency (Yes / No)", "key": "independent_agency" },
-                  { "label": "Results communicated in public domain (Yes / No)", "key": "results_public" },
-                  { "label": "Relevant Web link", "key": "web_link" }
+                  {
+                    "label": "S. No.",
+                    "key": "s_no"
+                  },
+                  {
+                    "label": "Name and brief details of project",
+                    "key": "project_details"
+                  },
+                  {
+                    "label": "EIA Notification No.",
+                    "key": "eia_notification_no"
+                  },
+                  {
+                    "label": "Date",
+                    "key": "date"
+                  },
+                  {
+                    "label": "Whether conducted by independent external agency (Yes / No)",
+                    "key": "independent_agency"
+                  },
+                  {
+                    "label": "Results communicated in public domain (Yes / No)",
+                    "key": "results_public"
+                  },
+                  {
+                    "label": "Relevant Web link",
+                    "key": "web_link"
+                  }
                 ],
                 "note": "Add a row for each project as applicable."
               },
@@ -488,11 +937,26 @@
               "metadata": {
                 "type": "dynamic-table",
                 "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Specify the law / regulation / guidelines which was not complied with", "key": "law_not_complied" },
-                  { "label": "Provide details of the non-compliance", "key": "non_compliance_details" },
-                  { "label": "Any fines / penalties / action taken by regulatory agencies such as pollution control boards or by courts", "key": "fines_penalties" },
-                  { "label": "Corrective action taken, if any", "key": "corrective_action" }
+                  {
+                    "label": "S. No.",
+                    "key": "s_no"
+                  },
+                  {
+                    "label": "Specify the law / regulation / guidelines which was not complied with",
+                    "key": "law_not_complied"
+                  },
+                  {
+                    "label": "Provide details of the non-compliance",
+                    "key": "non_compliance_details"
+                  },
+                  {
+                    "label": "Any fines / penalties / action taken by regulatory agencies such as pollution control boards or by courts",
+                    "key": "fines_penalties"
+                  },
+                  {
+                    "label": "Corrective action taken, if any",
+                    "key": "corrective_action"
+                  }
                 ],
                 "note": "Add a row for each non-compliance as applicable."
               },
@@ -567,11 +1031,26 @@
               "metadata": {
                 "type": "dynamic-table",
                 "columns": [
-                  { "label": "S. No.", "key": "s_no" },
-                  { "label": "Initiative undertaken", "key": "initiative" },
-                  { "label": "Details of the initiative (<i>summary</i>)", "key": "initiative_details" },
-                  { "label": "Outcome of the initiative", "key": "outcome" },
-                  { "label": "Web-link (if any)", "key": "web_link" }
+                  {
+                    "label": "S. No.",
+                    "key": "s_no"
+                  },
+                  {
+                    "label": "Initiative undertaken",
+                    "key": "initiative"
+                  },
+                  {
+                    "label": "Details of the initiative (<i>summary</i>)",
+                    "key": "initiative_details"
+                  },
+                  {
+                    "label": "Outcome of the initiative",
+                    "key": "outcome"
+                  },
+                  {
+                    "label": "Web-link (if any)",
+                    "key": "web_link"
+                  }
                 ],
                 "note": "Add a row for each initiative as applicable."
               },

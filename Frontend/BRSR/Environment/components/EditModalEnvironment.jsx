@@ -110,11 +110,11 @@ const EditModalEnvironment = ({ isOpen, onClose, children, title, onSave, tempDa
                         ease: [0.4, 0.0, 0.2, 1],
                         type: "tween"
                     }}
-                    style={{ maxHeight: '90vh', minWidth: smartFeaturesOpen ? '1200px' : '1024px', maxWidth: '95vw' }}
+                    style={{ maxHeight: '90vh', minWidth: smartFeaturesOpen ? '1200px' : '1024px', maxWidth: '95vw', display: 'flex', flexDirection: 'row' }}
                 >
                     <div className="flex h-full min-h-0">
-                        <div className="flex flex-col" style={{ width: '1024px', minWidth: '1024px' }}>
-                            <div className="px-6 py-4 border-b border-gray-200 relative">
+                        <div className="flex flex-col h-full" style={{ width: '1024px', minWidth: '1024px' }}>
+                            <div className="px-6 py-4 border-b border-gray-200 relative flex-shrink-0">
                                 <div className="pr-20">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
                                         {question.id && (
@@ -170,7 +170,7 @@ const EditModalEnvironment = ({ isOpen, onClose, children, title, onSave, tempDa
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-6 overflow-y-auto flex-1">
+                            <div className="p-6 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 80px)' }}>
                                 <div className="min-w-0">
                                     {children}
                                 </div>

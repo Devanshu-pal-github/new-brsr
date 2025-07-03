@@ -15,7 +15,8 @@ import {
   Activity,
   Download,
   MessageSquareText,
-  BookOpen
+  BookOpen,
+  Bot
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from "react-router-dom";
@@ -334,7 +335,7 @@ const Dashboard = ({ dynamicModules = [] }) => {
             className="flex items-center gap-2 px-4 py-2 bg-[#1A2341] text-white rounded-lg hover:bg-[#2A3351] transition-colors text-sm"
             onClick={() => setIsMCPModalOpen(true)}
           >
-            <MessageSquareText className="w-4 h-4" />
+            <Bot className="w-4 h-4" />
             <span>MCP</span>
           </button>
           <button 
